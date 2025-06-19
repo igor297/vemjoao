@@ -1,0 +1,33 @@
+/* Remove spinner arrows from number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Improve field explanation buttons */
+.field-explanation-btn {
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  margin-left: 8px !important;
+}
+
+/* Better popover styling */
+.popover {
+  max-width: 300px;
+}
+
+.popover-body {
+  font-size: 14px;
+  line-height: 1.4;
+}
