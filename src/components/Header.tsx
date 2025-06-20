@@ -261,16 +261,6 @@ export default function Header({ showLogout = true }: HeaderProps) {
                 <Button 
                   variant="outline-light" 
                   size="sm"
-                  onClick={() => router.push('/colaborador-dashboard')}
-                  className="ms-2"
-                >
-                  Meu Dashboard
-                </Button>
-              </Nav.Item>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
                   onClick={() => router.push('/eventos')}
                   className="ms-2"
                 >
