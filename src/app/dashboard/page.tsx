@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Container, Row, Col, Card, Form, Button, Alert, Badge } from 'react-bootstrap'
-import Header from '@/components/Header'
+import LayoutWithMobileMenu from '@/components/LayoutWithMobileMenu'
 
 interface Condominio {
   _id: string
@@ -124,8 +124,7 @@ export default function DashboardPage() {
   const getActiveCondominioName = () => activeCondominioName
 
   return (
-    <>
-      <Header />
+    <LayoutWithMobileMenu>
       <Container fluid className="py-5 bg-light min-vh-100">
         <Container>
           <Row className="justify-content-center">
@@ -373,6 +372,6 @@ export default function DashboardPage() {
           </Row>
         </Container>
       </Container>
-    </>
+    </LayoutWithMobileMenu>
   )
 }

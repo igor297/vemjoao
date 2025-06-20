@@ -23,4 +23,120 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  padding-bottom: 80px;
+}
+
+/* Mobile Menu Styles */
+.mobile-menu-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fff !important;
+  border-top: 1px solid #e5e5e5;
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.08);
+  height: 64px;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.mobile-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  height: 100%;
+  padding: 0 8px;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden; /* Impede barra lateral */
+}
+
+.mobile-menu-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #888;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 0;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  outline: none;
+  min-width: 0; /* Permite encolher sem overflow */
+  min-height: 0;
+  height: 100%;
+  position: relative;
+  touch-action: manipulation;
+}
+
+.mobile-menu-item:active {
+  background: #f0f4fa;
+}
+
+.mobile-menu-item.active {
+  color: #0d6efd;
+  background: #f0f4fa;
+}
+
+.mobile-menu-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 2px;
+  margin-top: 2px;
+  transition: color 0.15s;
+}
+
+.mobile-menu-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.1;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  margin-bottom: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mobile-menu-container {
+    background: #181c20 !important;
+    border-top: 1px solid #23272b;
+  }
+  .mobile-menu-item {
+    color: #aaa;
+  }
+  .mobile-menu-item.active {
+    color: #0d6efd;
+    background: #23272b;
+  }
+  .mobile-menu-item:active {
+    background: #23272b;
+  }
+}
+
+/* Responsividade - ocultar menu mobile em desktop e header em mobile */
+@media (min-width: 992px) {
+  .mobile-menu-container {
+    display: none !important;
+  }
+  
+  body {
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .desktop-header {
+    display: none !important;
+  }
+  
+  body {
+    padding-top: 0;
+  }
 }

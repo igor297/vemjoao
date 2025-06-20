@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/form-improvements.css';
+import LayoutWithMobileMenu from '../components/LayoutWithMobileMenu';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <LayoutWithMobileMenu>
+          {children}
+        </LayoutWithMobileMenu>
       </body>
     </html>
   );

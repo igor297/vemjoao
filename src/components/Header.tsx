@@ -86,7 +86,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
   }
 
   return (
-    <Navbar bg="primary" variant="dark" expand="lg" className="shadow">
+    <Navbar bg="primary" variant="dark" expand="lg" className="shadow desktop-header">
       <Container fluid>
         <Navbar.Brand onClick={handleDashboardClick} className="d-flex align-items-center" style={{ cursor: 'pointer' }}>
           <div className="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
