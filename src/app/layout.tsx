@@ -3,8 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/form-improvements.css';
-import LayoutWithMobileMenu from '../components/LayoutWithMobileMenu';
+import { ReactNode } from "react";
+import ClientShell from '../components/ClientShell';
 
+// Adicione novamente as definições das fontes
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -30,9 +32,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LayoutWithMobileMenu>
+        <ClientShell>
           {children}
-        </LayoutWithMobileMenu>
+        </ClientShell>
       </body>
     </html>
   );
