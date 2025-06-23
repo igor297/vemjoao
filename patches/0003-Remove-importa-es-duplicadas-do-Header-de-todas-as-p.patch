@@ -1,0 +1,454 @@
+From 42807511be98adc6ddabd1f251bcce4dc55bfcde Mon Sep 17 00:00:00 2001
+From: root <igor297297@gmail.com>
+Date: Mon, 23 Jun 2025 11:52:31 -0300
+Subject: [PATCH 3/3] =?UTF-8?q?Remove=20importa=C3=A7=C3=B5es=20duplicadas?=
+ =?UTF-8?q?=20do=20Header=20de=20todas=20as=20p=C3=A1ginas?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Remove import Header de 19 páginas que causavam menus duplicados
+- Mantém apenas o Header global via ClientShell
+- Corrige display de menu em todas as páginas do sistema
+- Agora todas as páginas mostram menu desktop e mobile corretamente
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ src/app/adm-dashboard/page.tsx                  | 2 --
+ src/app/adm/page.tsx                            | 2 --
+ src/app/colaborador-dashboard/financas/page.tsx | 3 ---
+ src/app/colaborador-dashboard/page.tsx          | 2 --
+ src/app/colaborador/page.tsx                    | 2 --
+ src/app/condominio/page.tsx                     | 2 --
+ src/app/eventos/page.tsx                        | 2 --
+ src/app/financeiro-colaborador/page.tsx         | 2 --
+ src/app/financeiro-condominio/page.tsx          | 2 --
+ src/app/financeiro-dashboard/page.tsx           | 2 --
+ src/app/financeiro-morador/page.tsx             | 2 --
+ src/app/financeiro-unificado/page.tsx           | 2 --
+ src/app/financeiro/page.tsx                     | 2 --
+ src/app/master-config-financeiro/page.tsx       | 3 ---
+ src/app/meu-inquilino/page.tsx                  | 3 ---
+ src/app/morador-dashboard/financas/page.tsx     | 3 ---
+ src/app/morador-dashboard/page.tsx              | 2 --
+ src/app/moradores/page.tsx                      | 2 --
+ src/app/portal-pagamento/page.tsx               | 2 --
+ 19 files changed, 42 deletions(-)
+
+diff --git a/src/app/adm-dashboard/page.tsx b/src/app/adm-dashboard/page.tsx
+index 463b1e5..6e31435 100644
+--- a/src/app/adm-dashboard/page.tsx
++++ b/src/app/adm-dashboard/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ export default function AdmDashboardPage() {
+   const [userInfo, setUserInfo] = useState<any>(null)
+@@ -32,7 +31,6 @@ export default function AdmDashboardPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-5 bg-light min-vh-100">
+         <Container>
+           <Row className="justify-content-center">
+diff --git a/src/app/adm/page.tsx b/src/app/adm/page.tsx
+index b6c2501..007e803 100644
+--- a/src/app/adm/page.tsx
++++ b/src/app/adm/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import MoradorSelector from '@/components/MoradorSelector'
+ import DateInput from '@/components/DateInput'
+ import { formatDateISO } from '@/utils/dateUtils'
+@@ -457,7 +456,6 @@ export default function AdmPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/colaborador-dashboard/financas/page.tsx b/src/app/colaborador-dashboard/financas/page.tsx
+index be3b395..c91ee48 100644
+--- a/src/app/colaborador-dashboard/financas/page.tsx
++++ b/src/app/colaborador-dashboard/financas/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge, Table, Button } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ interface FinanceiroColaborador {
+   _id: string
+@@ -134,7 +133,6 @@ export default function ColaboradorFinancasPage() {
+   if (loading) {
+     return (
+       <>
+-        <Header />
+         <Container fluid className="py-4">
+           <Alert variant="info" className="text-center">
+             <h5>⏳ Carregando suas informações financeiras...</h5>
+@@ -147,7 +145,6 @@ export default function ColaboradorFinancasPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/colaborador-dashboard/page.tsx b/src/app/colaborador-dashboard/page.tsx
+index fd7d4f5..c8c36fa 100644
+--- a/src/app/colaborador-dashboard/page.tsx
++++ b/src/app/colaborador-dashboard/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ export default function ColaboradorDashboardPage() {
+   const [userInfo, setUserInfo] = useState<any>(null)
+@@ -25,7 +24,6 @@ export default function ColaboradorDashboardPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-5 bg-light min-vh-100">
+         <Container>
+           <Row className="justify-content-center">
+diff --git a/src/app/colaborador/page.tsx b/src/app/colaborador/page.tsx
+index eb633f8..91c731a 100644
+--- a/src/app/colaborador/page.tsx
++++ b/src/app/colaborador/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge, Tabs, Tab, Image, Spinner } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import DateInput from '@/components/DateInput'
+ import { formatDateISO } from '@/utils/dateUtils'
+ 
+@@ -782,7 +781,6 @@ export default function ColaboradorPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         <Row className="mb-4">
+           <Col>
+diff --git a/src/app/condominio/page.tsx b/src/app/condominio/page.tsx
+index c15a26f..2e3f7c4 100644
+--- a/src/app/condominio/page.tsx
++++ b/src/app/condominio/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import FieldExplanation from '@/components/FieldExplanation'
+ 
+ interface Condominio {
+@@ -667,7 +666,6 @@ export default function CondominioPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/eventos/page.tsx b/src/app/eventos/page.tsx
+index 8785cda..5390e66 100644
+--- a/src/app/eventos/page.tsx
++++ b/src/app/eventos/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Nav } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import FullCalendar from '@fullcalendar/react'
+ import dayGridPlugin from '@fullcalendar/daygrid'
+ import timeGridPlugin from '@fullcalendar/timegrid'
+@@ -435,7 +434,6 @@ export default function EventosPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/financeiro-colaborador/page.tsx b/src/app/financeiro-colaborador/page.tsx
+index 02a557d..5499dc7 100644
+--- a/src/app/financeiro-colaborador/page.tsx
++++ b/src/app/financeiro-colaborador/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React, { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Line, Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -619,7 +618,6 @@ export default function FinanceiroColaboradorPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="mt-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/financeiro-condominio/page.tsx b/src/app/financeiro-condominio/page.tsx
+index 61ca008..a024f11 100644
+--- a/src/app/financeiro-condominio/page.tsx
++++ b/src/app/financeiro-condominio/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React, { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Line, Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -678,7 +677,6 @@ export default function FinanceiroCondominioPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="mt-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/financeiro-dashboard/page.tsx b/src/app/financeiro-dashboard/page.tsx
+index bef248d..ac84cfe 100644
+--- a/src/app/financeiro-dashboard/page.tsx
++++ b/src/app/financeiro-dashboard/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React, { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Line, Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -36,7 +35,6 @@ export default function FinanceiroDashboardPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container className="py-4">
+         <h2 className="mb-4">📊 Dashboard Financeiro</h2>
+         {/* KPIs e gráficos principais */}
+diff --git a/src/app/financeiro-morador/page.tsx b/src/app/financeiro-morador/page.tsx
+index a41dc32..6b3b9f9 100644
+--- a/src/app/financeiro-morador/page.tsx
++++ b/src/app/financeiro-morador/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React, { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Line, Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -774,7 +773,6 @@ export default function FinanceiroMoradorPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="mt-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/financeiro-unificado/page.tsx b/src/app/financeiro-unificado/page.tsx
+index 497efb1..0fca25c 100644
+--- a/src/app/financeiro-unificado/page.tsx
++++ b/src/app/financeiro-unificado/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Nav, Table, Dropdown, ProgressBar } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Line, Bar, Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -449,7 +448,6 @@ export default function FinanceiroUnificadoPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="mt-4">
+         {alert && (
+           <Alert variant={alert.type} className="mb-3">
+diff --git a/src/app/financeiro/page.tsx b/src/app/financeiro/page.tsx
+index 1326cfb..f3b7536 100644
+--- a/src/app/financeiro/page.tsx
++++ b/src/app/financeiro/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import React, { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Badge, Alert, Table, Form } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import { Doughnut } from 'react-chartjs-2'
+ import {
+   Chart as ChartJS,
+@@ -225,7 +224,6 @@ export default function FinanceiroPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="mt-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/master-config-financeiro/page.tsx b/src/app/master-config-financeiro/page.tsx
+index d81b851..4737ec6 100644
+--- a/src/app/master-config-financeiro/page.tsx
++++ b/src/app/master-config-financeiro/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Form, Alert, Badge, Modal } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ interface ConfiguracaoFinanceira {
+   _id?: string
+@@ -251,7 +250,6 @@ export default function MasterConfigFinanceiroPage() {
+   if (loading && !configuracao) {
+     return (
+       <>
+-        <Header />
+         <Container fluid className="py-4">
+           <Alert variant="info" className="text-center">
+             <h5>⏳ Carregando configurações financeiras...</h5>
+@@ -264,7 +262,6 @@ export default function MasterConfigFinanceiroPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/meu-inquilino/page.tsx b/src/app/meu-inquilino/page.tsx
+index c58d48b..c3e1d39 100644
+--- a/src/app/meu-inquilino/page.tsx
++++ b/src/app/meu-inquilino/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ interface Inquilino {
+   _id: string
+@@ -336,7 +335,6 @@ export default function MeuInquilinoPage() {
+   if (userInfo?.tipo !== 'morador' || userInfo?.subtipo !== 'proprietario') {
+     return (
+       <>
+-        <Header />
+         <Container className="py-5">
+           <Alert variant="danger">
+             <Alert.Heading>Acesso Negado</Alert.Heading>
+@@ -349,7 +347,6 @@ export default function MeuInquilinoPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         <Row className="mb-4">
+           <Col>
+diff --git a/src/app/morador-dashboard/financas/page.tsx b/src/app/morador-dashboard/financas/page.tsx
+index 9103709..cd4a994 100644
+--- a/src/app/morador-dashboard/financas/page.tsx
++++ b/src/app/morador-dashboard/financas/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge, Table, Button } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ interface FinanceiroMorador {
+   _id: string
+@@ -150,7 +149,6 @@ export default function MoradorFinancasPage() {
+   if (loading) {
+     return (
+       <>
+-        <Header />
+         <Container fluid className="py-4">
+           <Alert variant="info" className="text-center">
+             <h5>⏳ Carregando suas informações financeiras...</h5>
+@@ -163,7 +161,6 @@ export default function MoradorFinancasPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+diff --git a/src/app/morador-dashboard/page.tsx b/src/app/morador-dashboard/page.tsx
+index 3a19a8b..871ed01 100644
+--- a/src/app/morador-dashboard/page.tsx
++++ b/src/app/morador-dashboard/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Alert, Badge, Button, Modal, Form } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ export default function MoradorDashboardPage() {
+   const [userInfo, setUserInfo] = useState<any>(null)
+@@ -114,7 +113,6 @@ export default function MoradorDashboardPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-5 bg-light min-vh-100">
+         <Container>
+           <Row className="justify-content-center">
+diff --git a/src/app/moradores/page.tsx b/src/app/moradores/page.tsx
+index aeb2c0f..ce5441c 100644
+--- a/src/app/moradores/page.tsx
++++ b/src/app/moradores/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect, useMemo } from 'react'
+ import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ import ConjugeManager from '@/components/moradores/ConjugeManager'
+ import DependenteManager from '@/components/moradores/DependenteManager'
+ import VeiculoManager from '@/components/moradores/VeiculoManager'
+@@ -923,7 +922,6 @@ export default function MoradoresPage() {
+ 
+   return (
+     <>
+-      <Header />
+       <Container fluid className="py-4">
+         <Row className="mb-4">
+           <Col>
+diff --git a/src/app/portal-pagamento/page.tsx b/src/app/portal-pagamento/page.tsx
+index 9e0b46d..078dd52 100644
+--- a/src/app/portal-pagamento/page.tsx
++++ b/src/app/portal-pagamento/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect } from 'react'
+ import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Spinner } from 'react-bootstrap'
+-import Header from '@/components/Header'
+ 
+ // CSS styles para o componente
+ const styles = `
+@@ -281,7 +280,6 @@ export default function PortalPagamentoPage() {
+   return (
+     <>
+       <style>{styles}</style>
+-      <Header />
+       <Container fluid className="py-4">
+         {alert && (
+           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+-- 
+2.43.0
+

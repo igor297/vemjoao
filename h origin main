@@ -1,0 +1,84 @@
+[33mcommit 42807511be98adc6ddabd1f251bcce4dc55bfcde[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: root <igor297297@gmail.com>
+Date:   Mon Jun 23 11:52:31 2025 -0300
+
+    Remove importações duplicadas do Header de todas as páginas
+    
+    - Remove import Header de 19 páginas que causavam menus duplicados
+    - Mantém apenas o Header global via ClientShell
+    - Corrige display de menu em todas as páginas do sistema
+    - Agora todas as páginas mostram menu desktop e mobile corretamente
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit ccc587aa297e1f0ac070bf5f22e8b2b309b97467[m
+Author: root <igor297297@gmail.com>
+Date:   Mon Jun 23 11:46:09 2025 -0300
+
+    Corrige importação de LayoutWithMobileMenu no dashboard
+    
+    Remove importação do componente que foi removido e ajusta layout
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit 5807dd13c7b517df56530ba688dedabdfb0e5fc5[m
+Author: root <igor297297@gmail.com>
+Date:   Mon Jun 23 11:40:38 2025 -0300
+
+    Unifica menus: integra menu mobile no Header principal
+    
+    - Remove componentes MobileMenu e LayoutWithMobileMenu duplicados
+    - Integra funcionalidade mobile diretamente no Header.tsx
+    - Mantém menu desktop completo e adiciona versão mobile simplificada
+    - Atualiza ClientShell para usar apenas Header unificado
+    - Resolve conflito de dois menus no sistema
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit 3e4fa3ac61393b824d513513086a74dad3e812a8[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: root <igor297297@gmail.com>
+Date:   Fri Jun 20 19:36:57 2025 -0300
+
+    Adiciona ClientShell e atualiza layout
+
+[33mcommit bb17b05f8ce979e814576ede0f59bf762fee6e81[m
+Author: root <igor297297@gmail.com>
+Date:   Fri Jun 20 16:29:45 2025 -0300
+
+    Adiciona menu mobile e atualiza layout
+
+[33mcommit 3c8b6a43217394d94d7f1b8c10fe2a54ef8e72e4[m
+Author: root <igor297297@gmail.com>
+Date:   Fri Jun 20 12:12:38 2025 -0300
+
+    Segundo ponto de restauração - após remoção das funcionalidades do colaborador-dashboard
+    
+    Removidas as seguintes seções do colaborador-dashboard:
+    - Horários (Visualizar escala de trabalho)
+    - Comunicados (Avisos e informações importantes)
+    - Ordens de Serviço (Tarefas e manutenções atribuídas)
+    - Relatórios (Registrar atividades realizadas)
+    - Equipamentos (Controle de ferramentas e materiais)
+    - Contato (Falar com administração)
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+[33mcommit d0455cfc3df356b68f1589de3bc543e0d46958e4[m
+Author: root <igor297297@gmail.com>
+Date:   Fri Jun 20 11:07:06 2025 -0300
+
+    Ponto de restauração antes de modificações no colaborador-dashboard
+
+[33mcommit 9355fdc3ef1645221a5e24586d515194a541bcad[m
+Author: root <igor297297@gmail.com>
+Date:   Thu Jun 19 16:54:44 2025 -0300
+
+    Primeiro commit

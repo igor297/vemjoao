@@ -1,0 +1,49 @@
+From ccc587aa297e1f0ac070bf5f22e8b2b309b97467 Mon Sep 17 00:00:00 2001
+From: root <igor297297@gmail.com>
+Date: Mon, 23 Jun 2025 11:46:09 -0300
+Subject: [PATCH 2/3] =?UTF-8?q?Corrige=20importa=C3=A7=C3=A3o=20de=20Layou?=
+ =?UTF-8?q?tWithMobileMenu=20no=20dashboard?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Remove importação do componente que foi removido e ajusta layout
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ src/app/dashboard/page.tsx | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/app/dashboard/page.tsx b/src/app/dashboard/page.tsx
+index 2569c2b..7fad0e5 100644
+--- a/src/app/dashboard/page.tsx
++++ b/src/app/dashboard/page.tsx
+@@ -2,7 +2,6 @@
+ 
+ import { useState, useEffect, useMemo } from 'react'
+ import { Container, Row, Col, Card, Form, Button, Alert, Badge } from 'react-bootstrap'
+-import LayoutWithMobileMenu from '@/components/LayoutWithMobileMenu'
+ 
+ interface Condominio {
+   _id: string
+@@ -124,7 +123,6 @@ export default function DashboardPage() {
+   const getActiveCondominioName = () => activeCondominioName
+ 
+   return (
+-    <LayoutWithMobileMenu>
+       <Container fluid className="py-5 bg-light min-vh-100">
+         <Container>
+           <Row className="justify-content-center">
+@@ -372,6 +370,5 @@ export default function DashboardPage() {
+           </Row>
+         </Container>
+       </Container>
+-    </LayoutWithMobileMenu>
+   )
+ }
+\ No newline at end of file
+-- 
+2.43.0
+
