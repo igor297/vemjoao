@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Nav } from 'react-bootstrap'
-import Header from '@/components/Header'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -435,7 +434,6 @@ export default function EventosPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

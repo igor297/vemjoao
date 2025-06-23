@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Alert, Badge, Button, Modal, Form } from 'react-bootstrap'
-import Header from '@/components/Header'
 
 export default function MoradorDashboardPage() {
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -114,7 +113,6 @@ export default function MoradorDashboardPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-5 bg-light min-vh-100">
         <Container>
           <Row className="justify-content-center">

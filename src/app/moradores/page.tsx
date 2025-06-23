@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap'
-import Header from '@/components/Header'
 import ConjugeManager from '@/components/moradores/ConjugeManager'
 import DependenteManager from '@/components/moradores/DependenteManager'
 import VeiculoManager from '@/components/moradores/VeiculoManager'
@@ -923,7 +922,6 @@ export default function MoradoresPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         <Row className="mb-4">
           <Col>

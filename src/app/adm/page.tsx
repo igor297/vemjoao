@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert, Badge } from 'react-bootstrap'
-import Header from '@/components/Header'
 import MoradorSelector from '@/components/MoradorSelector'
 import DateInput from '@/components/DateInput'
 import { formatDateISO } from '@/utils/dateUtils'
@@ -457,7 +456,6 @@ export default function AdmPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

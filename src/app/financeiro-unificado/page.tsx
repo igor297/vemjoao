@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Nav, Table, Dropdown, ProgressBar } from 'react-bootstrap'
-import Header from '@/components/Header'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -449,7 +448,6 @@ export default function FinanceiroUnificadoPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="mt-4">
         {alert && (
           <Alert variant={alert.type} className="mb-3">

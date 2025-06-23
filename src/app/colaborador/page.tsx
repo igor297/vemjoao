@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge, Tabs, Tab, Image, Spinner } from 'react-bootstrap'
-import Header from '@/components/Header'
 import DateInput from '@/components/DateInput'
 import { formatDateISO } from '@/utils/dateUtils'
 
@@ -782,7 +781,6 @@ export default function ColaboradorPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         <Row className="mb-4">
           <Col>

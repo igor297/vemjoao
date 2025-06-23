@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Alert, Badge, Table, Button } from 'react-bootstrap'
-import Header from '@/components/Header'
 
 interface FinanceiroColaborador {
   _id: string
@@ -134,7 +133,6 @@ export default function ColaboradorFinancasPage() {
   if (loading) {
     return (
       <>
-        <Header />
         <Container fluid className="py-4">
           <Alert variant="info" className="text-center">
             <h5>⏳ Carregando suas informações financeiras...</h5>
@@ -147,7 +145,6 @@ export default function ColaboradorFinancasPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

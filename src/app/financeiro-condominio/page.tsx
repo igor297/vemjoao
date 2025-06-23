@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
-import Header from '@/components/Header'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -678,7 +677,6 @@ export default function FinanceiroCondominioPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="mt-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

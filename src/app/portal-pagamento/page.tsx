@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Spinner } from 'react-bootstrap'
-import Header from '@/components/Header'
 
 // CSS styles para o componente
 const styles = `
@@ -281,7 +280,6 @@ export default function PortalPagamentoPage() {
   return (
     <>
       <style>{styles}</style>
-      <Header />
       <Container fluid className="py-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

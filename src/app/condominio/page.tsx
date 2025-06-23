@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert } from 'react-bootstrap'
-import Header from '@/components/Header'
 import FieldExplanation from '@/components/FieldExplanation'
 
 interface Condominio {
@@ -667,7 +666,6 @@ export default function CondominioPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         {alert && (
           <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap'
-import Header from '@/components/Header'
 
 interface Inquilino {
   _id: string
@@ -336,7 +335,6 @@ export default function MeuInquilinoPage() {
   if (userInfo?.tipo !== 'morador' || userInfo?.subtipo !== 'proprietario') {
     return (
       <>
-        <Header />
         <Container className="py-5">
           <Alert variant="danger">
             <Alert.Heading>Acesso Negado</Alert.Heading>
@@ -349,7 +347,6 @@ export default function MeuInquilinoPage() {
 
   return (
     <>
-      <Header />
       <Container fluid className="py-4">
         <Row className="mb-4">
           <Col>

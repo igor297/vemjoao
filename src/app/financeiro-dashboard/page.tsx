@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap'
-import Header from '@/components/Header'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -36,7 +35,6 @@ export default function FinanceiroDashboardPage() {
 
   return (
     <>
-      <Header />
       <Container className="py-4">
         <h2 className="mb-4">📊 Dashboard Financeiro</h2>
         {/* KPIs e gráficos principais */}
