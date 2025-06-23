@@ -14,6 +14,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
   const [userSubtipo, setUserSubtipo] = useState<string>('')
   const [condominioNome, setCondominioNome] = useState<string>('')
   const [activeCondominioName, setActiveCondominioName] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<string>('')
   const router = useRouter()
 
   useEffect(() => {
@@ -39,6 +40,12 @@ export default function Header({ showLogout = true }: HeaderProps) {
     }
 
     loadUserData()
+
+    // Detectar página atual para destacar o menu ativo
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname
+      setActiveTab(currentPath)
+    }
 
     // Escutar mudanças no localStorage (quando condomínio ativo é alterado)
     const handleStorageChange = (e: any) => {
@@ -69,6 +76,58 @@ export default function Header({ showLogout = true }: HeaderProps) {
     router.push('/dashboard')
   }
 
+  const handleNavigation = (path: string) => {
+    setActiveTab(path)
+    router.push(path)
+  }
+
+  const getMobileMenuItems = () => {
+    const baseItems = [
+      {
+        icon: '🏠',
+        label: 'Dashboard',
+        path: userType === 'master' ? '/dashboard' : 
+              userType === 'adm' ? '/adm-dashboard' :
+              userType === 'colaborador' ? '/colaborador-dashboard' :
+              '/morador-dashboard'
+      }
+    ]
+
+    switch (userType) {
+      case 'master':
+        return [
+          ...baseItems,
+          { icon: '🏢', label: 'Condomínios', path: '/condominio' },
+          { icon: '👥', label: 'Moradores', path: '/moradores' },
+          { icon: '💰', label: 'Financeiro', path: '/financeiro' },
+          { icon: '📅', label: 'Eventos', path: '/eventos' }
+        ]
+      case 'adm':
+        return [
+          ...baseItems,
+          { icon: '👥', label: 'Moradores', path: '/moradores' },
+          { icon: '🤝', label: 'Colaborador', path: '/colaborador' },
+          { icon: '💰', label: 'Financeiro', path: '/financeiro' },
+          { icon: '📅', label: 'Eventos', path: '/eventos' }
+        ]
+      case 'colaborador':
+        return [
+          ...baseItems,
+          { icon: '💰', label: 'Financeiro', path: '/financeiro-colaborador' },
+          { icon: '📅', label: 'Eventos', path: '/eventos' }
+        ]
+      case 'morador':
+        return [
+          ...baseItems,
+          { icon: '👤', label: 'Perfil', path: '/morador-dashboard' },
+          { icon: '📅', label: 'Eventos', path: '/eventos' },
+          { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' }
+        ]
+      default:
+        return baseItems
+    }
+  }
+
   // URLs para os subitens do menu financeiro
   const financeiroLinks = {
     master: '/financeiro-condominio',
@@ -85,8 +144,11 @@ export default function Header({ showLogout = true }: HeaderProps) {
     morador: 'Financeiro do Morador'
   }
 
+  const mobileMenuItems = getMobileMenuItems()
+
   return (
-    <Navbar bg="primary" variant="dark" expand="lg" className="shadow desktop-header">
+    <>
+    <Navbar bg="primary" variant="dark" expand="lg" className="shadow d-none d-lg-block desktop-header">
       <Container fluid>
         <Navbar.Brand onClick={handleDashboardClick} className="d-flex align-items-center" style={{ cursor: 'pointer' }}>
           <div className="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
@@ -367,5 +429,30 @@ export default function Header({ showLogout = true }: HeaderProps) {
         )}
       </Container>
     </Navbar>
+    
+    {/* Mobile Menu */}
+    <div className="mobile-menu-container d-block d-lg-none">
+      <div className="mobile-menu">
+        {mobileMenuItems.map((item, index) => (
+          <button
+            key={index}
+            className={`mobile-menu-item ${activeTab === item.path ? 'active' : ''}`}
+            onClick={() => handleNavigation(item.path)}
+          >
+            <div className="mobile-menu-icon">{item.icon}</div>
+            <div className="mobile-menu-label">{item.label}</div>
+          </button>
+        ))}
+        <button
+          className="mobile-menu-item"
+          onClick={handleLogout}
+          title="Sair"
+        >
+          <div className="mobile-menu-icon">🚪</div>
+          <div className="mobile-menu-label">Sair</div>
+        </button>
+      </div>
+    </div>
+    </>
   )
 }

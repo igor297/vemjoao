@@ -1,7 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Header from "./Header";
-import LayoutWithMobileMenu from "./LayoutWithMobileMenu";
 import { ReactNode } from "react";
 
 export default function ClientShell({ children }: { children: ReactNode }) {
@@ -11,9 +10,9 @@ export default function ClientShell({ children }: { children: ReactNode }) {
     <>
       {!hideShell && <Header />}
       {!hideShell ? (
-        <LayoutWithMobileMenu>
+        <div className="main-content">
           {children}
-        </LayoutWithMobileMenu>
+        </div>
       ) : (
         children
       )}
