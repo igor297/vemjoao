@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table } from 'react-bootstrap'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -114,6 +114,8 @@ export default function FinanceiroColaboradorPage() {
   
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<FinanceiroColaborador | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<FinanceiroColaborador | null>(null)
   
   const [formData, setFormData] = useState({
     tipo: 'despesa' as 'receita' | 'despesa' | 'transferencia',
@@ -127,6 +129,7 @@ export default function FinanceiroColaboradorPage() {
     status: 'pendente' as 'pendente' | 'pago' | 'atrasado' | 'cancelado',
     data_pagamento: ''
   })
+
 
   const [filtros, setFiltros] = useState({
     categoria: '',
@@ -351,6 +354,15 @@ export default function FinanceiroColaboradorPage() {
   }
 
   const loadFinanceiro = async (user: any, colaboradorId: string, pagina: number = 1) => {
+    if (!colaboradorId || !selectedCondominiumId) {
+      console.warn('Colaborador ou condomínio não selecionado, não carregando dados financeiros')
+      setFinanceiro([])
+      setTotalRegistros(0)
+      setTotalPaginas(0)
+      setPaginaAtual(1)
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -389,6 +401,7 @@ export default function FinanceiroColaboradorPage() {
         setFinanceiro([])
         setTotalRegistros(0)
         setTotalPaginas(0)
+        setPaginaAtual(1)
       }
     } catch (error) {
       console.error('Erro ao carregar financeiro:', error)
@@ -396,6 +409,7 @@ export default function FinanceiroColaboradorPage() {
       setFinanceiro([])
       setTotalRegistros(0)
       setTotalPaginas(0)
+      setPaginaAtual(1)
     } finally {
       setLoading(false)
     }
@@ -481,8 +495,9 @@ export default function FinanceiroColaboradorPage() {
   }
 
   const handleEdit = (item: FinanceiroColaborador) => {
+    console.log('🔧 Editando item:', item)
     setEditingItem(item)
-    setFormData({
+    const newFormData = {
       tipo: item.tipo,
       categoria: item.categoria,
       descricao: item.descricao,
@@ -493,16 +508,24 @@ export default function FinanceiroColaboradorPage() {
       periodicidade: item.periodicidade || '',
       status: item.status,
       data_pagamento: item.data_pagamento ? item.data_pagamento.split('T')[0] : ''
-    })
+    }
+    console.log('📝 Form data sendo definido:', newFormData)
+    setFormData(newFormData)
     setShowModal(true)
+    console.log('📂 Modal deve estar aberto agora')
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este lançamento?')) return
+  const handleDelete = (item: FinanceiroColaborador) => {
+    setItemToDelete(item)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
 
     try {
       const response = await fetch(
-        `/api/financeiro-colaborador?id=${id}&tipo_usuario=${currentUser?.tipo}`,
+        `/api/financeiro-colaborador?id=${itemToDelete._id}&tipo_usuario=${currentUser?.tipo}`,
         { method: 'DELETE' }
       )
       
@@ -512,17 +535,21 @@ export default function FinanceiroColaboradorPage() {
         showAlert('success', 'Lançamento excluído!')
         loadDashboard(currentUser, selectedColaboradorId)
         // Se estamos na última página e ela ficou vazia, voltar para a página anterior
-        const novaPagina = financeiro.length === 1 && paginaAtual > 1 ? paginaAtual - 1 : paginaAtual
+        const novaPagina = (financeiro && financeiro.length === 1 && paginaAtual > 1) ? paginaAtual - 1 : paginaAtual
         loadFinanceiro(currentUser, selectedColaboradorId, novaPagina)
       } else {
         showAlert('error', data.error || 'Erro ao excluir')
       }
     } catch (error) {
       showAlert('error', 'Erro interno do servidor')
+    } finally {
+      setShowDeleteModal(false)
+      setItemToDelete(null)
     }
   }
 
   const handleCloseModal = () => {
+    console.log('❌ Fechando modal')
     setShowModal(false)
     setEditingItem(null)
     setFormData({
@@ -558,7 +585,13 @@ export default function FinanceiroColaboradorPage() {
 
   // UseEffect para preencher valor automaticamente quando categoria "salario" for selecionada
   useEffect(() => {
-    console.log('🎯 UseEffect categoria salário - Categoria:', formData.categoria, 'Colaborador:', selectedColaborador?.nome, 'Salário:', selectedColaborador?.salario)
+    console.log('🎯 UseEffect categoria salário - Categoria:', formData.categoria, 'Colaborador:', selectedColaborador?.nome, 'Salário:', selectedColaborador?.salario, 'Editando:', editingItem ? 'SIM' : 'NÃO')
+    
+    // Não executar se estivermos editando um item
+    if (editingItem) {
+      console.log('⏭️ Pulando preenchimento automático porque estamos editando')
+      return
+    }
     
     if (formData.categoria === 'salario' && selectedColaborador) {
       if (selectedColaborador.salario && selectedColaborador.salario > 0) {
@@ -581,7 +614,7 @@ export default function FinanceiroColaboradorPage() {
         }))
       }
     }
-  }, [formData.categoria, selectedColaborador])
+  }, [formData.categoria, selectedColaborador, editingItem])
 
   const handleCondominiumChange = (condominioId: string) => {
     setSelectedCondominiumId(condominioId)
@@ -691,15 +724,24 @@ export default function FinanceiroColaboradorPage() {
                 <h2 className="mb-1">👥 Gestão Financeira de Colaboradores</h2>
                 <p className="text-muted mb-0">Controle financeiro de pagamentos e benefícios para colaboradores</p>
               </div>
-              <Button 
-                variant="primary" 
-                size="lg"
-                onClick={() => setShowModal(true)}
-                disabled={!selectedColaboradorId}
-              >
-                <i className="fas fa-plus me-2"></i>
-                Novo Lançamento
-              </Button>
+              <div className="d-flex gap-2">
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={() => setShowModal(true)}
+                  disabled={!selectedColaboradorId}
+                >
+                  ➕ Novo Lançamento
+                </Button>
+                <Button 
+                  variant="outline-info" 
+                  size="lg"
+                  onClick={() => window.open('/financeiro-condominio', '_blank')}
+                  title="Ver dados sincronizados no financeiro do condomínio"
+                >
+                  🔗 Ver no Condomínio
+                </Button>
+              </div>
             </div>
           </Col>
         </Row>
@@ -820,7 +862,7 @@ export default function FinanceiroColaboradorPage() {
             <Col md={6} className="d-flex align-items-end">
               <div className="w-100">
                 <small className="text-muted">
-                  <strong>Total de lançamentos:</strong> {totalRegistros > 0 ? totalRegistros : financeiro.length}
+                  <strong>Total de lançamentos:</strong> {totalRegistros > 0 ? totalRegistros : (financeiro ? financeiro.length : 0)}
                   {totalPaginas > 1 && (
                     <span className="ms-2">
                       (Página {paginaAtual} de {totalPaginas})
@@ -851,6 +893,37 @@ export default function FinanceiroColaboradorPage() {
           </Alert>
         ) : null}
 
+        {selectedCondominiumId && (
+          <Row className="mb-4">
+            <Col>
+              <Alert variant="info" className="border-primary">
+                <div className="d-flex align-items-start">
+                  <div className="me-3">
+                    <span style={{ fontSize: '24px' }}>🔗</span>
+                  </div>
+                  <div className="flex-grow-1">
+                    <h6 className="alert-heading mb-2">
+                      <strong>Sincronização Automática com Financeiro do Condomínio</strong>
+                    </h6>
+                    <p className="mb-1">
+                      <strong>✅ Como funciona:</strong> Todos os lançamentos de colaboradores são automaticamente sincronizados 
+                      como <strong>despesas</strong> no financeiro do condomínio.
+                    </p>
+                    <p className="mb-1">
+                      <strong>💰 Salários, bônus e benefícios</strong> → Aparecem como despesas do condomínio
+                    </p>
+                    <p className="mb-0">
+                      <strong>🔍 Para ver a visão consolidada:</strong> Clique no botão 
+                      <span className="badge bg-info ms-1 me-1">🔗 Ver no Condomínio</span> 
+                      acima para abrir o financeiro unificado em nova aba.
+                    </p>
+                  </div>
+                </div>
+              </Alert>
+            </Col>
+          </Row>
+        )}
+
         {dashboardData && (currentUser?.tipo !== 'master' || selectedCondominiumId) && (
           <>
             <Row className="mb-4">
@@ -861,7 +934,7 @@ export default function FinanceiroColaboradorPage() {
                       <h6 className="text-success mb-0">Receitas</h6>
                       <i className="fas fa-arrow-up text-success"></i>
                     </div>
-                    <h3 className="text-success mb-0">{formatCurrencyDisplay(dashboardData.resumo.total_receitas)}</h3>
+                    <h3 className="text-success mb-0">{formatCurrencyDisplay(dashboardData?.resumo?.total_receitas || 0)}</h3>
                   </Card.Body>
                 </Card>
               </Col>
@@ -872,19 +945,19 @@ export default function FinanceiroColaboradorPage() {
                       <h6 className="text-danger mb-0">Despesas</h6>
                       <i className="fas fa-arrow-down text-danger"></i>
                     </div>
-                    <h3 className="text-danger mb-0">{formatCurrencyDisplay(dashboardData.resumo.total_despesas)}</h3>
+                    <h3 className="text-danger mb-0">{formatCurrencyDisplay(dashboardData?.resumo?.total_despesas || 0)}</h3>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className={dashboardData.resumo.resultado_liquido >= 0 ? 'border-primary' : 'border-warning'}>
+                <Card className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'border-primary' : 'border-warning'}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="mb-0">Saldo</h6>
-                      <i className={`fas ${dashboardData.resumo.resultado_liquido >= 0 ? 'fa-check-circle text-primary' : 'fa-exclamation-triangle text-warning'}`}></i>
+                      <i className={`fas ${(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'fa-check-circle text-primary' : 'fa-exclamation-triangle text-warning'}`}></i>
                     </div>
-                    <h3 className={dashboardData.resumo.resultado_liquido >= 0 ? 'text-primary' : 'text-warning'}>
-                      {formatCurrencyDisplay(dashboardData.resumo.resultado_liquido)}
+                    <h3 className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'text-primary' : 'text-warning'}>
+                      {formatCurrencyDisplay(dashboardData?.resumo?.resultado_liquido || 0)}
                     </h3>
                   </Card.Body>
                 </Card>
@@ -894,13 +967,13 @@ export default function FinanceiroColaboradorPage() {
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-warning mb-0">Pendentes</h6>
-                      <Badge bg="warning">{dashboardData.resumo.count_pendentes}</Badge>
+                      <Badge bg="warning">{dashboardData?.resumo?.count_pendentes || 0}</Badge>
                     </div>
-                    <h3 className="text-warning mb-0">{formatCurrencyDisplay(dashboardData.resumo.total_pendentes)}</h3>
-                    {dashboardData.resumo.total_atrasados > 0 && (
+                    <h3 className="text-warning mb-0">{formatCurrencyDisplay(dashboardData?.resumo?.total_pendentes || 0)}</h3>
+                    {(dashboardData?.resumo?.total_atrasados || 0) > 0 && (
                       <small className="text-danger">
                         <i className="fas fa-exclamation-triangle me-1"></i>
-                        {formatCurrencyDisplay(dashboardData.resumo.total_atrasados)} em atraso
+                        {formatCurrencyDisplay(dashboardData?.resumo?.total_atrasados || 0)} em atraso
                       </small>
                     )}
                   </Card.Body>
@@ -915,7 +988,7 @@ export default function FinanceiroColaboradorPage() {
                     <h5 className="mb-0">📈 Fluxo de Caixa Mensal</h5>
                   </Card.Header>
                   <Card.Body>
-                    {dashboardData.fluxo_mensal.length > 0 ? (
+                    {dashboardData && dashboardData.fluxo_mensal && dashboardData.fluxo_mensal.length > 0 ? (
                       <Line 
                         data={fluxoCaixaData} 
                         options={{
@@ -963,7 +1036,7 @@ export default function FinanceiroColaboradorPage() {
                     <h5 className="mb-0">🎯 Principais Categorias</h5>
                   </Card.Header>
                   <Card.Body>
-                    {dashboardData.categorias.length > 0 ? (
+                    {dashboardData && dashboardData.categorias && dashboardData.categorias.length > 0 ? (
                       <Doughnut 
                         data={categoriasData} 
                         options={{
@@ -1212,7 +1285,7 @@ export default function FinanceiroColaboradorPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {financeiro.length === 0 ? (
+                    {!financeiro || financeiro.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="text-center text-muted py-4">
                           <i className="fas fa-inbox fa-2x mb-2"></i>
@@ -1220,7 +1293,7 @@ export default function FinanceiroColaboradorPage() {
                         </td>
                       </tr>
                     ) : (
-                      financeiro.map((item) => (
+                      (financeiro || []).map((item) => (
                         <tr key={item._id}>
                           <td>{getCategoriaLabel(item.categoria)}</td>
                           <td>
@@ -1248,24 +1321,24 @@ export default function FinanceiroColaboradorPage() {
                             )}
                           </td>
                           <td>
-                            <Dropdown>
-                              <Dropdown.Toggle variant="outline-secondary" size="sm">
-                                <i className="fas fa-ellipsis-v"></i>
-                              </Dropdown.Toggle>
-                              <Dropdown.Menu>
-                                <Dropdown.Item onClick={() => handleEdit(item)}>
-                                  <i className="fas fa-edit me-2"></i>
-                                  Editar
-                                </Dropdown.Item>
-                                <Dropdown.Item 
-                                  onClick={() => handleDelete(item._id)}
-                                  className="text-danger"
-                                >
-                                  <i className="fas fa-trash me-2"></i>
-                                  Excluir
-                                </Dropdown.Item>
-                              </Dropdown.Menu>
-                            </Dropdown>
+                            <div className="d-flex gap-2">
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm"
+                                onClick={() => handleEdit(item)}
+                                title="Editar"
+                              >
+                                ✏️
+                              </Button>
+                              <Button 
+                                variant="outline-danger" 
+                                size="sm"
+                                onClick={() => handleDelete(item)}
+                                title="Excluir"
+                              >
+                                🗑️
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1673,6 +1746,47 @@ export default function FinanceiroColaboradorPage() {
             </Button>
             <Button variant="primary" onClick={handleSubmit}>
               {editingItem ? 'Atualizar' : 'Criar'} Lançamento
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal de confirmação de exclusão */}
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title className="text-danger">
+              🗑️ Confirmar Exclusão
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="text-center py-3">
+              <div className="mb-3">
+                <i className="text-danger" style={{ fontSize: '48px' }}>⚠️</i>
+              </div>
+              <h5 className="mb-3">Tem certeza que deseja excluir este lançamento?</h5>
+              {itemToDelete && (
+                <div className="bg-light p-3 rounded mb-3">
+                  <p className="mb-1"><strong>Descrição:</strong> {itemToDelete.descricao}</p>
+                  <p className="mb-1"><strong>Valor:</strong> {formatCurrencyDisplay(itemToDelete.valor)}</p>
+                  <p className="mb-0"><strong>Categoria:</strong> {getCategoriaLabel(itemToDelete.categoria)}</p>
+                </div>
+              )}
+              <p className="text-muted mb-0">
+                Esta ação não pode ser desfeita.
+              </p>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button 
+              variant="secondary" 
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={confirmDelete}
+            >
+              🗑️ Confirmar Exclusão
             </Button>
           </Modal.Footer>
         </Modal>

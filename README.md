@@ -1,36 +1,151 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏢 Sistema de Gestão de Condomínios
 
-## Getting Started
+Sistema completo para gestão de condomínios desenvolvido com Next.js 15, MongoDB e React Bootstrap.
 
-First, run the development server:
+## 🚀 Funcionalidades
 
+### 👥 **Gestão de Colaboradores**
+- Cadastro e controle de colaboradores
+- Gestão financeira (salários, bônus, benefícios)
+- Sincronização automática com financeiro do condomínio
+
+### 🏠 **Gestão de Moradores**
+- Cadastro de moradores por unidade
+- Controle de taxas e boletos
+- Integração com financeiro
+
+### 💰 **Sistema Financeiro**
+- **Financeiro Colaborador**: Salários, bônus, descontos
+- **Financeiro Morador**: Taxas, multas, receitas
+- **Financeiro Condomínio**: Visão consolidada automática
+- Relatórios e dashboards interativos
+
+### 🔐 **Controle de Acesso**
+- **Master**: Controle total do sistema
+- **Síndico**: Gestão completa do condomínio
+- **Subsíndico**: Gestão com restrições
+- **Conselheiro**: Visualização de relatórios
+- **Colaborador**: Acesso aos próprios dados
+
+## 🛠️ Tecnologias
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **UI**: React Bootstrap, Chart.js
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB com Mongoose
+- **Deploy**: Railway
+
+## 📦 Instalação
+
+1. **Clone o repositório**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [seu-repositorio]
+cd vemjoao
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Instale as dependências**
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Configure as variáveis de ambiente**
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edite o `.env.local` com suas configurações do MongoDB.
 
-## Learn More
+4. **Execute o projeto**
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Acesse [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🌐 Deploy no Railway
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Pré-requisitos
+- Conta no [Railway](https://railway.com)
+- MongoDB configurado no Railway
 
-## Deploy on Vercel
+### Configuração
+1. Conecte seu repositório GitHub ao Railway
+2. Configure as variáveis de ambiente no Railway:
+   ```
+   MONGODB_URI=mongodb://mongo:password@mongodb.railway.internal:27017/database
+   NODE_ENV=production
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. O deploy será automático a cada push na branch main
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Variáveis de Ambiente Railway
+```bash
+MONGO_INITDB_ROOT_PASSWORD=sua_senha
+MONGO_INITDB_ROOT_USERNAME=mongo
+MONGO_URL=mongodb://mongo:password@mongodb.railway.internal:27017
+MONGOHOST=mongodb.railway.internal
+MONGOPASSWORD=sua_senha
+MONGOPORT=27017
+MONGOUSER=mongo
+```
+
+## 📊 Arquitetura
+
+### Collections MongoDB
+- `masters` - Usuários master
+- `condominios` - Dados dos condomínios
+- `colaboradors` - Colaboradores
+- `moradors` - Moradores
+- `financeirocolaboradors` - Lançamentos de colaboradores
+- `financeiro-moradores` - Lançamentos de moradores
+- `financeiro-condominio` - Consolidação automática
+
+### Sincronização Automática
+- Lançamentos de colaboradores → Despesas no condomínio
+- Lançamentos de moradores → Receitas no condomínio
+- Sistema de hash para evitar duplicatas
+- Rastreabilidade completa da origem
+
+## 🔄 Scripts Disponíveis
+
+```bash
+npm run dev          # Desenvolvimento
+npm run build        # Build para produção
+npm run start        # Execução em produção
+npm run lint         # Linting do código
+npm run seed:master  # Criar usuário master inicial
+```
+
+## 📱 Responsividade
+
+- ✅ Desktop
+- ✅ Tablet
+- ✅ Mobile
+- Interface adaptativa com React Bootstrap
+
+## 🛡️ Segurança
+
+- Autenticação baseada em sessão
+- Controle granular de permissões
+- Validação de dados server-side
+- Sanitização de inputs
+- Logs de auditoria
+
+## 📈 Performance
+
+- Connection pooling otimizado MongoDB
+- Caching de componentes React
+- Lazy loading de rotas
+- Compressão de assets
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas mudanças
+4. Push para a branch
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
