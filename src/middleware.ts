@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { autoSeed } from '@/lib/auto-seed'
 
-export async function middleware(request: NextRequest) {
-  // Executar auto-seed apenas no Railway (produção)
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      await autoSeed()
-    } catch (error) {
-      console.error('Erro no middleware auto-seed:', error)
-      // Continua mesmo se o seed falhar
-    }
-  }
-
+export function middleware(_request: NextRequest) {
+  // Middleware simplificado - auto-seed será executado via API routes
   return NextResponse.next()
 }
 
