@@ -97,10 +97,17 @@ next.config.ts        # Configuração Next.js
 src/lib/mongodb.ts    # Conexão automática MongoDB
 ```
 
-#### 4. **Deploy Automático**
+#### 4. **Deploy e Inicialização Automática**
 - ✅ A cada push na branch `main`, o deploy acontecerá automaticamente
 - ✅ Railway detectará automaticamente que é um projeto Next.js
 - ✅ Build e start serão executados automaticamente
+- ✅ **AUTO-SEED**: Dados de teste são criados automaticamente no Railway
+
+**🌱 Auto-Seed inclui:**
+- 👤 Usuário Master: `master@teste.com` / `>T8Nn7n_S8-T`
+- 🏢 Condomínio de teste: "Residencial Teste Railway"
+- 👷 Colaborador: "Alex Sousa" (Porteiro)
+- 👥 Morador: "João Silva Santos" (Apt 101)
 
 #### 5. **Verificar Deploy**
 1. Aguarde o build finalizar (5-10 minutos)
