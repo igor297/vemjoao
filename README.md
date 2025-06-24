@@ -65,29 +65,79 @@ Acesse [http://localhost:3000](http://localhost:3000)
 ## 🌐 Deploy no Railway
 
 ### Pré-requisitos
-- Conta no [Railway](https://railway.com)
-- MongoDB configurado no Railway
+- ✅ Conta no [Railway](https://railway.com)
+- ✅ MongoDB configurado no Railway
 
-### Configuração
-1. Conecte seu repositório GitHub ao Railway
-2. Configure as variáveis de ambiente no Railway:
-   ```
-   MONGODB_URI=mongodb://mongo:password@mongodb.railway.internal:27017/database
-   NODE_ENV=production
-   ```
+### 🚀 Passo a Passo para Deploy
 
-3. O deploy será automático a cada push na branch main
+#### 1. **Conectar Repositório GitHub**
+1. Acesse [Railway.app](https://railway.app)
+2. Clique em "Start a New Project"
+3. Selecione "Deploy from GitHub repo"
+4. Escolha o repositório: `igor297/vemjoao`
 
-### Variáveis de Ambiente Railway
+#### 2. **Configurar MongoDB no Railway**
+1. No dashboard do Railway, clique em "+ New"
+2. Selecione "Database" → "MongoDB"
+3. Aguarde a criação e anote as credenciais
+
+#### 3. **Configurar Variáveis de Ambiente**
+No dashboard do seu projeto, vá em **Variables** e adicione:
+
 ```bash
-MONGO_INITDB_ROOT_PASSWORD=sua_senha
-MONGO_INITDB_ROOT_USERNAME=mongo
-MONGO_URL=mongodb://mongo:password@mongodb.railway.internal:27017
+# 🔥 OBRIGATÓRIO - Substitua pela sua string de conexão do Railway
+MONGODB_URI=mongodb://mongo:tJhXIsPGeEmWUhKehhXEkhMTegYIRQBC@mongodb.railway.internal:27017/condominio-sistema
+
+# 🔥 OBRIGATÓRIO - Ambiente de produção
+NODE_ENV=production
+
+# ⚙️ Opcionais (Railway configurará automaticamente)
 MONGOHOST=mongodb.railway.internal
-MONGOPASSWORD=sua_senha
 MONGOPORT=27017
 MONGOUSER=mongo
+MONGOPASSWORD=tJhXIsPGeEmWUhKehhXEkhMTegYIRQBC
 ```
+
+#### 4. **Deploy Automático**
+- ✅ A cada push na branch `main`, o deploy acontecerá automaticamente
+- ✅ Railway detectará automaticamente que é um projeto Next.js
+- ✅ Build e start serão executados automaticamente
+
+#### 5. **Verificar Deploy**
+1. Aguarde o build finalizar (5-10 minutos)
+2. Acesse a URL fornecida pelo Railway
+3. Teste o login e funcionalidades
+
+### 🔧 Comandos de Deploy
+```bash
+# Fazer deploy manual (push para main)
+git add .
+git commit -m "Deploy para Railway"
+git push origin main
+```
+
+### 📊 Monitoramento
+- **Logs**: Railway Dashboard → Deploy Logs
+- **Métricas**: Railway Dashboard → Metrics
+- **Banco**: Railway Dashboard → MongoDB → Connect
+
+### ❌ Solução de Problemas
+
+#### Erro: "MONGODB_URI não definido"
+```bash
+# Verificar se a variável está configurada no Railway Dashboard
+MONGODB_URI=mongodb://mongo:password@mongodb.railway.internal:27017/database
+```
+
+#### Erro: "Cannot connect to MongoDB"
+1. Verificar se MongoDB está rodando no Railway
+2. Verificar string de conexão
+3. Verificar se database existe
+
+#### Build falha
+1. Verificar logs no Railway Dashboard
+2. Verificar dependências no package.json
+3. Executar `npm run build` localmente
 
 ## 📊 Arquitetura
 
