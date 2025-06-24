@@ -2,9 +2,9 @@ import mongoose from 'mongoose'
 
 // Configuração automática para Railway vs Local
 const getMongoURI = () => {
-  // Se estiver em produção (Railway), usar credenciais do Railway
+  // Se estiver em produção (Railway), usar URL pública
   if (process.env.NODE_ENV === 'production') {
-    return 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@mongodb.railway.internal:27017/condominio-sistema'
+    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema'
   }
   
   // Se estiver em desenvolvimento, usar MongoDB local
