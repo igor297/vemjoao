@@ -1,0 +1,22 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[environments.production.variables]
+NODE_ENV = "production"
+MONGODB_URI = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@mongodb.railway.internal:27017/condominio-sistema"
+MONGODB_DB = "condominio-sistema"
+MONGO_INITDB_ROOT_PASSWORD = "dfSakOiePzOactfHNwqrQNfHnRlqBVZX"
+MONGO_INITDB_ROOT_USERNAME = "mongo"
+MONGO_PUBLIC_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512"
+MONGO_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@mongodb.railway.internal:27017"
+MONGOHOST = "mongodb.railway.internal"
+MONGOPASSWORD = "dfSakOiePzOactfHNwqrQNfHnRlqBVZX"
+MONGOPORT = "27017"
+MONGOUSER = "mongo"

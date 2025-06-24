@@ -81,21 +81,20 @@ Acesse [http://localhost:3000](http://localhost:3000)
 2. Selecione "Database" → "MongoDB"
 3. Aguarde a criação e anote as credenciais
 
-#### 3. **Configurar Variáveis de Ambiente**
-No dashboard do seu projeto, vá em **Variables** e adicione:
+#### 3. **✅ CONFIGURAÇÃO 100% AUTOMÁTICA** 
+🎉 **NÃO PRECISA CONFIGURAR NADA MANUALMENTE!**
 
+O projeto já está configurado com:
+- ✅ Credenciais do MongoDB Railway atualizadas
+- ✅ Variáveis de ambiente automáticas via `railway.toml`
+- ✅ Configuração de produção vs desenvolvimento
+- ✅ Detecção automática de ambiente (local/Railway)
+
+**Arquivos configurados:**
 ```bash
-# 🔥 OBRIGATÓRIO - Substitua pela sua string de conexão do Railway
-MONGODB_URI=mongodb://mongo:tJhXIsPGeEmWUhKehhXEkhMTegYIRQBC@mongodb.railway.internal:27017/condominio-sistema
-
-# 🔥 OBRIGATÓRIO - Ambiente de produção
-NODE_ENV=production
-
-# ⚙️ Opcionais (Railway configurará automaticamente)
-MONGOHOST=mongodb.railway.internal
-MONGOPORT=27017
-MONGOUSER=mongo
-MONGOPASSWORD=tJhXIsPGeEmWUhKehhXEkhMTegYIRQBC
+railway.toml          # Configuração automática Railway
+next.config.ts        # Configuração Next.js
+src/lib/mongodb.ts    # Conexão automática MongoDB
 ```
 
 #### 4. **Deploy Automático**

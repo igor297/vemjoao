@@ -1,10 +1,23 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI!
+// Configuração automática para Railway vs Local
+const getMongoURI = () => {
+  // Se estiver em produção (Railway), usar credenciais do Railway
+  if (process.env.NODE_ENV === 'production') {
+    return 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@mongodb.railway.internal:27017/condominio-sistema'
+  }
+  
+  // Se estiver em desenvolvimento, usar MongoDB local
+  return process.env.MONGODB_URI || 'mongodb://localhost:27017/condominio-sistema'
+}
+
+const MONGODB_URI = getMongoURI()
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
 }
+
+console.log(`🔗 Conectando ao MongoDB: ${MONGODB_URI.includes('railway') ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
 
 interface GlobalMongoDB {
   conn: typeof mongoose | null
