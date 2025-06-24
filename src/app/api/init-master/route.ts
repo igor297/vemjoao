@@ -6,12 +6,20 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
     
-    // Verificar se já existe um master
-    const existingMaster = await Master.findOne({})
+    // Verificar quantos masters existem
+    const totalMasters = await Master.countDocuments()
+    const existingMaster = await Master.findOne({ email: 'master@teste.com' })
+    
     if (existingMaster) {
       return NextResponse.json({
         success: false,
-        error: 'Já existe um usuário master no sistema'
+        error: 'Usuário master@teste.com já existe',
+        totalMasters,
+        existingUser: {
+          nome: existingMaster.nome,
+          email: existingMaster.email,
+          senha: existingMaster.senha
+        }
       }, { status: 400 })
     }
 
