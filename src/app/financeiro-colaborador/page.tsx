@@ -51,6 +51,15 @@ interface DashboardData {
     total_atrasados: number
     count_pendentes: number
     count_atrasados: number
+    // Campos específicos para colaboradores
+    total_salarios?: number
+    total_bonus?: number
+    total_descontos?: number
+    total_vales?: number
+    total_horas_extras?: number
+    total_pagos?: number
+    total_liquido?: number
+    count_total?: number
   }
   categorias: any[]
   fluxo_mensal: any[]
@@ -96,6 +105,12 @@ export default function FinanceiroColaboradorPage() {
   const [selectedCondominiumId, setSelectedCondominiumId] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [alert, setAlert] = useState<{type: string, message: string} | null>(null)
+  
+  // Estados para paginação
+  const [paginaAtual, setPaginaAtual] = useState(1)
+  const [totalRegistros, setTotalRegistros] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(0)
+  const registrosPorPagina = 20
   
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<FinanceiroColaborador | null>(null)
@@ -150,7 +165,7 @@ export default function FinanceiroColaboradorPage() {
             setSelectedColaboradorId(activeColaboradorId)
             fetchColaboradorCompleto(activeColaboradorId)
             loadDashboard(user, activeColaboradorId)
-            loadFinanceiro(user, activeColaboradorId)
+            loadFinanceiro(user, activeColaboradorId, 1)
           }
         } else {
           // Para não-masters, usar colaborador do usuário
@@ -158,7 +173,7 @@ export default function FinanceiroColaboradorPage() {
             setSelectedColaboradorId(user.colaborador_id)
             fetchColaboradorCompleto(user.colaborador_id)
             loadDashboard(user, user.colaborador_id)
-            loadFinanceiro(user, user.colaborador_id)
+            loadFinanceiro(user, user.colaborador_id, 1)
           }
         }
       } catch (error) {
@@ -189,7 +204,7 @@ export default function FinanceiroColaboradorPage() {
             setSelectedColaboradorId(activeColaboradorId)
             fetchColaboradorCompleto(activeColaboradorId)
             loadDashboard(user, activeColaboradorId)
-            loadFinanceiro(user, activeColaboradorId)
+            loadFinanceiro(user, activeColaboradorId, 1)
           }
         }
       }
@@ -228,7 +243,7 @@ export default function FinanceiroColaboradorPage() {
           setSelectedColaboradorId(activeColaborador)
           fetchColaboradorCompleto(activeColaborador)
           loadDashboard(currentUser, activeColaborador)
-          loadFinanceiro(currentUser, activeColaborador)
+          loadFinanceiro(currentUser, activeColaborador, 1)
         }
       }, 1000)
 
@@ -298,21 +313,34 @@ export default function FinanceiroColaboradorPage() {
   const loadDashboard = async (user: any, colaboradorId: string) => {
     try {
       const response = await fetch(
-        `/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&relatorio=resumo`
+        `/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=resumo`
       )
       const data = await response.json()
       
       if (data.success) {
         const [categoriasResponse, fluxoResponse] = await Promise.all([
-          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&relatorio=por_categoria`),
-          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&relatorio=fluxo_mensal`)
+          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=por_categoria`),
+          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=fluxo_mensal`)
         ])
 
         const categoriasData = await categoriasResponse.json()
         const fluxoData = await fluxoResponse.json()
 
+        // Converter os dados específicos de colaborador para o formato esperado
+        const resumoConvertido = {
+          total_receitas: (data.resumo?.total_salarios || 0) + (data.resumo?.total_bonus || 0) + (data.resumo?.total_horas_extras || 0),
+          total_despesas: (data.resumo?.total_descontos || 0) + (data.resumo?.total_vales || 0),
+          resultado_liquido: data.resumo?.total_liquido || 0,
+          total_pendentes: data.resumo?.total_pendentes || 0,
+          total_atrasados: 0, // Colaboradores não têm campo atrasados na API atual
+          count_pendentes: data.resumo?.count_pendentes || 0,
+          count_atrasados: 0,
+          // Manter campos originais para referência
+          ...data.resumo
+        }
+
         setDashboardData({
-          resumo: data.resumo,
+          resumo: resumoConvertido,
           categorias: categoriasData.success ? categoriasData.categorias : [],
           fluxo_mensal: fluxoData.success ? fluxoData.fluxo_mensal : []
         })
@@ -322,14 +350,17 @@ export default function FinanceiroColaboradorPage() {
     }
   }
 
-  const loadFinanceiro = async (user: any, colaboradorId: string) => {
+  const loadFinanceiro = async (user: any, colaboradorId: string, pagina: number = 1) => {
     try {
       setLoading(true)
       
       const params = new URLSearchParams({
         master_id: user.master_id || user.id,
         colaborador_id: colaboradorId,
+        condominio_id: selectedCondominiumId || '',
         tipo_usuario: user.tipo,
+        page: pagina.toString(),
+        limit: registrosPorPagina.toString(),
         ...(filtros.categoria && { categoria: filtros.categoria }),
         ...(filtros.status && { status: filtros.status }),
         ...(filtros.tipo && { tipo: filtros.tipo }),
@@ -341,13 +372,30 @@ export default function FinanceiroColaboradorPage() {
       const data = await response.json()
       
       if (data.success) {
-        setFinanceiro(data.lancamentos)
+        setFinanceiro(data.lancamentos || [])
+        // A API retorna os dados de paginação no objeto pagination
+        if (data.pagination) {
+          setTotalRegistros(data.pagination.total_items || 0)
+          setTotalPaginas(data.pagination.total_pages || 0)
+          setPaginaAtual(data.pagination.current_page || pagina)
+        } else {
+          // Fallback se não houver dados de paginação
+          setTotalRegistros(data.lancamentos?.length || 0)
+          setTotalPaginas(1)
+          setPaginaAtual(1)
+        }
       } else {
         showAlert('error', data.error || 'Erro ao carregar lançamentos')
+        setFinanceiro([])
+        setTotalRegistros(0)
+        setTotalPaginas(0)
       }
     } catch (error) {
       console.error('Erro ao carregar financeiro:', error)
       showAlert('error', 'Erro ao carregar dados financeiros')
+      setFinanceiro([])
+      setTotalRegistros(0)
+      setTotalPaginas(0)
     } finally {
       setLoading(false)
     }
@@ -422,7 +470,7 @@ export default function FinanceiroColaboradorPage() {
         showAlert('success', editingItem ? 'Lançamento atualizado!' : 'Lançamento criado!')
         handleCloseModal()
         loadDashboard(currentUser, selectedColaboradorId)
-        loadFinanceiro(currentUser, selectedColaboradorId)
+        loadFinanceiro(currentUser, selectedColaboradorId, paginaAtual)
       } else {
         showAlert('error', data.error || 'Erro ao salvar lançamento')
       }
@@ -463,7 +511,9 @@ export default function FinanceiroColaboradorPage() {
       if (data.success) {
         showAlert('success', 'Lançamento excluído!')
         loadDashboard(currentUser, selectedColaboradorId)
-        loadFinanceiro(currentUser, selectedColaboradorId)
+        // Se estamos na última página e ela ficou vazia, voltar para a página anterior
+        const novaPagina = financeiro.length === 1 && paginaAtual > 1 ? paginaAtual - 1 : paginaAtual
+        loadFinanceiro(currentUser, selectedColaboradorId, novaPagina)
       } else {
         showAlert('error', data.error || 'Erro ao excluir')
       }
@@ -501,7 +551,8 @@ export default function FinanceiroColaboradorPage() {
 
   useEffect(() => {
     if (currentUser && selectedColaboradorId) {
-      loadFinanceiro(currentUser, selectedColaboradorId)
+      setPaginaAtual(1) // Reset para primeira página quando filtros mudarem
+      loadFinanceiro(currentUser, selectedColaboradorId, 1)
     }
   }, [filtros])
 
@@ -547,10 +598,18 @@ export default function FinanceiroColaboradorPage() {
 
   const handleColaboradorChange = async (colaboradorId: string) => {
     setSelectedColaboradorId(colaboradorId)
+    setPaginaAtual(1) // Reset para primeira página
     if (colaboradorId && currentUser) {
       await fetchColaboradorCompleto(colaboradorId)
       loadDashboard(currentUser, colaboradorId)
-      loadFinanceiro(currentUser, colaboradorId)
+      loadFinanceiro(currentUser, colaboradorId, 1)
+    }
+  }
+
+  // Função para navegar entre páginas
+  const handlePaginaChange = (novaPagina: number) => {
+    if (novaPagina >= 1 && novaPagina <= totalPaginas && currentUser && selectedColaboradorId) {
+      loadFinanceiro(currentUser, selectedColaboradorId, novaPagina)
     }
   }
 
@@ -761,7 +820,12 @@ export default function FinanceiroColaboradorPage() {
             <Col md={6} className="d-flex align-items-end">
               <div className="w-100">
                 <small className="text-muted">
-                  <strong>Total de lançamentos:</strong> {financeiro.length}
+                  <strong>Total de lançamentos:</strong> {totalRegistros > 0 ? totalRegistros : financeiro.length}
+                  {totalPaginas > 1 && (
+                    <span className="ms-2">
+                      (Página {paginaAtual} de {totalPaginas})
+                    </span>
+                  )}
                 </small>
                 {localStorage.getItem('activeColaborador') && (
                   <div className="mt-1">
@@ -1208,6 +1272,83 @@ export default function FinanceiroColaboradorPage() {
                     )}
                   </tbody>
                 </Table>
+                
+                {/* Paginação */}
+                {totalPaginas > 1 && (
+                  <div className="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                    <div className="text-muted">
+                      <small>
+                        Mostrando {((paginaAtual - 1) * registrosPorPagina) + 1} a {Math.min(paginaAtual * registrosPorPagina, totalRegistros)} de {totalRegistros} registros
+                      </small>
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        disabled={paginaAtual === 1 || loading}
+                        onClick={() => handlePaginaChange(1)}
+                        title="Primeira página"
+                      >
+                        <i className="fas fa-angle-double-left"></i>
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        disabled={paginaAtual === 1 || loading}
+                        onClick={() => handlePaginaChange(paginaAtual - 1)}
+                        title="Página anterior"
+                      >
+                        <i className="fas fa-angle-left"></i>
+                      </Button>
+                      
+                      {/* Números das páginas */}
+                      {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+                        let pageNum
+                        if (totalPaginas <= 5) {
+                          pageNum = i + 1
+                        } else if (paginaAtual <= 3) {
+                          pageNum = i + 1
+                        } else if (paginaAtual >= totalPaginas - 2) {
+                          pageNum = totalPaginas - 4 + i
+                        } else {
+                          pageNum = paginaAtual - 2 + i
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={pageNum === paginaAtual ? "primary" : "outline-secondary"}
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => handlePaginaChange(pageNum)}
+                            style={{ minWidth: '32px' }}
+                          >
+                            {pageNum}
+                          </Button>
+                        )
+                      })}
+                      
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        disabled={paginaAtual === totalPaginas || loading}
+                        onClick={() => handlePaginaChange(paginaAtual + 1)}
+                        title="Próxima página"
+                      >
+                        <i className="fas fa-angle-right"></i>
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        disabled={paginaAtual === totalPaginas || loading}
+                        onClick={() => handlePaginaChange(totalPaginas)}
+                        title="Última página"
+                      >
+                        <i className="fas fa-angle-double-right"></i>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </Card.Body>
             </Card>
           </Col>
