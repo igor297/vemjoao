@@ -10,13 +10,13 @@ restartPolicyMaxRetries = 10
 
 [environments.production.variables]
 NODE_ENV = "production"
-MONGODB_URI = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512"
+MONGODB_URI = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema?authSource=admin"
 MONGODB_DB = "condominio-sistema"
 MONGO_INITDB_ROOT_PASSWORD = "dfSakOiePzOactfHNwqrQNfHnRlqBVZX"
 MONGO_INITDB_ROOT_USERNAME = "mongo"
-MONGO_PUBLIC_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512"
-MONGO_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512"
-MONGOHOST = "mongodb.railway.internal"
+MONGO_PUBLIC_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema?authSource=admin"
+MONGO_URL = "mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema?authSource=admin"
+MONGOHOST = "shuttle.proxy.rlwy.net"
 MONGOPASSWORD = "dfSakOiePzOactfHNwqrQNfHnRlqBVZX"
-MONGOPORT = "27017"
+MONGOPORT = "30512"
 MONGOUSER = "mongo"

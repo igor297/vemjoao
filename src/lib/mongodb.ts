@@ -6,8 +6,8 @@ const getMongoURI = () => {
   const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
   
   if (isRailway) {
-    // MongoDB Atlas connection string para produção
-    return process.env.MONGODB_URI || 'mongodb://vemjoao:N7MIVGHqNAPq44qt@168.232.86.13:27017/condominio-sistema?authSource=admin'
+    // MongoDB Railway interno para produção
+    return process.env.MONGODB_URI || process.env.MONGO_URL || process.env.MONGO_PUBLIC_URL || 'mongodb://localhost:27017/condominio-sistema'
   }
   
   // Se estiver em desenvolvimento local, usar MongoDB local
