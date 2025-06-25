@@ -49,8 +49,9 @@ async function connectDB() {
       bufferCommands: false,
       // 🚀 Performance: Connection pooling otimizado
       maxPoolSize: 10, // Máximo 10 conexões simultâneas
-      serverSelectionTimeoutMS: 5000, // Timeout de seleção do servidor
+      serverSelectionTimeoutMS: 30000, // Timeout de seleção do servidor (aumentado)
       socketTimeoutMS: 45000, // Timeout do socket
+      connectTimeoutMS: 30000, // Timeout de conexão inicial
       family: 4, // Use IPv4, skip trying IPv6
       maxIdleTimeMS: 30000, // Fechar conexões inativas após 30s
       // 🚀 Performance: Configurações de retry
@@ -60,6 +61,15 @@ async function connectDB() {
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
       console.log('🚀 MongoDB connected with optimized pool settings')
+      console.log('📊 Connection state:', mongoose.connection.readyState)
+      
+      // Verificar se a conexão está realmente funcionando
+      if (mongoose.connection.db) {
+        await mongoose.connection.db.admin().ping()
+        console.log('✅ MongoDB ping successful')
+      } else {
+        console.log('⚠️ Database connection not ready, skipping ping')
+      }
       
       // Executar auto-seed automaticamente no Railway
       const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
@@ -76,6 +86,10 @@ async function connectDB() {
       }
       
       return mongoose
+    }).catch((error) => {
+      console.error('❌ Erro na conexão MongoDB:', error.message)
+      console.error('📋 Detalhes do erro:', error)
+      throw error
     })
   }
 
