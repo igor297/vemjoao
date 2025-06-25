@@ -7,7 +7,7 @@ const getMongoURI = () => {
   
   if (isRailway) {
     // Tentar primeiro sem database específica, depois com database
-    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512'
+    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema'
   }
   
   // Se estiver em desenvolvimento local, usar MongoDB local
