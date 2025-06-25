@@ -37,15 +37,7 @@ if (!MONGODB_URI) {
 
 const isRailwayEnv = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
 console.log(`🔗 [MongoDB] Conectando ao MongoDB: ${isRailwayEnv ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
-console.log(`🔗 [MongoDB] URI configurada: ${MONGODB_URI.substring(0, 30)}...`)
-
-// Tentar conexão imediata para testes
-console.log('🔄 [MongoDB] Testando conexão imediata...')
-connectDB().then(() => {
-  console.log('✅ [MongoDB] Conexão de teste bem-sucedida!')
-}).catch((error) => {
-  console.error('❌ [MongoDB] Falha na conexão de teste:', error.message)
-})
+console.log(`🔗 [MongoDB] URI configurada: ${MONGODB_URI}`)
 
 interface GlobalMongoDB {
   conn: typeof mongoose | null
@@ -152,6 +144,17 @@ async function connectDB() {
 
   console.log('✅ [MongoDB] Retornando conexão estabelecida')
   return cached!.conn
+}
+
+// Testar conexão após definição da função se estiver no Railway
+if (isRailwayEnv) {
+  console.log('🔄 [MongoDB] Testando conexão Railway...')
+  connectDB().then(() => {
+    console.log('✅ [MongoDB] Conexão Railway bem-sucedida!')
+  }).catch((error) => {
+    console.error('❌ [MongoDB] Falha na conexão Railway:', error.message)
+    console.error('❌ [MongoDB] Stack trace:', error.stack)
+  })
 }
 
 export default connectDB
