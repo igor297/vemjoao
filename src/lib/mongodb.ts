@@ -65,7 +65,7 @@ async function connectDB() {
   console.log('🔄 [MongoDB] Cached promise exists?', !!cached!.promise)
   if (!cached!.promise) {
     console.log('🔄 [MongoDB] Criando nova conexão...')
-    console.log('🔄 [MongoDB] URI para conexão:', MONGODB_URI.substring(0, 50) + '...')
+    console.log('🔄 [MongoDB] URI COMPLETA para conexão:', MONGODB_URI)
     
     const opts = {
       bufferCommands: false,
