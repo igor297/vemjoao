@@ -8,8 +8,11 @@ import Morador from '@/models/Morador'
 let dbInitialized = false
 
 export async function POST(request: NextRequest) {
+  console.log('🔄 [INIT-DB] Início da inicialização do banco')
+  
   try {
     if (dbInitialized) {
+      console.log('ℹ️ [INIT-DB] Banco já foi inicializado anteriormente')
       return NextResponse.json({
         success: true,
         message: 'Banco já foi inicializado',
@@ -17,12 +20,18 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log('🚀 Iniciando inicialização completa do banco de dados...')
+    console.log('🚀 [INIT-DB] Iniciando inicialização completa do banco de dados...')
+    console.log('🔄 [INIT-DB] Conectando ao banco de dados...')
     await connectDB()
+    console.log('✅ [INIT-DB] Conexão com banco estabelecida')
 
     // Verificar se já existem dados
+    console.log('🔄 [INIT-DB] Verificando se já existem dados no banco...')
     const existingMaster = await Master.findOne({})
+    console.log('🔄 [INIT-DB] Master existente encontrado?', !!existingMaster)
+    
     if (existingMaster) {
+      console.log('ℹ️ [INIT-DB] Dados já existem no banco, retornando credenciais')
       dbInitialized = true
       return NextResponse.json({
         success: true,
@@ -147,7 +156,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Erro na inicialização:', error)
+    console.error('❌ [INIT-DB] ERRO CRÍTICO na inicialização:', error)
+    console.error('❌ [INIT-DB] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+    console.error('❌ [INIT-DB] Objeto completo do erro:', JSON.stringify(error, null, 2))
     return NextResponse.json({
       success: false,
       error: 'Erro ao inicializar banco de dados',

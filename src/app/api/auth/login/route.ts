@@ -7,27 +7,39 @@ import Morador from '@/models/Morador'
 import Condominium from '@/models/condominios'
 
 export async function POST(request: NextRequest) {
+  console.log('🔄 [LOGIN] Início da tentativa de login')
+  
   try {
+    console.log('🔄 [LOGIN] Extraindo dados do request...')
     const { email, password } = await request.json()
+    console.log('🔄 [LOGIN] Email recebido:', email)
+    console.log('🔄 [LOGIN] Senha recebida? (length):', password ? password.length : 'N/A')
     
     if (!email || !password) {
+      console.log('❌ [LOGIN] Email ou senha não fornecidos')
       return NextResponse.json(
         { error: 'Email e senha são obrigatórios' },
         { status: 400 }
       )
     }
 
+    console.log('🔄 [LOGIN] Conectando ao banco de dados...')
     await connectDB()
+    console.log('✅ [LOGIN] Conexão com banco estabelecida')
     
     const emailLower = email.toLowerCase().trim()
+    console.log('🔄 [LOGIN] Email normalizado:', emailLower)
     
     // Primeiro, tentar buscar na collection masters
+    console.log('🔄 [LOGIN] Buscando usuário master...')
     const masterUser = await Master.findOne({ 
       email: emailLower,
       senha: password 
     })
+    console.log('🔄 [LOGIN] Master encontrado?', !!masterUser)
     
     if (masterUser) {
+      console.log('✅ [LOGIN] Login como master bem-sucedido:', masterUser.nome)
       return NextResponse.json({
         success: true,
         user: {
@@ -221,13 +233,20 @@ export async function POST(request: NextRequest) {
     }
     
     // Se não encontrou em nenhuma collection
+    console.log('❌ [LOGIN] Usuário não encontrado em nenhuma collection')
+    console.log('🔄 [LOGIN] Verificando se existem usuários master no banco...')
+    const masterCount = await Master.countDocuments()
+    console.log('🔄 [LOGIN] Total de masters no banco:', masterCount)
+    
     return NextResponse.json(
       { error: 'Email ou senha incorretos' },
       { status: 401 }
     )
     
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('❌ [LOGIN] ERRO CRÍTICO no login:', error)
+    console.error('❌ [LOGIN] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+    console.error('❌ [LOGIN] Objeto completo do erro:', JSON.stringify(error, null, 2))
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
