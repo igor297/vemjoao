@@ -6,8 +6,8 @@ const getMongoURI = () => {
   const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
   
   if (isRailway) {
-    // Tentar primeiro sem database específica, depois com database
-    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema'
+    // MongoDB Atlas connection string para produção
+    return process.env.MONGODB_URI || 'mongodb://vemjoao:N7MIVGHqNAPq44qt@168.232.86.13:27017/condominio-sistema?authSource=admin'
   }
   
   // Se estiver em desenvolvimento local, usar MongoDB local
