@@ -7,8 +7,9 @@ import Morador from '@/models/Morador'
 let seedExecuted = false
 
 export async function autoSeed() {
-  // Só executa uma vez e apenas em produção (Railway)
-  if (seedExecuted || process.env.NODE_ENV !== 'production') {
+  // Só executa uma vez e apenas no Railway
+  const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
+  if (seedExecuted || !isRailway) {
     return
   }
 

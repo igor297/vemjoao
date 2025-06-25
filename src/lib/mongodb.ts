@@ -2,12 +2,15 @@ import mongoose from 'mongoose'
 
 // Configuração automática para Railway vs Local
 const getMongoURI = () => {
-  // Se estiver em produção (Railway), usar URL pública
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512/condominio-sistema'
+  // Se estiver no Railway (detectar pela porta 8080 ou variável de ambiente)
+  const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
+  
+  if (isRailway) {
+    // Tentar primeiro sem database específica, depois com database
+    return process.env.MONGODB_URI || 'mongodb://mongo:dfSakOiePzOactfHNwqrQNfHnRlqBVZX@shuttle.proxy.rlwy.net:30512'
   }
   
-  // Se estiver em desenvolvimento, usar MongoDB local
+  // Se estiver em desenvolvimento local, usar MongoDB local
   return process.env.MONGODB_URI || 'mongodb://localhost:27017/condominio-sistema'
 }
 
@@ -17,7 +20,9 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
 }
 
-console.log(`🔗 Conectando ao MongoDB: ${MONGODB_URI.includes('railway') ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
+const isRailwayEnv = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
+console.log(`🔗 Conectando ao MongoDB: ${isRailwayEnv ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
+console.log(`🔗 URI: ${MONGODB_URI.substring(0, 30)}...`)
 
 interface GlobalMongoDB {
   conn: typeof mongoose | null
