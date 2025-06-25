@@ -31,12 +31,21 @@ const getMongoURI = () => {
 const MONGODB_URI = getMongoURI()
 
 if (!MONGODB_URI) {
+  console.error('❌ [MongoDB] MONGODB_URI não encontrada!')
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
 }
 
 const isRailwayEnv = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
-console.log(`🔗 Conectando ao MongoDB: ${isRailwayEnv ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
-console.log(`🔗 URI: ${MONGODB_URI.substring(0, 30)}...`)
+console.log(`🔗 [MongoDB] Conectando ao MongoDB: ${isRailwayEnv ? 'Railway (Produção)' : 'Local (Desenvolvimento)'}`)
+console.log(`🔗 [MongoDB] URI configurada: ${MONGODB_URI.substring(0, 30)}...`)
+
+// Tentar conexão imediata para testes
+console.log('🔄 [MongoDB] Testando conexão imediata...')
+connectDB().then(() => {
+  console.log('✅ [MongoDB] Conexão de teste bem-sucedida!')
+}).catch((error) => {
+  console.error('❌ [MongoDB] Falha na conexão de teste:', error.message)
+})
 
 interface GlobalMongoDB {
   conn: typeof mongoose | null
