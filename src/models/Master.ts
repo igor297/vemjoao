@@ -45,7 +45,7 @@ const MasterSchema: Schema = new Schema({
     validate: {
       validator: function(senha: string) {
         // Senha deve ter pelo menos 8 caracteres, incluindo: maiúscula, minúscula, número e caractere especial
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(senha)
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])[^\s]{8,}$/.test(senha)
       },
       message: 'Senha deve ter pelo menos 8 caracteres, incluindo: maiúscula, minúscula, número e caractere especial'
     }
