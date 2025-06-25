@@ -61,11 +61,14 @@ async function connectDB() {
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
       console.log('🚀 MongoDB connected with optimized pool settings')
       
-      // Executar auto-seed apenas em produção (Railway)
-      if (process.env.NODE_ENV === 'production') {
+      // Executar auto-seed automaticamente no Railway
+      const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
+      if (isRailway) {
         try {
+          console.log('🌱 Executando auto-seed automaticamente...')
           const { autoSeed } = await import('./auto-seed')
           await autoSeed()
+          console.log('✅ Auto-seed concluído')
         } catch (error) {
           console.error('⚠️ Erro no auto-seed:', error)
           // Continua mesmo se o seed falhar
