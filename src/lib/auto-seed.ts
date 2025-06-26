@@ -7,14 +7,14 @@ import Morador from '@/models/Morador'
 let seedExecuted = false
 
 export async function autoSeed() {
-  // Só executa uma vez e apenas no Railway
-  const isRailway = process.env.PORT === '8080' || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production'
-  if (seedExecuted || !isRailway) {
+  // Só executa uma vez e apenas em produção
+  const isProduction = process.env.NODE_ENV === 'production'
+  if (seedExecuted || !isProduction) {
     return
   }
 
   try {
-    console.log('🌱 Iniciando auto-seed para Railway...')
+    console.log('🌱 Iniciando auto-seed para produção...')
     await connectDB()
 
     // Verificar se já existem dados
@@ -40,24 +40,24 @@ export async function autoSeed() {
     // Criar Condomínio de teste
     console.log('🏢 Criando condomínio de teste...')
     const condominioData = {
-      nome: 'Residencial Teste Railway',
+      nome: 'Residencial Teste Produção',
       cep: '01234-567',
       estado: 'SP',
       cidade: 'São Paulo',
       bairro: 'Centro',
       rua: 'Rua de Teste',
       numero: '123',
-      complemento: 'Teste Railway',
+      complemento: 'Teste Produção',
       master_id: master._id,
       valor_taxa_condominio: 450.00,
       dia_vencimento: 10,
       aceita_pagamento_automatico: true,
-      razao_social: 'Condomínio Teste Railway Ltda',
+      razao_social: 'Condomínio Teste Produção Ltda',
       cnpj: '12.345.678/0001-90',
       banco: 'Banco do Brasil',
       agencia: '1234-5',
       conta: '12345-6',
-      chave_pix: 'teste@railway.com',
+      chave_pix: 'teste@producao.com',
       multa_atraso: 2.0,
       juros_mes: 1.0,
       dias_aviso_vencimento: 5

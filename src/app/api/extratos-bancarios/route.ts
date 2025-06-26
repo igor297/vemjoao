@@ -5,7 +5,7 @@ import ContaBancaria from '@/models/ContaBancaria'
 import Transacao from '@/models/Transacao'
 import FinanceiroUnificado from '@/models/FinanceiroUnificado'
 import multer from 'multer'
-import csv from 'csv-parse'
+import { parse } from 'csv-parse'
 import { Readable } from 'stream'
 
 export async function GET(request: NextRequest) {
@@ -206,7 +206,7 @@ async function processarCSV(arquivo: File): Promise<any[]> {
   const movimentos: any[] = []
 
   return new Promise((resolve, reject) => {
-    const parser = csv.parse({
+    const parser = parse({
       columns: true,
       skip_empty_lines: true,
       delimiter: ';'

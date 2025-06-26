@@ -167,10 +167,10 @@ const AdmSchema: Schema = new Schema({
 })
 
 // Índices para otimização e performance
-AdmSchema.index({ master_id: 1, ativo: 1 }) // 🚀 Performance: filtro principal
+AdmSchema.index({ master_id: 1 }) // 🚀 Performance: filtro principal
 AdmSchema.index({ master_id: 1, condominio_id: 1 }) // 🚀 Performance: filtro por condomínio
 AdmSchema.index({ cpf: 1, condominio_id: 1 })
-AdmSchema.index({ condominio_id: 1, tipo: 1, ativo: 1 }) // 🚀 Performance: filtro por tipo
+AdmSchema.index({ condominio_id: 1, tipo: 1 }) // 🚀 Performance: filtro por tipo
 AdmSchema.index({ data_criacao: -1 }) // 🚀 Performance: ordenação
 
 // Índice composto para garantir apenas um síndico ativo por condomínio

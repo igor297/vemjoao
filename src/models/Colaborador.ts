@@ -276,7 +276,7 @@ const ColaboradorSchema: Schema = new Schema({
 ColaboradorSchema.index({ master_id: 1, ativo: 1 }) // 🚀 Performance: filtro principal
 ColaboradorSchema.index({ master_id: 1, condominio_id: 1 }) // 🚀 Performance: filtro por condomínio
 ColaboradorSchema.index({ condominio_id: 1, ativo: 1 })
-ColaboradorSchema.index({ email: 1 }, { unique: true })
+// Email já tem unique: true no schema
 ColaboradorSchema.index({ cpf: 1 })
 ColaboradorSchema.index({ data_criacao: -1 }) // 🚀 Performance: ordenação
 

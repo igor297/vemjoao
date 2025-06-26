@@ -33,7 +33,7 @@ Sistema completo para gestão de condomínios desenvolvido com Next.js 15, Mongo
 - **UI**: React Bootstrap, Chart.js
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB com Mongoose
-- **Deploy**: Railway
+- **Deploy**: Localhost/Production
 
 ## 📦 Instalação
 
@@ -62,88 +62,37 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000)
 
-## 🌐 Deploy no Railway
+## 🌐 Deploy
 
-### Pré-requisitos
-- ✅ Conta no [Railway](https://railway.com)
-- ✅ MongoDB configurado no Railway
+### ✅ **Configuração para Produção**
 
-### 🚀 Passo a Passo para Deploy
+Configure as variáveis de ambiente no seu provedor de hosting:
 
-#### 1. **Conectar Repositório GitHub**
-1. Acesse [Railway.app](https://railway.app)
-2. Clique em "Start a New Project"
-3. Selecione "Deploy from GitHub repo"
-4. Escolha o repositório: `igor297/vemjoao`
-
-#### 2. **Configurar MongoDB no Railway**
-1. No dashboard do Railway, clique em "+ New"
-2. Selecione "Database" → "MongoDB"
-3. Aguarde a criação e anote as credenciais
-
-#### 3. **✅ CONFIGURAÇÃO 100% AUTOMÁTICA** 
-🎉 **NÃO PRECISA CONFIGURAR NADA MANUALMENTE!**
-
-O projeto já está configurado com:
-- ✅ Credenciais do MongoDB Railway atualizadas
-- ✅ Variáveis de ambiente automáticas via `railway.toml`
-- ✅ Configuração de produção vs desenvolvimento
-- ✅ Detecção automática de ambiente (local/Railway)
-
-**Arquivos configurados:**
 ```bash
-railway.toml          # Configuração automática Railway
-next.config.ts        # Configuração Next.js
-src/lib/mongodb.ts    # Conexão automática MongoDB
+MONGODB_URI=sua_string_de_conexao_mongodb
+MONGODB_DB=condominio-sistema
+NODE_ENV=production
 ```
 
-#### 4. **Deploy e Inicialização Automática**
-- ✅ A cada push na branch `main`, o deploy acontecerá automaticamente
-- ✅ Railway detectará automaticamente que é um projeto Next.js
-- ✅ Build e start serão executados automaticamente
-- ✅ **AUTO-SEED**: Dados de teste são criados automaticamente no Railway
+### 🎯 **Auto-Seed em Produção**
 
-**🌱 Auto-Seed inclui:**
-- 👤 Usuário Master: `master@teste.com` / `>T8Nn7n_S8-T`
-- 🏢 Condomínio de teste: "Residencial Teste Railway"
-- 👷 Colaborador: "Alex Sousa" (Porteiro)
-- 👥 Morador: "João Silva Santos" (Apt 101)
+- ✅ Dados de teste são criados automaticamente em produção
+- ✅ **Master**: master@teste.com | Senha: 123456
+- 🏢 Condomínio de teste: "Residencial Teste Produção"
+- 👥 Moradores e lançamentos financeiros de exemplo
 
-#### 5. **Verificar Deploy**
-1. Aguarde o build finalizar (5-10 minutos)
-2. Acesse a URL fornecida pelo Railway
-3. Teste o login e funcionalidades
+### 🛠️ **Troubleshooting**
 
-### 🔧 Comandos de Deploy
+Verifique se as variáveis de ambiente estão configuradas:
 ```bash
-# Fazer deploy manual (push para main)
-git add .
-git commit -m "Deploy para Railway"
-git push origin main
+echo $MONGODB_URI
+echo $NODE_ENV
 ```
 
-### 📊 Monitoramento
-- **Logs**: Railway Dashboard → Deploy Logs
-- **Métricas**: Railway Dashboard → Metrics
-- **Banco**: Railway Dashboard → MongoDB → Connect
-
-### ❌ Solução de Problemas
-
-#### Erro: "MONGODB_URI não definido"
-```bash
-# Verificar se a variável está configurada no Railway Dashboard
-MONGODB_URI=mongodb://mongo:password@mongodb.railway.internal:27017/database
-```
-
-#### Erro: "Cannot connect to MongoDB"
-1. Verificar se MongoDB está rodando no Railway
-2. Verificar string de conexão
-3. Verificar se database existe
-
-#### Build falha
-1. Verificar logs no Railway Dashboard
-2. Verificar dependências no package.json
-3. Executar `npm run build` localmente
+**Problemas comuns:**
+1. Verificar string de conexão do MongoDB
+2. Confirmar se o database existe
+3. Executar `npm run build` localmente para testar
 
 ## 📊 Arquitetura
 

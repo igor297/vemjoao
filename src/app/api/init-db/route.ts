@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Criar Master
     console.log('👤 Criando usuário master...')
     const masterData = {
-      nome: 'Master Sistema Railway',
+      nome: 'Master Sistema Teste',
       email: 'master@teste.com',
       senha: '>T8Nn7n_S8-T',
       celular1: '(11) 99999-0001',
@@ -65,24 +65,24 @@ export async function POST(request: NextRequest) {
     // Criar Condomínio
     console.log('🏢 Criando condomínio de teste...')
     const condominioData = {
-      nome: 'Residencial Teste Railway',
+      nome: 'Residencial Teste Sistema',
       cep: '01234-567',
       estado: 'SP',
       cidade: 'São Paulo',
       bairro: 'Centro',
-      rua: 'Rua de Teste Railway',
+      rua: 'Rua de Teste Sistema',
       numero: '123',
-      complemento: 'Teste Railway Deploy',
+      complemento: 'Teste Sistema Deploy',
       master_id: master._id,
       valor_taxa_condominio: 450.00,
       dia_vencimento: 10,
       aceita_pagamento_automatico: true,
-      razao_social: 'Condomínio Teste Railway Ltda',
+      razao_social: 'Condomínio Teste Sistema Ltda',
       cnpj: '12.345.678/0001-90',
       banco: 'Banco do Brasil',
       agencia: '1234-5',
       conta: '12345-6',
-      chave_pix: 'teste@railway.com',
+      chave_pix: 'teste@sistema.com',
       multa_atraso: 2.0,
       juros_mes: 1.0,
       dias_aviso_vencimento: 5
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Criar Colaborador
     console.log('👷 Criando colaborador de teste...')
     const colaboradorData = {
-      nome: 'Alex Sousa Railway',
+      nome: 'Alex Sousa Teste',
       cpf: '12345678901',
       data_nasc: new Date('1985-06-15'),
       celular1: '(11) 98765-4321',
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     // Criar Morador
     console.log('👥 Criando morador de teste...')
     const moradorData = {
-      nome: 'João Silva Santos Railway',
+      nome: 'João Silva Santos Teste',
       cpf: '98765432100',
       data_nasc: new Date('1980-03-20'),
       celular1: '(11) 99111-2233',
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       condominio_id: condominio._id,
       master_id: master._id,
       ativo: true,
-      observacoes: 'Morador de teste criado via Railway'
+      observacoes: 'Morador de teste criado via sistema'
     }
     const morador = await Morador.create(moradorData)
     console.log('✅ Morador criado:', morador.nome)

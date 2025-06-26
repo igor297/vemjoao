@@ -7,7 +7,6 @@ import Colaborador from '@/models/Colaborador'
 import mongoose from 'mongoose'
 
 export async function GET(request: NextRequest) {
-  console.log('🔍 [DEBUG] API Colaboradores GET - Iniciando...')
   try {
     const url = new URL(request.url)
     const masterId = url.searchParams.get('master_id')
@@ -15,16 +14,12 @@ export async function GET(request: NextRequest) {
     const userType = url.searchParams.get('user_type')
     const colaboradorId = url.searchParams.get('id')
 
-    console.log('🔍 [DEBUG] Parâmetros recebidos:', { masterId, condominioId, userType, colaboradorId })
-
     // Se um ID específico de colaborador foi fornecido, buscar apenas ele
     if (colaboradorId) {
-      console.log('🔍 [DEBUG] Buscando colaborador específico por ID:', colaboradorId)
       await connectDB()
       
       const colaborador = await Colaborador.findById(colaboradorId).lean()
       if (!colaborador) {
-        console.log('❌ [DEBUG] Colaborador não encontrado')
         return NextResponse.json(
           { error: 'Colaborador não encontrado' },
           { status: 404 }
@@ -41,7 +36,7 @@ export async function GET(request: NextRequest) {
           condominium = await Condominium.findById(condominiumId).lean()
         }
       } catch (error) {
-        console.error('❌ [DEBUG] Erro ao buscar condomínio:', error)
+        console.error('Erro ao buscar condomínio:', error)
       }
 
       const colaboradorCompleto = {
@@ -49,7 +44,6 @@ export async function GET(request: NextRequest) {
         condominio_nome: condominium?.nome || 'N/A'
       }
 
-      console.log('✅ [DEBUG] Colaborador encontrado:', colaboradorCompleto.nome)
       return NextResponse.json({
         success: true,
         colaborador: colaboradorCompleto
@@ -57,44 +51,35 @@ export async function GET(request: NextRequest) {
     }
 
     if (!masterId) {
-      console.log('❌ [DEBUG] Master ID não fornecido')
       return NextResponse.json(
         { error: 'Master ID é obrigatório' },
         { status: 400 }
       )
     }
 
-    console.log('🔌 [DEBUG] Conectando ao MongoDB...')
     await connectDB()
-    console.log('✅ [DEBUG] MongoDB conectado com sucesso')
+    
     // Filtrar colaboradores por master e condomínio
     const filter: any = { master_id: masterId }
     if (condominioId) {
       filter.condominio_id = condominioId
     }
 
-    console.log('🔍 [DEBUG] Filtro aplicado:', filter)
-    console.log('🔍 [DEBUG] Buscando colaboradores...')
     const result = await Colaborador.find(filter).lean()
-    console.log('✅ [DEBUG] Colaboradores encontrados:', result.length)
 
     // Buscar dados dos condomínios para exibir nomes
-    console.log('🔍 [DEBUG] Buscando dados dos condomínios...')
     const colaboradoresComCondominio = await Promise.all(
-      result.map(async (colaborador, index) => {
-        console.log(`🔍 [DEBUG] Processando colaborador ${index + 1}/${result.length}:`, colaborador.nome)
+      result.map(async (colaborador) => {
         let condominium = null
         try {
           if (colaborador.condominio_id) {
             const condominiumId = typeof colaborador.condominio_id === 'string'
               ? new mongoose.Types.ObjectId(colaborador.condominio_id)
               : colaborador.condominio_id
-            console.log(`🔍 [DEBUG] Buscando condomínio ID:`, condominiumId)
             condominium = await Condominium.findById(condominiumId).lean()
-            console.log(`✅ [DEBUG] Condomínio encontrado:`, condominium?.nome || 'N/A')
           }
         } catch (error) {
-          console.error('❌ [DEBUG] Error finding condominium:', error, 'ID:', colaborador.condominio_id)
+          console.error('Erro ao buscar condomínio:', error)
         }
 
         return {
@@ -103,17 +88,14 @@ export async function GET(request: NextRequest) {
         }
       })
     )
-    console.log('✅ [DEBUG] Processamento de condomínios concluído')
 
-    console.log('✅ [DEBUG] Retornando resposta com', colaboradoresComCondominio.length, 'colaboradores')
     return NextResponse.json({
       success: true,
       colaboradores: colaboradoresComCondominio
     })
 
   } catch (error: any) {
-    console.error('❌ [DEBUG] ERRO na API GET colaboradores:', error)
-    console.error('❌ [DEBUG] Stack trace:', error.stack)
+    console.error('Erro na API GET colaboradores:', error)
     return NextResponse.json(
       { error: 'Erro ao buscar colaboradores' },
       { status: 500 }
@@ -122,31 +104,24 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🔍 [DEBUG] API Colaboradores POST - Iniciando...')
   try {
-    console.log('🔍 [DEBUG] Lendo dados do request...')
     const colaboradorData = await request.json()
-    console.log('🔍 [DEBUG] Dados recebidos:', colaboradorData)
 
     // Validação básica
     const requiredFields = [
       'nome', 'cpf', 'data_nasc', 'celular1', 'email', 'senha', 'data_inicio', 'condominio_id', 'master_id'
     ]
-    console.log('🔍 [DEBUG] Validando campos obrigatórios...')
+    // Validação de campos obrigatórios
     for (const field of requiredFields) {
       if (!colaboradorData[field]) {
-        console.log(`❌ [DEBUG] Campo obrigatório ausente: ${field}`)
         return NextResponse.json(
           { error: `Campo ${field} é obrigatório` },
           { status: 400 }
         )
       }
     }
-    console.log('✅ [DEBUG] Todos os campos obrigatórios estão presentes')
 
-    console.log('🔌 [DEBUG] Conectando ao MongoDB...')
     await connectDB()
-    console.log('✅ [DEBUG] MongoDB conectado com sucesso')
 
     // Verificar se email já existe em colaboradores
     const existingColaborador = await Colaborador.findOne({
@@ -228,9 +203,7 @@ export async function POST(request: NextRequest) {
       ativo: true
     }
 
-    console.log('🔍 [DEBUG] Criando colaborador no banco...')
     const result = await Colaborador.create(newColaborador)
-    console.log('✅ [DEBUG] Colaborador criado com sucesso. ID:', result._id)
 
     return NextResponse.json({
       success: true,
@@ -238,8 +211,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ [DEBUG] ERRO na API POST colaborador:', error)
-    console.error('❌ [DEBUG] Stack trace:', error.stack)
+    console.error('Erro na API POST colaborador:', error)
     return NextResponse.json(
       { error: 'Erro ao criar colaborador' },
       { status: 500 }
