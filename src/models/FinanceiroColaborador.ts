@@ -12,6 +12,8 @@ export interface IFinanceiroColaborador extends Document {
   // Vinculação
   colaborador_id: mongoose.Types.ObjectId // Reference to Colaborador._id
   colaborador_nome: string
+  colaborador_cargo?: string
+  colaborador_cpf?: string
   condominio_id: mongoose.Types.ObjectId // Reference to Condominio._id
   master_id: mongoose.Types.ObjectId // Reference to Master._id
   
@@ -72,6 +74,16 @@ const FinanceiroColaboradorSchema: Schema = new Schema({
   colaborador_nome: {
     type: String,
     required: true,
+    trim: true
+  },
+  colaborador_cargo: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  colaborador_cpf: {
+    type: String,
+    required: false,
     trim: true
   },
   condominio_id: {
