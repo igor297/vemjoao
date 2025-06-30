@@ -502,8 +502,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar se é o próprio colaborador
-    const isProprioColaborador = tipoUsuario === 'colaborador' && 
-                                usuarioId === lancamento.colaborador_id.toString()
+    const isProprioColaborador = tipo_usuario === 'colaborador' && 
+                                usuario_id === lancamento.colaborador_id.toString()
 
     // Verificar permissão
     if (!verificarPermissaoFinanceiroColaborador('editar', tipo_usuario, isProprioColaborador)) {
@@ -550,6 +550,43 @@ export async function PUT(request: NextRequest) {
       dadosAtualizacao,
       { new: true, runValidators: true }
     )
+
+    // Sincronizar com financeiro do condomínio após atualização
+    if (lancamentoAtualizado) {
+      try {
+        // Buscar dados do colaborador para sincronização
+        const colaborador = await Colaborador.findById(lancamentoAtualizado.colaborador_id)
+        
+        const dadosSincronizacao = {
+          _id: lancamentoAtualizado._id.toString(),
+          tipo: 'despesa' as const,
+          categoria: lancamentoAtualizado.tipo,
+          descricao: lancamentoAtualizado.descricao,
+          valor: lancamentoAtualizado.valor,
+          data_vencimento: lancamentoAtualizado.data_vencimento,
+          data_pagamento: lancamentoAtualizado.data_pagamento,
+          status: lancamentoAtualizado.status,
+          condominio_id: lancamentoAtualizado.condominio_id.toString(),
+          master_id: lancamentoAtualizado.master_id.toString(),
+          criado_por_tipo: tipo_usuario,
+          criado_por_id: usuario_id,
+          criado_por_nome: lancamentoAtualizado.criado_por_nome,
+          observacoes: lancamentoAtualizado.observacoes,
+          recorrente: lancamentoAtualizado.tipo === 'salario',
+          periodicidade: lancamentoAtualizado.tipo === 'salario' ? 'mensal' : undefined,
+          mes_referencia: lancamentoAtualizado.mes_referencia,
+          origem_nome: colaborador?.nome || lancamentoAtualizado.colaborador_nome,
+          origem_identificacao: colaborador?.cpf || '',
+          bloco: colaborador?.setor || '',
+          apartamento: colaborador?.cargo || ''
+        }
+
+        await SincronizacaoFinanceira.sincronizarColaborador(dadosSincronizacao)
+        console.log('✅ Lançamento de colaborador atualizado e sincronizado com condomínio')
+      } catch (syncError) {
+        console.error('⚠️ Erro na sincronização durante atualização, mas lançamento foi atualizado:', syncError)
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -604,6 +641,15 @@ export async function DELETE(request: NextRequest) {
         success: false,
         error: 'Lançamento não encontrado'
       }, { status: 404 })
+    }
+
+    // Sincronizar exclusão com financeiro do condomínio
+    try {
+      // Para exclusão, também precisamos remover do financeiro do condomínio
+      await SincronizacaoFinanceira.removerSincronizacao('colaborador', lancamento._id.toString())
+      console.log('✅ Lançamento de colaborador excluído e removido do condomínio')
+    } catch (syncError) {
+      console.error('⚠️ Erro na sincronização durante exclusão, mas lançamento foi excluído:', syncError)
     }
 
     return NextResponse.json({

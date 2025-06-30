@@ -28,18 +28,24 @@ ChartJS.register(
 
 interface FinanceiroColaborador {
   _id: string
-  tipo: 'receita' | 'despesa' | 'transferencia'
-  categoria: string
+  tipo: 'salario' | 'bonus' | 'desconto' | 'vale' | 'comissao' | 'hora_extra' | 'ferias' | 'decimo_terceiro'
+  categoria?: string // Campo opcional para compatibilidade
   descricao: string
   valor: number
   data_vencimento: string
   data_pagamento?: string
   status: 'pendente' | 'pago' | 'atrasado' | 'cancelado'
   observacoes?: string
-  recorrente: boolean
+  recorrente?: boolean
   periodicidade?: string
   criado_por_nome: string
   data_criacao: string
+  colaborador_id: string
+  colaborador_nome: string
+  condominio_id: string
+  master_id: string
+  mes_referencia?: string
+  horas_trabalhadas?: number
 }
 
 interface DashboardData {
@@ -73,6 +79,7 @@ const CATEGORIAS_COLABORADOR = [
   { value: 'beneficios', label: '🎁 Benefícios', tipo: 'despesa' },
   { value: 'premiacao', label: '🏆 Premiação', tipo: 'despesa' },
   { value: 'bonus', label: '💵 Bônus', tipo: 'despesa' },
+  { value: 'desconto', label: '📉 Desconto', tipo: 'despesa' },
   { value: 'ajuda_custo', label: '🚗 Ajuda de Custo', tipo: 'despesa' },
   { value: 'reembolso', label: '🔄 Reembolso', tipo: 'despesa' },
   { value: 'adiantamento', label: '💳 Adiantamento', tipo: 'despesa' },
@@ -118,7 +125,6 @@ export default function FinanceiroColaboradorPage() {
   const [itemToDelete, setItemToDelete] = useState<FinanceiroColaborador | null>(null)
   
   const [formData, setFormData] = useState({
-    tipo: 'despesa' as 'receita' | 'despesa' | 'transferencia',
     categoria: '',
     descricao: '',
     valor: '',
@@ -441,7 +447,7 @@ export default function FinanceiroColaboradorPage() {
       showAlert('error', 'Selecione um colaborador primeiro')
       return
     }
-    if (!formData.tipo || !formData.categoria || !formData.descricao || !formData.valor || !formData.data_vencimento) {
+    if (!formData.categoria || !formData.descricao || !formData.valor || !formData.data_vencimento) {
       showAlert('error', 'Preencha todos os campos obrigatórios')
       return
     }
@@ -452,10 +458,36 @@ export default function FinanceiroColaboradorPage() {
 
     try {
       const valorNumerico = parseFloat(formData.valor.replace(/\./g, '').replace(',', '.'))
+      
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        showAlert('error', 'Valor deve ser um número maior que zero')
+        return
+      }
+      // Mapear categoria para tipo esperado pela API
+      const mapCategoriaToTipo = (categoria: string) => {
+        const mapping: { [key: string]: string } = {
+          'salario': 'salario',
+          'adicional': 'bonus',
+          'vale_transporte': 'vale',
+          'vale_refeicao': 'vale', 
+          'beneficios': 'bonus',
+          'premiacao': 'bonus',
+          'bonus': 'bonus',
+          'ajuda_custo': 'comissao',
+          'reembolso': 'comissao',
+          'adiantamento': 'vale',
+          'pro_labor': 'salario',
+          'outros': 'bonus'
+        }
+        return mapping[categoria] || 'bonus'
+      }
+
       const dataToSend: any = {
         ...formData,
+        tipo: mapCategoriaToTipo(formData.categoria),
         master_id: currentUser?.master_id || currentUser?.id,
         colaborador_id: selectedColaboradorId,
+        condominio_id: selectedCondominiumId,
         tipo_usuario: currentUser?.tipo,
         usuario_id: currentUser?.id,
         criado_por_nome: currentUser?.nome || currentUser?.email,
@@ -469,6 +501,10 @@ export default function FinanceiroColaboradorPage() {
       const method = editingItem ? 'PUT' : 'POST'
       
       if (editingItem) {
+        if (!editingItem._id) {
+          showAlert('error', 'ID do item não encontrado para edição')
+          return
+        }
         dataToSend._id = editingItem._id
       }
 
@@ -481,12 +517,16 @@ export default function FinanceiroColaboradorPage() {
       const data = await response.json()
       
       if (data.success) {
-        showAlert('success', editingItem ? 'Lançamento atualizado!' : 'Lançamento criado!')
+        showAlert('success', editingItem ? 'Lançamento atualizado com sucesso!' : 'Lançamento criado com sucesso!')
         handleCloseModal()
-        loadDashboard(currentUser, selectedColaboradorId)
-        loadFinanceiro(currentUser, selectedColaboradorId, paginaAtual)
+        // Recarregar dados
+        if (currentUser && selectedColaboradorId) {
+          loadDashboard(currentUser, selectedColaboradorId)
+          loadFinanceiro(currentUser, selectedColaboradorId, paginaAtual)
+        }
       } else {
-        showAlert('error', data.error || 'Erro ao salvar lançamento')
+        console.error('Erro na resposta da API:', data)
+        showAlert('error', data.error || `Erro ao ${editingItem ? 'atualizar' : 'criar'} lançamento`)
       }
     } catch (error) {
       console.error('Erro ao submeter:', error)
@@ -497,22 +537,58 @@ export default function FinanceiroColaboradorPage() {
   const handleEdit = (item: FinanceiroColaborador) => {
     console.log('🔧 Editando item:', item)
     setEditingItem(item)
+    
+    // Validações antes de formatação
+    if (!item._id) {
+      showAlert('error', 'ID do item não encontrado')
+      return
+    }
+    
+    // Mapear tipo do banco para categoria do frontend
+    const mapTipoToCategoria = (tipo: string) => {
+      const mapping: { [key: string]: string } = {
+        'salario': 'salario',
+        'bonus': 'bonus',
+        'desconto': 'desconto',
+        'vale': 'vale_transporte', // Mapeamos para a primeira opção de vale
+        'comissao': 'ajuda_custo',
+        'hora_extra': 'adicional', // Mapeamos para adicional
+        'ferias': 'beneficios',
+        'decimo_terceiro': 'beneficios'
+      }
+      return mapping[tipo] || 'outros'
+    }
+    
+    const valorFormatado = typeof item.valor === 'number' 
+      ? item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '0,00'
+    
+    const dataVencimento = item.data_vencimento 
+      ? item.data_vencimento.split('T')[0] 
+      : ''
+    
+    const dataPagamento = item.data_pagamento 
+      ? item.data_pagamento.split('T')[0] 
+      : ''
+    
+    // Se o item tem campo categoria, usar ele, senão mapear do tipo
+    const categoria = item.categoria || mapTipoToCategoria(item.tipo)
+    
     const newFormData = {
-      tipo: item.tipo,
-      categoria: item.categoria,
-      descricao: item.descricao,
-      valor: item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      data_vencimento: item.data_vencimento.split('T')[0],
+      categoria: categoria,
+      descricao: item.descricao || '',
+      valor: valorFormatado,
+      data_vencimento: dataVencimento,
       observacoes: item.observacoes || '',
-      recorrente: item.recorrente,
+      recorrente: item.recorrente || false,
       periodicidade: item.periodicidade || '',
-      status: item.status,
-      data_pagamento: item.data_pagamento ? item.data_pagamento.split('T')[0] : ''
+      status: item.status || 'pendente',
+      data_pagamento: dataPagamento
     }
     console.log('📝 Form data sendo definido:', newFormData)
+    console.log('🔄 Mapeamento tipo->categoria:', item.tipo, '->', categoria)
     setFormData(newFormData)
     setShowModal(true)
-    console.log('📂 Modal deve estar aberto agora')
   }
 
   const handleDelete = (item: FinanceiroColaborador) => {
@@ -553,7 +629,6 @@ export default function FinanceiroColaboradorPage() {
     setShowModal(false)
     setEditingItem(null)
     setFormData({
-      tipo: 'despesa',
       categoria: '',
       descricao: '',
       valor: '',
@@ -669,9 +744,7 @@ export default function FinanceiroColaboradorPage() {
     return cat ? cat.label : categoria
   }
 
-  const categoriasDisponiveis = CATEGORIAS_COLABORADOR.filter(cat => 
-    cat.tipo === formData.tipo || cat.tipo === 'ambos'
-  )
+  const categoriasDisponiveis = CATEGORIAS_COLABORADOR
 
   const fluxoCaixaData = {
     labels: dashboardData?.fluxo_mensal?.map(item => `${item._id.mes}/${item._id.ano}`) || [],
@@ -1452,23 +1525,7 @@ export default function FinanceiroColaboradorPage() {
               )}
               
               <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Tipo de Operação *</Form.Label>
-                    <Form.Select
-                      value={formData.tipo}
-                      onChange={(e) => {
-                        const tipo = e.target.value as 'receita' | 'despesa' | 'transferencia'
-                        setFormData({...formData, tipo, categoria: ''})
-                      }}
-                      required
-                    >
-                      <option value="receita">📈 Receita</option>
-                      <option value="despesa">📉 Despesa</option>
-                      <option value="transferencia">🔄 Transferência</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
+                
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Categoria *</Form.Label>
