@@ -24,6 +24,8 @@ interface DadosLancamento {
   bloco?: string
   apartamento?: string
   unidade?: string
+  cargo?: string
+  departamento?: string
 }
 
 export class SincronizacaoFinanceira {
@@ -37,10 +39,11 @@ export class SincronizacaoFinanceira {
 
       const hash = gerarHashSincronizacao(dadosColaborador)
       
-      // Verificar se já existe sincronização
+      // Verificar se já existe sincronização (usando origem_identificacao como CPF)
       const existente = await FinanceiroCondominio.findOne({
         origem_sistema: 'colaborador',
-        origem_id: new mongoose.Types.ObjectId(dadosColaborador._id),
+        origem_identificacao: dadosColaborador.origem_identificacao,
+        condominio_id: new mongoose.Types.ObjectId(dadosColaborador.condominio_id),
         ativo: true
       })
 
@@ -60,6 +63,8 @@ export class SincronizacaoFinanceira {
         origem_identificacao: dadosColaborador.origem_identificacao,
         bloco: dadosColaborador.bloco,
         apartamento: dadosColaborador.apartamento,
+        cargo: dadosColaborador.cargo,
+        departamento: dadosColaborador.departamento,
         criado_por_tipo: dadosColaborador.criado_por_tipo,
         criado_por_id: new mongoose.Types.ObjectId(dadosColaborador.criado_por_id),
         criado_por_nome: dadosColaborador.criado_por_nome,
@@ -167,14 +172,15 @@ export class SincronizacaoFinanceira {
   /**
    * Remove sincronização quando lançamento é excluído
    */
-  static async removerSincronizacao(origemSistema: 'colaborador' | 'morador', origemId: string): Promise<boolean> {
+  static async removerSincronizacao(origemSistema: 'colaborador' | 'morador', origemIdentificacao: string, condominioId: string): Promise<boolean> {
     try {
-      console.log(`🗑️ Removendo sincronização ${origemSistema}:`, origemId)
+      console.log(`🗑️ Removendo sincronização ${origemSistema}:`, origemIdentificacao)
       
       await FinanceiroCondominio.findOneAndUpdate(
         {
           origem_sistema: origemSistema,
-          origem_id: new mongoose.Types.ObjectId(origemId),
+          origem_identificacao: origemIdentificacao,
+          condominio_id: new mongoose.Types.ObjectId(condominioId),
           ativo: true
         },
         {

@@ -29,7 +29,10 @@ ChartJS.register(
 interface FinanceiroColaborador {
   _id: string
   tipo: 'salario' | 'bonus' | 'desconto' | 'vale' | 'comissao' | 'hora_extra' | 'ferias' | 'decimo_terceiro'
+<<<<<<< HEAD
   categoria?: string // Campo opcional para compatibilidade
+=======
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
   descricao: string
   valor: number
   data_vencimento: string
@@ -72,6 +75,7 @@ interface DashboardData {
 }
 
 const CATEGORIAS_COLABORADOR = [
+<<<<<<< HEAD
   { value: 'salario', label: '💼 Salário', tipo: 'despesa' },
   { value: 'adicional', label: '💲 Adicional', tipo: 'despesa' },
   { value: 'vale_transporte', label: '🚌 Vale Transporte', tipo: 'despesa' },
@@ -85,6 +89,16 @@ const CATEGORIAS_COLABORADOR = [
   { value: 'adiantamento', label: '💳 Adiantamento', tipo: 'despesa' },
   { value: 'pro_labor', label: '👔 Pró-labore', tipo: 'despesa' },
   { value: 'outros', label: '📦 Outros', tipo: 'ambos' }
+=======
+  { value: 'salario', label: '💼 Salário' },
+  { value: 'bonus', label: '💵 Bônus' },
+  { value: 'vale', label: '🍽️ Vale Refeição/Transporte' },
+  { value: 'comissao', label: '💰 Comissão' },
+  { value: 'hora_extra', label: '⏰ Hora Extra' },
+  { value: 'ferias', label: '🏖️ Férias' },
+  { value: 'decimo_terceiro', label: '🎁 13º Salário' },
+  { value: 'desconto', label: '📉 Desconto' }
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
 ]
 
 interface Colaborador {
@@ -141,8 +155,7 @@ export default function FinanceiroColaboradorPage() {
     categoria: '',
     status: '',
     data_inicio: '',
-    data_fim: '',
-    tipo: ''
+    data_fim: ''
   })
 
   useEffect(() => {
@@ -381,7 +394,6 @@ export default function FinanceiroColaboradorPage() {
         limit: registrosPorPagina.toString(),
         ...(filtros.categoria && { categoria: filtros.categoria }),
         ...(filtros.status && { status: filtros.status }),
-        ...(filtros.tipo && { tipo: filtros.tipo }),
         ...(filtros.data_inicio && { data_inicio: filtros.data_inicio }),
         ...(filtros.data_fim && { data_fim: filtros.data_fim })
       })
@@ -483,18 +495,28 @@ export default function FinanceiroColaboradorPage() {
       }
 
       const dataToSend: any = {
+<<<<<<< HEAD
         ...formData,
         tipo: mapCategoriaToTipo(formData.categoria),
+=======
+        tipo: formData.categoria, // Mapear categoria para tipo
+        categoria: formData.categoria,
+        descricao: formData.descricao,
+        valor: valorNumerico,
+        data_vencimento: formData.data_vencimento,
+        observacoes: formData.observacoes,
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
         master_id: currentUser?.master_id || currentUser?.id,
+        condominio_id: selectedCondominiumId,
         colaborador_id: selectedColaboradorId,
         condominio_id: selectedCondominiumId,
         tipo_usuario: currentUser?.tipo,
         usuario_id: currentUser?.id,
         criado_por_nome: currentUser?.nome || currentUser?.email,
-        valor: valorNumerico,
         periodicidade: formData.recorrente && formData.periodicidade ? formData.periodicidade : undefined,
         status: formData.status,
-        data_pagamento: formData.status === 'pago' && formData.data_pagamento ? formData.data_pagamento : undefined
+        data_pagamento: formData.status === 'pago' && formData.data_pagamento ? formData.data_pagamento : undefined,
+        recorrente: formData.recorrente
       }
 
       const url = '/api/financeiro-colaborador'
@@ -575,6 +597,7 @@ export default function FinanceiroColaboradorPage() {
     const categoria = item.categoria || mapTipoToCategoria(item.tipo)
     
     const newFormData = {
+<<<<<<< HEAD
       categoria: categoria,
       descricao: item.descricao || '',
       valor: valorFormatado,
@@ -584,6 +607,17 @@ export default function FinanceiroColaboradorPage() {
       periodicidade: item.periodicidade || '',
       status: item.status || 'pendente',
       data_pagamento: dataPagamento
+=======
+      categoria: item.tipo || '', // Usar item.tipo que é o que está salvo no banco
+      descricao: item.descricao || '',
+      valor: item.valor ? item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
+      data_vencimento: item.data_vencimento ? item.data_vencimento.split('T')[0] : '',
+      observacoes: item.observacoes || '',
+      recorrente: !!item.recorrente,
+      periodicidade: item.periodicidade || '',
+      status: item.status || 'pendente',
+      data_pagamento: item.data_pagamento ? item.data_pagamento.split('T')[0] : ''
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
     console.log('📝 Form data sendo definido:', newFormData)
     console.log('🔄 Mapeamento tipo->categoria:', item.tipo, '->', categoria)
@@ -646,8 +680,7 @@ export default function FinanceiroColaboradorPage() {
       categoria: '',
       status: '',
       data_inicio: '',
-      data_fim: '',
-      tipo: ''
+      data_fim: ''
     })
   }
 
@@ -1161,22 +1194,7 @@ export default function FinanceiroColaboradorPage() {
                 </div>
                 <div className="bg-light p-3 rounded">
                   <Row className="g-2">
-                    <Col md={3}>
-                      <Form.Group>
-                        <Form.Label className="small mb-1">Tipo</Form.Label>
-                        <Form.Select 
-                          size="sm"
-                          value={filtros.tipo}
-                          onChange={(e) => setFiltros({...filtros, tipo: e.target.value})}
-                        >
-                          <option value="">Todos os tipos</option>
-                          <option value="receita">📈 Receita</option>
-                          <option value="despesa">📉 Despesa</option>
-                          <option value="transferencia">🔄 Transferência</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
+                    <Col md={4}>
                       <Form.Group>
                         <Form.Label className="small mb-1">Status</Form.Label>
                         <Form.Select 
@@ -1192,7 +1210,7 @@ export default function FinanceiroColaboradorPage() {
                         </Form.Select>
                       </Form.Group>
                     </Col>
-                    <Col md={3}>
+                    <Col md={4}>
                       <Form.Group>
                         <Form.Label className="small mb-1">Categoria</Form.Label>
                         <Form.Select 
@@ -1207,7 +1225,7 @@ export default function FinanceiroColaboradorPage() {
                         </Form.Select>
                       </Form.Group>
                     </Col>
-                    <Col md={3}>
+                    <Col md={4}>
                       <Form.Group>
                         <Form.Label className="small mb-1">Período</Form.Label>
                         <div className="d-flex flex-column gap-2">
@@ -1328,10 +1346,9 @@ export default function FinanceiroColaboradorPage() {
                     </Col>
                   </Row>
                   
-                  {(filtros.tipo || filtros.status || filtros.categoria || filtros.data_inicio || filtros.data_fim) && (
+                  {(filtros.status || filtros.categoria || filtros.data_inicio || filtros.data_fim) && (
                     <div className="mt-2">
                       <small className="text-muted">Filtros ativos: </small>
-                      {filtros.tipo && <span className="badge bg-primary me-1">Tipo: {filtros.tipo}</span>}
                       {filtros.status && <span className="badge bg-warning me-1">Status: {filtros.status}</span>}
                       {filtros.categoria && (
                         <span className="badge bg-info me-1">
@@ -1348,6 +1365,7 @@ export default function FinanceiroColaboradorPage() {
                 <Table responsive hover>
                   <thead>
                     <tr>
+                      <th>Colaborador</th>
                       <th>Categoria</th>
                       <th>Descrição</th>
                       <th>Valor</th>
@@ -1360,7 +1378,7 @@ export default function FinanceiroColaboradorPage() {
                   <tbody>
                     {!financeiro || financeiro.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="text-center text-muted py-4">
+                        <td colSpan={8} className="text-center text-muted py-4">
                           <i className="fas fa-inbox fa-2x mb-2"></i>
                           <p>Nenhum lançamento encontrado</p>
                         </td>
@@ -1368,7 +1386,26 @@ export default function FinanceiroColaboradorPage() {
                     ) : (
                       (financeiro || []).map((item) => (
                         <tr key={item._id}>
-                          <td>{getCategoriaLabel(item.categoria)}</td>
+                          <td>
+                            <div>
+                              <strong>{selectedColaborador?.nome || 'Colaborador'}</strong>
+                              {selectedColaborador?.cpf && (
+                                <>
+                                  <br />
+                                  <small className="text-muted">
+                                    CPF: {selectedColaborador.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
+                                  </small>
+                                </>
+                              )}
+                              {selectedColaborador?.cargo && (
+                                <>
+                                  <br />
+                                  <span className="badge bg-info">{selectedColaborador.cargo}</span>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td>{getCategoriaLabel(item.tipo)}</td>
                           <td>
                             <strong>{item.descricao}</strong>
                             {item.observacoes && (
@@ -1378,10 +1415,10 @@ export default function FinanceiroColaboradorPage() {
                               </>
                             )}
                           </td>
-                          <td className={item.tipo === 'receita' ? 'text-success' : 'text-danger'}>
+                          <td className="text-danger">
                             <strong>{formatCurrencyDisplay(item.valor)}</strong>
                           </td>
-                          <td>{new Date(item.data_vencimento).toLocaleDateString('pt-BR')}</td>
+                          <td>{item.data_vencimento.split('T')[0].split('-').reverse().join('/')}</td>
                           <td>{getStatusBadge(item.status)}</td>
                           <td>
                             {item.recorrente ? (
@@ -1525,8 +1562,12 @@ export default function FinanceiroColaboradorPage() {
               )}
               
               <Row>
+<<<<<<< HEAD
                 
                 <Col md={6}>
+=======
+                <Col md={12}>
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
                   <Form.Group className="mb-3">
                     <Form.Label>Categoria *</Form.Label>
                     <Form.Select
@@ -1606,7 +1647,6 @@ export default function FinanceiroColaboradorPage() {
                         value={formData.data_vencimento}
                         onChange={(e) => setFormData({...formData, data_vencimento: e.target.value})}
                         required
-                        min={new Date().toISOString().split('T')[0]}
                         style={{ paddingRight: '80px' }}
                       />
                       <div className="position-absolute" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: '4px' }}>
@@ -1688,7 +1728,7 @@ export default function FinanceiroColaboradorPage() {
                   as="textarea"
                   rows={3}
                   placeholder="Observações adicionais..."
-                  value={formData.observacoes}
+                  value={formData.observacoes || ''}
                   onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
                 />
               </Form.Group>
@@ -1698,14 +1738,14 @@ export default function FinanceiroColaboradorPage() {
                   <Form.Check
                     type="checkbox"
                     label="Lançamento recorrente"
-                    checked={formData.recorrente}
+                    checked={!!formData.recorrente}
                     onChange={(e) => setFormData({...formData, recorrente: e.target.checked})}
                   />
                 </Col>
                 {formData.recorrente && (
                   <Col md={6}>
                     <Form.Select
-                      value={formData.periodicidade}
+                      value={formData.periodicidade || ''}
                       onChange={(e) => setFormData({...formData, periodicidade: e.target.value})}
                       required={formData.recorrente}
                     >
@@ -1749,9 +1789,8 @@ export default function FinanceiroColaboradorPage() {
                       <div className="position-relative">
                         <Form.Control
                           type="date"
-                          value={formData.data_pagamento || ''}
+                          value={formData.data_pagamento}
                           onChange={(e) => setFormData({...formData, data_pagamento: e.target.value})}
-                          max={new Date().toISOString().split('T')[0]}
                         />
                         <button
                           type="button"
@@ -1824,7 +1863,7 @@ export default function FinanceiroColaboradorPage() {
                 <div className="bg-light p-3 rounded mb-3">
                   <p className="mb-1"><strong>Descrição:</strong> {itemToDelete.descricao}</p>
                   <p className="mb-1"><strong>Valor:</strong> {formatCurrencyDisplay(itemToDelete.valor)}</p>
-                  <p className="mb-0"><strong>Categoria:</strong> {getCategoriaLabel(itemToDelete.categoria)}</p>
+                  <p className="mb-0"><strong>Categoria:</strong> {getCategoriaLabel(itemToDelete.tipo)}</p>
                 </div>
               )}
               <p className="text-muted mb-0">

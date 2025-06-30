@@ -15,10 +15,12 @@ export interface IFinanceiroCondominio extends Document {
   origem_sistema: 'colaborador' | 'morador' | 'manual'
   origem_id?: mongoose.Types.ObjectId
   origem_nome?: string
-  origem_identificacao?: string
+  origem_identificacao?: string  // CPF do colaborador ou identificação do morador
   bloco?: string
   apartamento?: string
   unidade?: string
+  cargo?: string
+  departamento?: string
   
   criado_por_tipo: 'master' | 'sindico' | 'subsindico'
   criado_por_id: mongoose.Types.ObjectId
@@ -117,6 +119,16 @@ const FinanceiroCondominioSchema: Schema = new Schema({
     required: false,
     trim: true
   },
+  cargo: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  departamento: {
+    type: String,
+    required: false,
+    trim: true
+  },
   criado_por_tipo: {
     type: String,
     required: true,
@@ -181,7 +193,7 @@ const FinanceiroCondominioSchema: Schema = new Schema({
 })
 
 FinanceiroCondominioSchema.index({ condominio_id: 1, tipo: 1, status: 1 })
-FinanceiroCondominioSchema.index({ origem_sistema: 1, origem_id: 1 })
+FinanceiroCondominioSchema.index({ origem_sistema: 1, origem_identificacao: 1, condominio_id: 1 })
 
 export default mongoose.models.FinanceiroCondominio || mongoose.model<IFinanceiroCondominio>('FinanceiroCondominio', FinanceiroCondominioSchema)
 

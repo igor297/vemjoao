@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
       categoria,
       descricao,
       valor: parseFloat(valor),
-      data_vencimento: new Date(data_vencimento),
+      data_vencimento: new Date(data_vencimento + 'T12:00:00'),
       observacoes,
       recorrente: recorrente || false,
       periodicidade: recorrente ? periodicidade : undefined,
@@ -264,12 +264,12 @@ export async function POST(request: NextRequest) {
 
     // Definir data de pagamento se status for 'pago'
     if (status === 'pago') {
-      novoLancamento.data_pagamento = data_pagamento ? new Date(data_pagamento) : new Date()
+      novoLancamento.data_pagamento = data_pagamento ? new Date(data_pagamento + 'T12:00:00') : new Date()
     } else {
       // Calcular status baseado na data de vencimento se não foi fornecido
       if (!status) {
         const hoje = new Date()
-        const vencimento = new Date(data_vencimento)
+        const vencimento = new Date(data_vencimento + 'T12:00:00')
         
         if (vencimento < hoje) {
           novoLancamento.status = 'atrasado'
@@ -343,7 +343,7 @@ export async function PUT(request: NextRequest) {
       dadosAtualizacao.status = status
       
       if (status === 'pago' && data_pagamento) {
-        dadosAtualizacao.data_pagamento = new Date(data_pagamento)
+        dadosAtualizacao.data_pagamento = new Date(data_pagamento + 'T12:00:00')
       } else if (status === 'pago' && !data_pagamento) {
         dadosAtualizacao.data_pagamento = new Date()
       }

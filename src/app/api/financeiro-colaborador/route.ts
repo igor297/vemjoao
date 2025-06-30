@@ -144,6 +144,8 @@ export async function GET(request: NextRequest) {
           $group: {
             _id: '$colaborador_id',
             colaborador_nome: { $first: '$colaborador_nome' },
+            colaborador_cargo: { $first: '$colaborador_cargo' },
+            colaborador_cpf: { $first: '$colaborador_cpf' },
             total_valor: { $sum: '$valor' },
             total_salarios: {
               $sum: {
@@ -163,7 +165,22 @@ export async function GET(request: NextRequest) {
             count: { $sum: 1 },
             pendentes: {
               $sum: {
-                $cond: [{ $eq: ['$status', 'pendente'] }, '$valor', 0]
+                $cond: [{ $in: ['$status', ['pendente', 'atrasado']] }, '$valor', 0]
+              }
+            },
+            atrasados: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'atrasado'] }, '$valor', 0]
+              }
+            },
+            count_pendentes: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'pendente'] }, 1, 0]
+              }
+            },
+            count_atrasados: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'atrasado'] }, 1, 0]
               }
             }
           }
@@ -346,6 +363,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    if (!tipo || !valor || !data_vencimento || !descricao) {
+      return NextResponse.json({
+        success: false,
+        error: 'Dados obrigatórios faltando: tipo, valor, data_vencimento, descricao'
+      }, { status: 400 })
+    }
+
     // Verificar permissão
     if (!verificarPermissaoFinanceiroColaborador('criar', tipo_usuario)) {
       return NextResponse.json({
@@ -399,9 +423,11 @@ export async function POST(request: NextRequest) {
       tipo,
       descricao,
       valor: parseFloat(valor),
-      data_vencimento: new Date(data_vencimento),
+      data_vencimento: new Date(data_vencimento + 'T12:00:00'),
       colaborador_id: new mongoose.Types.ObjectId(colaborador_id),
       colaborador_nome: colaborador.nome,
+      colaborador_cargo: colaborador.cargo,
+      colaborador_cpf: colaborador.cpf,
       mes_referencia,
       horas_trabalhadas: tipo === 'hora_extra' ? parseFloat(horas_trabalhadas) : undefined,
       observacoes,
@@ -431,7 +457,7 @@ export async function POST(request: NextRequest) {
         categoria: tipo,
         descricao,
         valor: parseFloat(valor),
-        data_vencimento: new Date(data_vencimento),
+        data_vencimento: new Date(data_vencimento + 'T12:00:00'),
         data_pagamento: novoLancamento.data_pagamento,
         status: novoLancamento.status,
         condominio_id: condominio_id,
@@ -445,8 +471,10 @@ export async function POST(request: NextRequest) {
         mes_referencia,
         origem_nome: colaborador.nome,
         origem_identificacao: colaborador.cpf,
-        bloco: colaborador.setor || '',
-        apartamento: colaborador.cargo || ''
+        bloco: colaborador.departamento || '',
+        apartamento: colaborador.cargo || '',
+        departamento: colaborador.departamento,
+        cargo: colaborador.cargo
       }
 
       await SincronizacaoFinanceira.sincronizarColaborador(dadosSincronizacao)
@@ -534,7 +562,7 @@ export async function PUT(request: NextRequest) {
       dadosAtualizacao.status = status
       
       if (status === 'pago' && data_pagamento) {
-        dadosAtualizacao.data_pagamento = new Date(data_pagamento)
+        dadosAtualizacao.data_pagamento = new Date(data_pagamento + 'T12:00:00')
       } else if (status === 'pago' && !data_pagamento) {
         dadosAtualizacao.data_pagamento = new Date()
       }
@@ -551,6 +579,7 @@ export async function PUT(request: NextRequest) {
       { new: true, runValidators: true }
     )
 
+<<<<<<< HEAD
     // Sincronizar com financeiro do condomínio após atualização
     if (lancamentoAtualizado) {
       try {
@@ -586,6 +615,43 @@ export async function PUT(request: NextRequest) {
       } catch (syncError) {
         console.error('⚠️ Erro na sincronização durante atualização, mas lançamento foi atualizado:', syncError)
       }
+=======
+    if (!lancamentoAtualizado) {
+      return NextResponse.json({
+        success: false,
+        error: 'Lançamento não encontrado'
+      }, { status: 404 })
+    }
+
+    // Sincronizar alterações com financeiro do condomínio
+    try {
+      const dadosSincronizacao = {
+        _id: lancamentoAtualizado._id.toString(),
+        tipo: 'despesa' as const,
+        categoria: lancamentoAtualizado.tipo,
+        descricao: `${lancamentoAtualizado.colaborador_nome} - ${lancamentoAtualizado.tipo}`,
+        valor: lancamentoAtualizado.valor,
+        data_vencimento: lancamentoAtualizado.data_vencimento,
+        data_pagamento: lancamentoAtualizado.data_pagamento,
+        status: lancamentoAtualizado.status,
+        condominio_id: lancamentoAtualizado.condominio_id.toString(),
+        master_id: lancamentoAtualizado.master_id.toString(),
+        criado_por_tipo: lancamentoAtualizado.criado_por_tipo,
+        criado_por_id: lancamentoAtualizado.criado_por_id.toString(),
+        criado_por_nome: lancamentoAtualizado.criado_por_nome,
+        observacoes: lancamentoAtualizado.observacoes,
+        recorrente: false,
+        mes_referencia: lancamentoAtualizado.mes_referencia,
+        origem_nome: lancamentoAtualizado.colaborador_nome,
+        origem_identificacao: lancamentoAtualizado.colaborador_cpf
+      }
+
+      await SincronizacaoFinanceira.sincronizarColaborador(dadosSincronizacao)
+      console.log('✅ Sincronização UPDATE realizada com sucesso')
+    } catch (syncError) {
+      console.error('❌ Erro na sincronização UPDATE:', syncError)
+      // Não falha a operação se a sincronização der erro
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
 
     return NextResponse.json({
@@ -645,11 +711,19 @@ export async function DELETE(request: NextRequest) {
 
     // Sincronizar exclusão com financeiro do condomínio
     try {
+<<<<<<< HEAD
       // Para exclusão, também precisamos remover do financeiro do condomínio
       await SincronizacaoFinanceira.removerSincronizacao('colaborador', lancamento._id.toString())
       console.log('✅ Lançamento de colaborador excluído e removido do condomínio')
     } catch (syncError) {
       console.error('⚠️ Erro na sincronização durante exclusão, mas lançamento foi excluído:', syncError)
+=======
+      await SincronizacaoFinanceira.removerSincronizacao('colaborador', lancamento.colaborador_cpf, lancamento.condominio_id.toString())
+      console.log('✅ Sincronização DELETE realizada com sucesso')
+    } catch (syncError) {
+      console.error('❌ Erro na sincronização DELETE:', syncError)
+      // Não falha a operação se a sincronização der erro
+>>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
 
     return NextResponse.json({
