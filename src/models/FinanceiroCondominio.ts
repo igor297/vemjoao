@@ -1,138 +1,147 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose from 'mongoose'
 
-export interface IFinanceiroCondominio extends Document {
-  tipo: 'receita' | 'despesa'
-  categoria: string
-  descricao: string
-  valor: number
-  data_vencimento: Date
-  data_pagamento?: Date
-  status: 'pendente' | 'pago' | 'atrasado' | 'cancelado'
-  
-  condominio_id: mongoose.Types.ObjectId
-  master_id: mongoose.Types.ObjectId
-  
-  origem_sistema: 'colaborador' | 'morador' | 'manual'
-  origem_id?: mongoose.Types.ObjectId
-  origem_nome?: string
-  origem_identificacao?: string  // CPF do colaborador ou identificação do morador
-  bloco?: string
-  apartamento?: string
-  unidade?: string
-  cargo?: string
-  departamento?: string
-  
-  criado_por_tipo: 'master' | 'sindico' | 'subsindico'
-  criado_por_id: mongoose.Types.ObjectId
-  criado_por_nome: string
-  data_criacao: Date
-  data_atualizacao: Date
-  ativo: boolean
-  
-  observacoes?: string
-  recorrente: boolean
-  periodicidade?: 'mensal' | 'bimestral' | 'trimestral' | 'semestral' | 'anual'
-  mes_referencia?: string
-  
-  sincronizado: boolean
-  data_sincronizacao?: Date
-  hash_origem?: string
-}
+const FinanceiroCondominioSchema = new mongoose.Schema({
+  // Identificação básica
+  master_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Master',
+    required: true,
+    index: true
+  },
+  condominio_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Condominio',
+    required: true,
+    index: true
+  },
 
-const FinanceiroCondominioSchema: Schema = new Schema({
+  // Dados do lançamento
   tipo: {
     type: String,
+    enum: ['receita', 'despesa', 'transferencia'],
     required: true,
-    enum: ['receita', 'despesa']
+    index: true
   },
   categoria: {
     type: String,
     required: true,
-    trim: true
+    index: true
   },
   descricao: {
     type: String,
-    required: true,
-    trim: true,
-    maxlength: [300, 'Descrição deve ter no máximo 300 caracteres']
+    required: true
   },
   valor: {
     type: Number,
     required: true,
-    min: [0, 'Valor deve ser maior ou igual a 0']
+    min: 0
   },
+
+  // Datas
   data_vencimento: {
     type: Date,
-    required: true
+    required: true,
+    index: true
   },
   data_pagamento: {
     type: Date,
-    required: false
+    default: null
   },
+  data_criacao: {
+    type: Date,
+    default: Date.now,
+    index: true
+  },
+  data_atualizacao: {
+    type: Date,
+    default: Date.now
+  },
+
+  // Status e controle
   status: {
     type: String,
-    required: true,
     enum: ['pendente', 'pago', 'atrasado', 'cancelado'],
-    default: 'pendente'
+    default: 'pendente',
+    index: true
   },
-  condominio_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'Condominio'
+  ativo: {
+    type: Boolean,
+    default: true,
+    index: true
   },
-  master_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'Master'
+
+  // Observações
+  observacoes: {
+    type: String,
+    default: ''
   },
+
+  // Recorrência
+  recorrente: {
+    type: Boolean,
+    default: false
+  },
+  periodicidade: {
+    type: String,
+    enum: ['mensal', 'bimestral', 'trimestral', 'semestral', 'anual'],
+    default: null
+  },
+
+  // Origem do lançamento
   origem_sistema: {
     type: String,
-    required: true,
-    enum: ['colaborador', 'morador', 'manual']
-  },
-  origem_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: false
+    enum: ['manual', 'morador', 'colaborador', 'importacao', 'recorrencia'],
+    default: 'manual',
+    index: true
   },
   origem_nome: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
   origem_identificacao: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
+  // NOVOS CAMPOS
+  origem_cpf: {
+    type: String,
+    default: '',
+    index: true
+  },
+  origem_cargo: {
+    type: String,
+    default: ''
+  },
+
+  // Dados de localização (para moradores)
   bloco: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
   apartamento: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
   unidade: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
+
+  // Dados profissionais (para colaboradores)
   cargo: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
   departamento: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
+
+  // Auditoria
   criado_por_tipo: {
     type: String,
-    required: true,
-    enum: ['master', 'sindico', 'subsindico']
+    enum: ['master', 'adm', 'sindico', 'subsindico', 'conselheiro', 'sistema'],
+    required: true
   },
   criado_por_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -140,64 +149,175 @@ const FinanceiroCondominioSchema: Schema = new Schema({
   },
   criado_por_nome: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
-  observacoes: {
+
+  // Metadados adicionais
+  origem_referencia_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
+  taxa_juros: {
+    type: Number,
+    default: 0
+  },
+  taxa_multa: {
+    type: Number,
+    default: 0
+  },
+  valor_juros: {
+    type: Number,
+    default: 0
+  },
+  valor_multa: {
+    type: Number,
+    default: 0
+  },
+  valor_desconto: {
+    type: Number,
+    default: 0
+  },
+  valor_total: {
+    type: Number,
+    default: 0
+  },
+
+  // Dados bancários (para transferências)
+  banco_origem: {
     type: String,
-    required: false,
-    trim: true,
-    maxlength: [500, 'Observações devem ter no máximo 500 caracteres']
+    default: ''
   },
-  recorrente: {
-    type: Boolean,
-    default: false
-  },
-  periodicidade: {
+  banco_destino: {
     type: String,
-    required: false,
-    enum: ['mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+    default: ''
   },
-  mes_referencia: {
+  numero_documento: {
     type: String,
-    required: false,
-    trim: true
+    default: ''
   },
-  sincronizado: {
-    type: Boolean,
-    default: true
-  },
-  data_sincronizacao: {
-    type: Date,
-    default: Date.now
-  },
-  hash_origem: {
+
+  // Tags e categorizações
+  tags: [{
+    type: String
+  }],
+  prioridade: {
     type: String,
-    required: false
+    enum: ['baixa', 'normal', 'alta', 'urgente'],
+    default: 'normal'
   },
-  data_criacao: {
-    type: Date,
-    default: Date.now
-  },
-  data_atualizacao: {
-    type: Date,
-    default: Date.now
-  },
-  ativo: {
-    type: Boolean,
-    default: true
-  }
+
+  // Anexos
+  anexos: [{
+    nome: String,
+    url: String,
+    tipo: String,
+    tamanho: Number,
+    data_upload: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true,
-  collection: 'financeiro-condominio'
+  collection: 'financeiro_condominios'
 })
 
-FinanceiroCondominioSchema.index({ condominio_id: 1, tipo: 1, status: 1 })
-FinanceiroCondominioSchema.index({ origem_sistema: 1, origem_identificacao: 1, condominio_id: 1 })
+// Índices compostos para performance
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, data_vencimento: -1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, status: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, tipo: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, categoria: 1 })
+FinanceiroCondominioSchema.index({ origem_cpf: 1, condominio_id: 1 })
+FinanceiroCondominioSchema.index({ origem_sistema: 1, condominio_id: 1 })
 
-export default mongoose.models.FinanceiroCondominio || mongoose.model<IFinanceiroCondominio>('FinanceiroCondominio', FinanceiroCondominioSchema)
+// Middleware para calcular valor total automaticamente
+FinanceiroCondominioSchema.pre('save', function(next) {
+  if (this.isModified('valor') || this.isModified('valor_juros') || this.isModified('valor_multa') || this.isModified('valor_desconto')) {
+    this.valor_total = this.valor + (this.valor_juros || 0) + (this.valor_multa || 0) - (this.valor_desconto || 0)
+  }
+  
+  // Atualizar data de atualização
+  this.data_atualizacao = new Date()
+  
+  next()
+})
 
-export const gerarHashSincronizacao = (dados: any): string => {
-  const { valor, data_vencimento, status, descricao } = dados
-  return Buffer.from(`${valor}_${data_vencimento}_${status}_${descricao}`).toString('base64')
+// Método para calcular atraso
+FinanceiroCondominioSchema.methods.calcularAtraso = function() {
+  if (this.status === 'pago') return 0
+  
+  const hoje = new Date()
+  const vencimento = new Date(this.data_vencimento)
+  
+  if (hoje > vencimento) {
+    return Math.ceil((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24))
+  }
+  
+  return 0
 }
+
+// Método para formatar valor como moeda
+FinanceiroCondominioSchema.methods.formatarValor = function() {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(this.valor_total || this.valor)
+}
+
+// Virtual para CPF formatado
+FinanceiroCondominioSchema.virtual('cpf_formatado').get(function() {
+  if (!this.origem_cpf) return ''
+  
+  const cpf = this.origem_cpf.replace(/\D/g, '')
+  if (cpf.length === 11) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+  }
+  
+  return this.origem_cpf
+})
+
+// Método estático para buscar por CPF
+FinanceiroCondominioSchema.statics.findByCPF = function(cpf: string, condominioId: string) {
+  const cpfLimpo = cpf.replace(/\D/g, '')
+  return this.find({
+    origem_cpf: cpfLimpo,
+    condominio_id: condominioId,
+    ativo: true
+  }).sort({ data_vencimento: -1 })
+}
+
+// Método estático para relatório por cargo
+FinanceiroCondominioSchema.statics.relatorioPorCargo = function(condominioId: string, masterId: string) {
+  return this.aggregate([
+    {
+      $match: {
+        condominio_id: new mongoose.Types.ObjectId(condominioId),
+        master_id: new mongoose.Types.ObjectId(masterId),
+        ativo: true,
+        origem_cargo: { $exists: true, $ne: '' }
+      }
+    },
+    {
+      $group: {
+        _id: '$origem_cargo',
+        total_valor: { $sum: '$valor' },
+        count: { $sum: 1 },
+        receitas: {
+          $sum: {
+            $cond: [{ $eq: ['$tipo', 'receita'] }, '$valor', 0]
+          }
+        },
+        despesas: {
+          $sum: {
+            $cond: [{ $eq: ['$tipo', 'despesa'] }, '$valor', 0]
+          }
+        }
+      }
+    },
+    {
+      $sort: { total_valor: -1 }
+    }
+  ])
+}
+
+export default mongoose.models.FinanceiroCondominio || mongoose.model('FinanceiroCondominio', FinanceiroCondominioSchema)

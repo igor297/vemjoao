@@ -29,10 +29,7 @@ ChartJS.register(
 interface FinanceiroColaborador {
   _id: string
   tipo: 'salario' | 'bonus' | 'desconto' | 'vale' | 'comissao' | 'hora_extra' | 'ferias' | 'decimo_terceiro'
-<<<<<<< HEAD
   categoria?: string // Campo opcional para compatibilidade
-=======
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
   descricao: string
   valor: number
   data_vencimento: string
@@ -75,30 +72,24 @@ interface DashboardData {
 }
 
 const CATEGORIAS_COLABORADOR = [
-<<<<<<< HEAD
   { value: 'salario', label: '💼 Salário', tipo: 'despesa' },
+  { value: 'bonus', label: '💵 Bônus', tipo: 'despesa' },
+  { value: 'vale', label: '🍽️ Vale Refeição/Transporte', tipo: 'despesa' },
+  { value: 'comissao', label: '💰 Comissão', tipo: 'despesa' },
+  { value: 'hora_extra', label: '⏰ Hora Extra', tipo: 'despesa' },
+  { value: 'ferias', label: '🏖️ Férias', tipo: 'despesa' },
+  { value: 'decimo_terceiro', label: '🎁 13º Salário', tipo: 'despesa' },
+  { value: 'desconto', label: '📉 Desconto', tipo: 'despesa' },
   { value: 'adicional', label: '💲 Adicional', tipo: 'despesa' },
   { value: 'vale_transporte', label: '🚌 Vale Transporte', tipo: 'despesa' },
   { value: 'vale_refeicao', label: '🍽️ Vale Refeição', tipo: 'despesa' },
   { value: 'beneficios', label: '🎁 Benefícios', tipo: 'despesa' },
   { value: 'premiacao', label: '🏆 Premiação', tipo: 'despesa' },
-  { value: 'bonus', label: '💵 Bônus', tipo: 'despesa' },
-  { value: 'desconto', label: '📉 Desconto', tipo: 'despesa' },
   { value: 'ajuda_custo', label: '🚗 Ajuda de Custo', tipo: 'despesa' },
   { value: 'reembolso', label: '🔄 Reembolso', tipo: 'despesa' },
   { value: 'adiantamento', label: '💳 Adiantamento', tipo: 'despesa' },
   { value: 'pro_labor', label: '👔 Pró-labore', tipo: 'despesa' },
   { value: 'outros', label: '📦 Outros', tipo: 'ambos' }
-=======
-  { value: 'salario', label: '💼 Salário' },
-  { value: 'bonus', label: '💵 Bônus' },
-  { value: 'vale', label: '🍽️ Vale Refeição/Transporte' },
-  { value: 'comissao', label: '💰 Comissão' },
-  { value: 'hora_extra', label: '⏰ Hora Extra' },
-  { value: 'ferias', label: '🏖️ Férias' },
-  { value: 'decimo_terceiro', label: '🎁 13º Salário' },
-  { value: 'desconto', label: '📉 Desconto' }
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
 ]
 
 interface Colaborador {
@@ -495,17 +486,10 @@ export default function FinanceiroColaboradorPage() {
       }
 
       const dataToSend: any = {
-<<<<<<< HEAD
         ...formData,
         tipo: mapCategoriaToTipo(formData.categoria),
-=======
-        tipo: formData.categoria, // Mapear categoria para tipo
         categoria: formData.categoria,
-        descricao: formData.descricao,
         valor: valorNumerico,
-        data_vencimento: formData.data_vencimento,
-        observacoes: formData.observacoes,
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
         master_id: currentUser?.master_id || currentUser?.id,
         condominio_id: selectedCondominiumId,
         colaborador_id: selectedColaboradorId,
@@ -597,7 +581,6 @@ export default function FinanceiroColaboradorPage() {
     const categoria = item.categoria || mapTipoToCategoria(item.tipo)
     
     const newFormData = {
-<<<<<<< HEAD
       categoria: categoria,
       descricao: item.descricao || '',
       valor: valorFormatado,
@@ -607,17 +590,6 @@ export default function FinanceiroColaboradorPage() {
       periodicidade: item.periodicidade || '',
       status: item.status || 'pendente',
       data_pagamento: dataPagamento
-=======
-      categoria: item.tipo || '', // Usar item.tipo que é o que está salvo no banco
-      descricao: item.descricao || '',
-      valor: item.valor ? item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
-      data_vencimento: item.data_vencimento ? item.data_vencimento.split('T')[0] : '',
-      observacoes: item.observacoes || '',
-      recorrente: !!item.recorrente,
-      periodicidade: item.periodicidade || '',
-      status: item.status || 'pendente',
-      data_pagamento: item.data_pagamento ? item.data_pagamento.split('T')[0] : ''
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
     console.log('📝 Form data sendo definido:', newFormData)
     console.log('🔄 Mapeamento tipo->categoria:', item.tipo, '->', categoria)
@@ -1562,12 +1534,7 @@ export default function FinanceiroColaboradorPage() {
               )}
               
               <Row>
-<<<<<<< HEAD
-                
                 <Col md={6}>
-=======
-                <Col md={12}>
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
                   <Form.Group className="mb-3">
                     <Form.Label>Categoria *</Form.Label>
                     <Form.Select

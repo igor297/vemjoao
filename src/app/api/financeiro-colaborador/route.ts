@@ -579,43 +579,6 @@ export async function PUT(request: NextRequest) {
       { new: true, runValidators: true }
     )
 
-<<<<<<< HEAD
-    // Sincronizar com financeiro do condomínio após atualização
-    if (lancamentoAtualizado) {
-      try {
-        // Buscar dados do colaborador para sincronização
-        const colaborador = await Colaborador.findById(lancamentoAtualizado.colaborador_id)
-        
-        const dadosSincronizacao = {
-          _id: lancamentoAtualizado._id.toString(),
-          tipo: 'despesa' as const,
-          categoria: lancamentoAtualizado.tipo,
-          descricao: lancamentoAtualizado.descricao,
-          valor: lancamentoAtualizado.valor,
-          data_vencimento: lancamentoAtualizado.data_vencimento,
-          data_pagamento: lancamentoAtualizado.data_pagamento,
-          status: lancamentoAtualizado.status,
-          condominio_id: lancamentoAtualizado.condominio_id.toString(),
-          master_id: lancamentoAtualizado.master_id.toString(),
-          criado_por_tipo: tipo_usuario,
-          criado_por_id: usuario_id,
-          criado_por_nome: lancamentoAtualizado.criado_por_nome,
-          observacoes: lancamentoAtualizado.observacoes,
-          recorrente: lancamentoAtualizado.tipo === 'salario',
-          periodicidade: lancamentoAtualizado.tipo === 'salario' ? 'mensal' : undefined,
-          mes_referencia: lancamentoAtualizado.mes_referencia,
-          origem_nome: colaborador?.nome || lancamentoAtualizado.colaborador_nome,
-          origem_identificacao: colaborador?.cpf || '',
-          bloco: colaborador?.setor || '',
-          apartamento: colaborador?.cargo || ''
-        }
-
-        await SincronizacaoFinanceira.sincronizarColaborador(dadosSincronizacao)
-        console.log('✅ Lançamento de colaborador atualizado e sincronizado com condomínio')
-      } catch (syncError) {
-        console.error('⚠️ Erro na sincronização durante atualização, mas lançamento foi atualizado:', syncError)
-      }
-=======
     if (!lancamentoAtualizado) {
       return NextResponse.json({
         success: false,
@@ -625,11 +588,14 @@ export async function PUT(request: NextRequest) {
 
     // Sincronizar alterações com financeiro do condomínio
     try {
+      // Buscar dados do colaborador para sincronização mais completa
+      const colaborador = await Colaborador.findById(lancamentoAtualizado.colaborador_id)
+      
       const dadosSincronizacao = {
         _id: lancamentoAtualizado._id.toString(),
         tipo: 'despesa' as const,
         categoria: lancamentoAtualizado.tipo,
-        descricao: `${lancamentoAtualizado.colaborador_nome} - ${lancamentoAtualizado.tipo}`,
+        descricao: lancamentoAtualizado.descricao || `${lancamentoAtualizado.colaborador_nome} - ${lancamentoAtualizado.tipo}`,
         valor: lancamentoAtualizado.valor,
         data_vencimento: lancamentoAtualizado.data_vencimento,
         data_pagamento: lancamentoAtualizado.data_pagamento,
@@ -640,18 +606,20 @@ export async function PUT(request: NextRequest) {
         criado_por_id: lancamentoAtualizado.criado_por_id.toString(),
         criado_por_nome: lancamentoAtualizado.criado_por_nome,
         observacoes: lancamentoAtualizado.observacoes,
-        recorrente: false,
+        recorrente: lancamentoAtualizado.tipo === 'salario',
+        periodicidade: lancamentoAtualizado.tipo === 'salario' ? 'mensal' : undefined,
         mes_referencia: lancamentoAtualizado.mes_referencia,
-        origem_nome: lancamentoAtualizado.colaborador_nome,
-        origem_identificacao: lancamentoAtualizado.colaborador_cpf
+        origem_nome: colaborador?.nome || lancamentoAtualizado.colaborador_nome,
+        origem_identificacao: colaborador?.cpf || lancamentoAtualizado.colaborador_cpf,
+        bloco: colaborador?.setor || '',
+        apartamento: colaborador?.cargo || ''
       }
 
       await SincronizacaoFinanceira.sincronizarColaborador(dadosSincronizacao)
-      console.log('✅ Sincronização UPDATE realizada com sucesso')
+      console.log('✅ Lançamento de colaborador atualizado e sincronizado com condomínio')
     } catch (syncError) {
-      console.error('❌ Erro na sincronização UPDATE:', syncError)
+      console.error('⚠️ Erro na sincronização durante atualização, mas lançamento foi atualizado:', syncError)
       // Não falha a operação se a sincronização der erro
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
 
     return NextResponse.json({
@@ -711,19 +679,12 @@ export async function DELETE(request: NextRequest) {
 
     // Sincronizar exclusão com financeiro do condomínio
     try {
-<<<<<<< HEAD
       // Para exclusão, também precisamos remover do financeiro do condomínio
       await SincronizacaoFinanceira.removerSincronizacao('colaborador', lancamento._id.toString())
       console.log('✅ Lançamento de colaborador excluído e removido do condomínio')
     } catch (syncError) {
       console.error('⚠️ Erro na sincronização durante exclusão, mas lançamento foi excluído:', syncError)
-=======
-      await SincronizacaoFinanceira.removerSincronizacao('colaborador', lancamento.colaborador_cpf, lancamento.condominio_id.toString())
-      console.log('✅ Sincronização DELETE realizada com sucesso')
-    } catch (syncError) {
-      console.error('❌ Erro na sincronização DELETE:', syncError)
       // Não falha a operação se a sincronização der erro
->>>>>>> f299e005071a508a427b04239bdbf49815971dce
     }
 
     return NextResponse.json({
