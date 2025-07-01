@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
-import FinanceiroCondominio from '@/models/FinanceiroCondominio'
+import FinanceiroMorador from '@/models/FinanceiroMorador'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Buscar lançamento
-    const lancamento = await FinanceiroCondominio.findById(id)
+    const lancamento = await FinanceiroMorador.findById(id)
     if (!lancamento) {
       return NextResponse.json({
         success: false,
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     console.log('📝 Dados que serão atualizados:', JSON.stringify(dadosAtualizacao, null, 2))
 
     // Atualizar
-    const lancamentoAtualizado = await FinanceiroCondominio.findByIdAndUpdate(
+    const lancamentoAtualizado = await FinanceiroMorador.findByIdAndUpdate(
       id,
       dadosAtualizacao,
       { new: true, runValidators: true }
@@ -142,7 +142,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Soft delete
-    const lancamento = await FinanceiroCondominio.findByIdAndUpdate(
+    const lancamento = await FinanceiroMorador.findByIdAndUpdate(
       id,
       { 
         ativo: false,

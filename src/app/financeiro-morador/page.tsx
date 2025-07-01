@@ -92,12 +92,17 @@ export default function FinanceiroMoradorPage() {
   const [condominiums, setCondominiums] = useState<Condominium[]>([])
   const [selectedMorador, setSelectedMorador] = useState<Morador | null>(null)
   const [selectedCondominium, setSelectedCondominium] = useState<Condominium | null>(null)
+  const [moradoresEmDia, setMoradoresEmDia] = useState<MoradorComStatus[]>([])
+  const [moradoresAtrasados, setMoradoresAtrasados] = useState<MoradorComStatus[]>([])
   
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [selectedMoradorId, setSelectedMoradorId] = useState<string>('')
   const [selectedCondominiumId, setSelectedCondominiumId] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [alert, setAlert] = useState<{type: string, message: string} | null>(null)
+  const [showResumoGeral, setShowResumoGeral] = useState(false)
+  const [showBuscaModal, setShowBuscaModal] = useState(false)
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState<{unidade: string, bloco?: string, moradores: string[]} | null>(null)
   
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<FinanceiroMorador | null>(null)
@@ -124,11 +129,29 @@ export default function FinanceiroMoradorPage() {
   })
 
   const [buscaMorador, setBuscaMorador] = useState('')
-  const [moradoresEmDia, setMoradoresEmDia] = useState<any[]>([])
-  const [moradoresAtrasados, setMoradoresAtrasados] = useState<any[]>([])
-  const [showBuscaModal, setShowBuscaModal] = useState(false)
-  const [showResumoGeral, setShowResumoGeral] = useState(false)
-  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'em_dia' | 'atrasados'>('todos')
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'proprietario' | 'inquilino' | 'dependente'>('todos');
+  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'em_dia' | 'atrasados'>('todos');
+
+  interface MoradorComStatus extends Morador {
+    total_pendente: number;
+    count_pendente: number;
+    total_pago: number;
+    count_pago: number;
+    total_atrasado: number;
+    count_atrasado: number;
+    total_cancelado: number;
+    count_cancelado: number;
+    total_geral: number;
+    count_geral: number;
+    tem_atraso: boolean;
+    moradores_na_unidade: number;
+    detalhes_moradores: { nome: string; tipo: string; cpf?: string }[];
+    tipos_na_unidade: string[];
+    tem_proprietario: boolean;
+    tem_inquilino: boolean;
+  }
+
+  
 
   useEffect(() => {
     const userData = localStorage.getItem('userData')
@@ -348,6 +371,8 @@ export default function FinanceiroMoradorPage() {
       if (data.success) {
         setMoradoresEmDia(data.moradores_em_dia || [])
         setMoradoresAtrasados(data.moradores_atrasados || [])
+      } else {
+        console.error('Erro na resposta da API de status dos moradores:', data.error)
       }
     } catch (error) {
       console.error('Erro ao buscar status dos moradores:', error)
@@ -486,6 +511,126 @@ export default function FinanceiroMoradorPage() {
     }
   }
 
+  // Nova função para ver detalhes da unidade completa (todos os moradores)
+  const handleVerDetalhesUnidade = async (morador: MoradorComStatus) => {
+    setSelectedMoradorId('')
+    setSelectedMorador(null)
+    setShowResumoGeral(false)
+    
+    // Definir unidade selecionada
+    setUnidadeSelecionada({
+      unidade: morador.unidade,
+      bloco: morador.bloco,
+      moradores: morador.detalhes_moradores.map(m => m.nome)
+    })
+    
+    if (currentUser) {
+      // Carregar dados financeiros de todos os moradores da unidade
+      await loadDashboardUnidade(currentUser, morador.unidade, morador.bloco)
+      await loadFinanceiroUnidade(currentUser, morador.unidade, morador.bloco)
+    }
+  }
+
+  // Função para carregar dashboard de toda a unidade
+  const loadDashboardUnidade = async (user: any, unidade: string, bloco?: string) => {
+    try {
+      const condominioId = selectedCondominiumId || localStorage.getItem('activeCondominio') || ''
+      if (!condominioId) {
+        console.warn('⚠️ Condominio ID não encontrado para carregar dashboard')
+        return
+      }
+
+      // Buscar todos os moradores da unidade
+      const moradoresDaUnidade = moradores.filter(m => 
+        m.unidade === unidade && 
+        (!bloco || m.bloco === bloco)
+      )
+
+      // Carregar dados de todos os moradores da unidade
+      const dashboardPromises = moradoresDaUnidade.map(async (morador) => {
+        const response = await fetch(
+          `/api/financeiro-morador?master_id=${user.master_id || user.id}&condominio_id=${condominioId}&morador_id=${morador._id}&tipo_usuario=${user.tipo}&relatorio=resumo`
+        )
+        return response.json()
+      })
+
+      const dashboardResults = await Promise.all(dashboardPromises)
+      
+      // Consolidar dados de todos os moradores
+      const resumoConsolidado = {
+        total_receitas: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.total_receitas : 0), 0),
+        total_despesas: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.total_despesas : 0), 0),
+        resultado_liquido: 0,
+        total_pendentes: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.total_pendentes : 0), 0),
+        total_atrasados: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.total_atrasados : 0), 0),
+        count_pendentes: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.count_pendentes : 0), 0),
+        count_atrasados: dashboardResults.reduce((sum, data) => sum + (data.success ? data.resumo.count_atrasados : 0), 0)
+      }
+      
+      resumoConsolidado.resultado_liquido = resumoConsolidado.total_receitas - resumoConsolidado.total_despesas
+
+      setDashboardData({
+        resumo: resumoConsolidado,
+        categorias: [],
+        fluxo_mensal: []
+      })
+    } catch (error) {
+      console.error('Erro ao carregar dashboard da unidade:', error)
+    }
+  }
+
+  // Função para carregar financeiro de toda a unidade
+  const loadFinanceiroUnidade = async (user: any, unidade: string, bloco?: string) => {
+    try {
+      setLoading(true)
+      
+      const condominioId = selectedCondominiumId || localStorage.getItem('activeCondominio') || ''
+      if (!condominioId) {
+        console.warn('⚠️ Condominio ID não encontrado para carregar financeiro')
+        setLoading(false)
+        return
+      }
+      
+      // Buscar todos os moradores da unidade
+      const moradoresDaUnidade = moradores.filter(m => 
+        m.unidade === unidade && 
+        (!bloco || m.bloco === bloco)
+      )
+
+      // Carregar dados financeiros de todos os moradores
+      const financeiroPromises = moradoresDaUnidade.map(async (morador) => {
+        const params = new URLSearchParams({
+          master_id: user.master_id || user.id,
+          condominio_id: condominioId,
+          morador_id: morador._id,
+          tipo_usuario: user.tipo,
+          ...(filtros.categoria && { categoria: filtros.categoria }),
+          ...(filtros.status && { status: filtros.status }),
+          ...(filtros.tipo && { tipo: filtros.tipo }),
+          ...(filtros.data_inicio && { data_inicio: filtros.data_inicio }),
+          ...(filtros.data_fim && { data_fim: filtros.data_fim })
+        })
+
+        const response = await fetch(`/api/financeiro-morador?${params}`)
+        return response.json()
+      })
+
+      const financeiroResults = await Promise.all(financeiroPromises)
+      
+      // Consolidar todos os lançamentos
+      const todosLancamentos = financeiroResults
+        .filter(data => data.success)
+        .flatMap(data => data.lancamentos || [])
+        .sort((a, b) => new Date(b.data_vencimento).getTime() - new Date(a.data_vencimento).getTime())
+
+      setFinanceiro(todosLancamentos)
+    } catch (error) {
+      console.error('Erro ao carregar financeiro da unidade:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const formatCurrencyDisplay = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -524,6 +669,18 @@ export default function FinanceiroMoradorPage() {
       loadFinanceiro(currentUser, selectedMoradorId)
     }
   }, [filtros])
+
+  useEffect(() => {
+    if (currentUser?.tipo === 'master') {
+      if (!selectedMoradorId) {
+        setShowResumoGeral(true);
+      } else {
+        setShowResumoGeral(false);
+      }
+    } else {
+      setShowResumoGeral(false);
+    }
+  }, [currentUser, selectedMoradorId]);
 
   // UseEffect para carregar status dos moradores quando tudo estiver pronto
   useEffect(() => {
@@ -966,8 +1123,62 @@ export default function FinanceiroMoradorPage() {
           </Alert>
         ) : null}
 
-        {selectedMoradorId && dashboardData && !showResumoGeral && (
+        {(selectedMoradorId || unidadeSelecionada) && dashboardData && !showResumoGeral && (
           <>
+            {/* Indicação visual do tipo de visualização */}
+            {unidadeSelecionada && (
+              <Alert variant="info" className="mb-3">
+                <div className="d-flex align-items-center">
+                  <i className="fas fa-building me-2"></i>
+                  <div>
+                    <strong>🏠 Visualização de Unidade Completa</strong>
+                    <br />
+                    <small>
+                      Exibindo dados consolidados de todos os moradores da unidade {unidadeSelecionada.bloco ? `${unidadeSelecionada.bloco} - ` : ''}{unidadeSelecionada.unidade}
+                      <br />
+                      Moradores incluídos: {unidadeSelecionada.moradores.join(', ')}
+                    </small>
+                  </div>
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    className="ms-auto"
+                    onClick={() => {
+                      setUnidadeSelecionada(null)
+                      setShowResumoGeral(true)
+                    }}
+                  >
+                    Voltar ao Resumo
+                  </Button>
+                </div>
+              </Alert>
+            )}
+
+            {selectedMorador && !unidadeSelecionada && (
+              <Alert variant="primary" className="mb-3">
+                <div className="d-flex align-items-center">
+                  <i className="fas fa-user me-2"></i>
+                  <div>
+                    <strong>👤 Visualização Individual</strong>
+                    <br />
+                    <small>Exibindo dados específicos do morador: {selectedMorador.nome}</small>
+                  </div>
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    className="ms-auto"
+                    onClick={() => {
+                      setSelectedMoradorId('')
+                      setSelectedMorador(null)
+                      setShowResumoGeral(true)
+                    }}
+                  >
+                    Voltar ao Resumo
+                  </Button>
+                </div>
+              </Alert>
+            )}
+
             {/* Dashboard Cards */}
             <Row className="mb-4">
               <Col md={3}>
@@ -1011,8 +1222,8 @@ export default function FinanceiroMoradorPage() {
             </Row>
 
             {/* Gráficos */}
-            <Row className="mb-4">
-              <Col md={6}>
+            <Row className="mb-4 justify-content-center">
+              <Col md={4}>
                 <Card>
                   <Card.Header>
                     <h6 className="mb-0">📊 Lançamentos por Categoria</h6>
@@ -1051,7 +1262,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={6}>
+              <Col md={4}>
                 <Card>
                   <Card.Header>
                     <h6 className="mb-0">📈 Fluxo Mensal</h6>
@@ -1202,22 +1413,26 @@ export default function FinanceiroMoradorPage() {
                         </Form.Select>
                       </Col>
                       <Col md={3}>
-                        <Form.Control
-                          type="date"
-                          value={filtros.data_inicio}
-                          onChange={(e) => setFiltros({...filtros, data_inicio: e.target.value})}
-                          size="sm"
-                          placeholder="Data início"
-                        />
+                        <Form.Group controlId="filtroDataInicio">
+                          <Form.Label>Data Início</Form.Label>
+                          <Form.Control
+                            type="date"
+                            value={filtros.data_inicio}
+                            onChange={(e) => setFiltros({...filtros, data_inicio: e.target.value})}
+                            size="sm"
+                          />
+                        </Form.Group>
                       </Col>
                       <Col md={3}>
-                        <Form.Control
-                          type="date"
-                          value={filtros.data_fim}
-                          onChange={(e) => setFiltros({...filtros, data_fim: e.target.value})}
-                          size="sm"
-                          placeholder="Data fim"
-                        />
+                        <Form.Group controlId="filtroDataFim">
+                          <Form.Label>Data Fim</Form.Label>
+                          <Form.Control
+                            type="date"
+                            value={filtros.data_fim}
+                            onChange={(e) => setFiltros({...filtros, data_fim: e.target.value})}
+                            size="sm"
+                          />
+                        </Form.Group>
                       </Col>
                       <Col md={2}>
                         <small className="text-muted">
@@ -1334,6 +1549,23 @@ export default function FinanceiroMoradorPage() {
                     </div>
                   </Card.Header>
                   <Card.Body>
+                    <Row className="mb-3">
+                      <Col md={4}>
+                        <Form.Group>
+                          <Form.Label>Filtrar por Tipo</Form.Label>
+                          <Form.Select
+                            value={filtroTipo}
+                            onChange={(e) => setFiltroTipo(e.target.value as 'todos' | 'proprietario' | 'inquilino' | 'dependente')}
+                            size="sm"
+                          >
+                            <option value="todos">Todos os Tipos</option>
+                            <option value="proprietario">Proprietário</option>
+                            <option value="inquilino">Inquilino</option>
+                            <option value="dependente">Dependente</option>
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                    </Row>
                     <Row>
                       <Col md={4}>
                         <Card className="border-success text-center">
@@ -1384,82 +1616,120 @@ export default function FinanceiroMoradorPage() {
                             <th>Nome</th>
                             <th>Unidade</th>
                             <th>Tipo</th>
-                            <th>Status</th>
-                            <th>Valor Pendente</th>
+                            <th>Pendente</th>
+                            <th>Atrasado</th>
+                            <th>Pago</th>
+                            <th>Cancelado</th>
                             <th>Ações</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {(filtroStatus === 'todos' || filtroStatus === 'em_dia') &&
-                            moradoresEmDia.map((morador) => (
-                              <tr key={morador._id}>
-                                <td><strong>{morador.nome}</strong></td>
-                                <td>{morador.bloco && `${morador.bloco} - `}{morador.unidade}</td>
-                                <td>
-                                  <Badge bg={morador.tipo === 'proprietario' ? 'primary' : 'secondary'}>
-                                    {morador.tipo}
-                                  </Badge>
-                                </td>
-                                <td>
-                                  <Badge bg="success">Em Dia</Badge>
-                                </td>
-                                <td>
-                                  <span className="text-success">R$ 0,00</span>
-                                </td>
-                                <td>
+                          {(filtroStatus === 'todos' || filtroStatus === 'em_dia' ? moradoresEmDia : []).filter(m => 
+                            filtroTipo === 'todos' || 
+                            m.tipo === filtroTipo ||
+                            (m.tipos_na_unidade && m.tipos_na_unidade.includes(filtroTipo))
+                          ).map((morador) => (
+                            <tr key={morador._id}>
+                              <td><strong>{morador.nome}</strong></td>
+                              <td>{morador.bloco && `${morador.bloco} - `}{morador.unidade}</td>
+                              <td>
+                                <Badge bg={morador.tipo === 'proprietario' ? 'primary' : morador.tipo === 'inquilino' ? 'info' : 'secondary'}>
+                                  {morador.tipo}
+                                </Badge>
+                              </td>
+                              <td>
+                                {morador.count_pendente > 0 ? (
+                                  <span className="text-warning">
+                                    {formatCurrencyDisplay(morador.total_pendente)} ({morador.count_pendente})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_atrasado > 0 ? (
+                                  <span className="text-danger">
+                                    {formatCurrencyDisplay(morador.total_atrasado)} ({morador.count_atrasado})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_pago > 0 ? (
+                                  <span className="text-success">
+                                    {formatCurrencyDisplay(morador.total_pago)} ({morador.count_pago})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_cancelado > 0 ? (
+                                  <span className="text-secondary">
+                                    {formatCurrencyDisplay(morador.total_cancelado)} ({morador.count_cancelado})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleVerDetalhesUnidade(morador)}
+                                >
+                                  Ver Detalhes
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                          {(filtroStatus === 'todos' || filtroStatus === 'atrasados' ? moradoresAtrasados : []).filter(m => 
+                            filtroTipo === 'todos' || 
+                            m.tipo === filtroTipo ||
+                            (m.tipos_na_unidade && m.tipos_na_unidade.includes(filtroTipo))
+                          ).map((morador) => (
+                            <tr key={morador._id}>
+                              <td><strong>{morador.nome}</strong></td>
+                              <td>{morador.bloco && `${morador.bloco} - `}{morador.unidade}</td>
+                              <td>
+                                <Badge bg={morador.tipo === 'proprietario' ? 'primary' : morador.tipo === 'inquilino' ? 'info' : 'secondary'}>
+                                  {morador.tipo}
+                                </Badge>
+                              </td>
+                              <td>
+                                {morador.count_pendente > 0 ? (
+                                  <span className="text-warning">
+                                    {formatCurrencyDisplay(morador.total_pendente)} ({morador.count_pendente})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_atrasado > 0 ? (
+                                  <span className="text-danger">
+                                    {formatCurrencyDisplay(morador.total_atrasado)} ({morador.count_atrasado})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_pago > 0 ? (
+                                  <span className="text-success">
+                                    {formatCurrencyDisplay(morador.total_pago)} ({morador.count_pago})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                {morador.count_cancelado > 0 ? (
+                                  <span className="text-secondary">
+                                    {formatCurrencyDisplay(morador.total_cancelado)} ({morador.count_cancelado})
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                <div className="d-flex gap-1">
                                   <Button
                                     variant="outline-primary"
                                     size="sm"
-                                    onClick={() => {
-                                      handleMoradorChange(morador._id)
-                                      setShowResumoGeral(false)
-                                    }}
+                                    onClick={() => handleVerDetalhesUnidade(morador)}
                                   >
                                     Ver Detalhes
                                   </Button>
-                                </td>
-                              </tr>
-                            ))
-                          }
-                          {(filtroStatus === 'todos' || filtroStatus === 'atrasados') &&
-                            moradoresAtrasados.map((morador) => (
-                              <tr key={morador._id}>
-                                <td><strong>{morador.nome}</strong></td>
-                                <td>{morador.bloco && `${morador.bloco} - `}{morador.unidade}</td>
-                                <td>
-                                  <Badge bg={morador.tipo === 'proprietario' ? 'primary' : 'secondary'}>
-                                    {morador.tipo}
-                                  </Badge>
-                                </td>
-                                <td>
-                                  <Badge bg="danger">Atrasado</Badge>
-                                </td>
-                                <td>
-                                  <strong className="text-danger">
-                                    {formatCurrencyDisplay(morador.total_atrasado || 0)}
-                                  </strong>
-                                  <br/>
-                                  <small className="text-muted">
-                                    {morador.count_atrasados} lançamento(s)
-                                  </small>
-                                </td>
-                                <td>
-                                  <div className="d-flex gap-1">
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      onClick={() => {
-                                        handleMoradorChange(morador._id)
-                                        setShowResumoGeral(false)
-                                      }}
-                                    >
-                                      Ver Detalhes
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          }
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </Table>
                     </div>
@@ -1470,12 +1740,7 @@ export default function FinanceiroMoradorPage() {
           </>
         )}
 
-        {!selectedMoradorId && currentUser?.tipo === 'master' && !showResumoGeral && (
-          <Alert variant="info" className="text-center">
-            <h5>👤 Selecione um morador</h5>
-            <p className="mb-0">Escolha um morador acima para visualizar os dados financeiros</p>
-          </Alert>
-        )}
+        
 
         {/* Modal para Novo/Editar Lançamento */}
         <Modal show={showModal} onHide={handleCloseModal} size="lg">

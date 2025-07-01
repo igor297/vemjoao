@@ -231,6 +231,14 @@ FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1 }) /
 FinanceiroCondominioSchema.index({ origem_cpf: 1, condominio_id: 1 })
 FinanceiroCondominioSchema.index({ origem_sistema: 1, condominio_id: 1, ativo: 1 })
 
+// Índices otimizados para consultas com múltiplos filtros (performance crítica)
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, origem_sistema: 1, status: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, tipo: 1, status: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, categoria: 1, tipo: 1 })
+
+// Índice para consultas de data com range (relatórios financeiros)
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, data_vencimento: 1, data_criacao: 1 })
+
 // Middleware para calcular valor total automaticamente
 FinanceiroCondominioSchema.pre('save', function(next) {
   if (this.isModified('valor') || this.isModified('valor_juros') || this.isModified('valor_multa') || this.isModified('valor_desconto')) {

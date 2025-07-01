@@ -60,28 +60,42 @@ export async function GET(request: NextRequest) {
         const idsmoradores = moradoresDaUnidade.map(m => m._id)
         
         // Buscar lançamentos atrasados/pendentes de TODOS os moradores da unidade
-        const lancamentosAtrasados = await FinanceiroMorador.aggregate([
+        const lancamentosFinanceiros = await FinanceiroMorador.aggregate([
           {
             $match: {
               morador_id: { $in: idsmoradores },
               condominio_id: new mongoose.Types.ObjectId(condominioId),
-              status: { $in: ['atrasado', 'pendente'] },
-              data_vencimento: { $lt: hoje },
               ativo: true
             }
           },
           {
             $group: {
               _id: null,
-              total_atrasado: { $sum: '$valor' },
-              count_atrasados: { $sum: 1 }
+              total_pendente: { $sum: { $cond: [{ $eq: ['$status', 'pendente'] }, '$valor', 0] } },
+              count_pendente: { $sum: { $cond: [{ $eq: ['$status', 'pendente'] }, 1, 0] } },
+              total_pago: { $sum: { $cond: [{ $eq: ['$status', 'pago'] }, '$valor', 0] } },
+              count_pago: { $sum: { $cond: [{ $eq: ['$status', 'pago'] }, 1, 0] } },
+              total_atrasado: { $sum: { $cond: [{ $eq: ['$status', 'atrasado'] }, '$valor', 0] } },
+              count_atrasado: { $sum: { $cond: [{ $eq: ['$status', 'atrasado'] }, 1, 0] } },
+              total_cancelado: { $sum: { $cond: [{ $eq: ['$status', 'cancelado'] }, '$valor', 0] } },
+              count_cancelado: { $sum: { $cond: [{ $eq: ['$status', 'cancelado'] }, 1, 0] } },
+              total_geral: { $sum: '$valor' },
+              count_geral: { $sum: 1 }
             }
           }
         ])
 
-        const statusFinanceiro = lancamentosAtrasados[0] || {
+        const statusFinanceiro = lancamentosFinanceiros[0] || {
+          total_pendente: 0,
+          count_pendente: 0,
+          total_pago: 0,
+          count_pago: 0,
           total_atrasado: 0,
-          count_atrasados: 0
+          count_atrasado: 0,
+          total_cancelado: 0,
+          count_cancelado: 0,
+          total_geral: 0,
+          count_geral: 0
         }
 
         // Encontrar o morador principal (proprietário se existir, senão o primeiro)
@@ -97,16 +111,27 @@ export async function GET(request: NextRequest) {
           cpf: moradorPrincipal.cpf,
           unidade: unidadeData.unidade,
           bloco: unidadeData.bloco,
-          tipo: proprietario ? 'unidade_com_proprietario' : moradoresDaUnidade[0].tipo,
+          tipo: moradorPrincipal.tipo, // Manter o tipo do morador principal
+          total_pendente: statusFinanceiro.total_pendente,
+          count_pendente: statusFinanceiro.count_pendente,
+          total_pago: statusFinanceiro.total_pago,
+          count_pago: statusFinanceiro.count_pago,
           total_atrasado: statusFinanceiro.total_atrasado,
-          count_atrasados: statusFinanceiro.count_atrasados,
-          tem_atraso: statusFinanceiro.count_atrasados > 0,
+          count_atrasado: statusFinanceiro.count_atrasado,
+          total_cancelado: statusFinanceiro.total_cancelado,
+          count_cancelado: statusFinanceiro.count_cancelado,
+          total_geral: statusFinanceiro.total_geral,
+          count_geral: statusFinanceiro.count_geral,
+          tem_atraso: statusFinanceiro.count_atrasado > 0 || statusFinanceiro.count_pendente > 0, // Considera atrasado se tiver atrasados ou pendentes
           moradores_na_unidade: moradoresDaUnidade.length,
           detalhes_moradores: moradoresDaUnidade.map(m => ({
             nome: m.nome,
             tipo: m.tipo,
             cpf: m.cpf
-          }))
+          })),
+          tipos_na_unidade: [...new Set(moradoresDaUnidade.map(m => m.tipo))], // Array com todos os tipos únicos na unidade
+          tem_proprietario: moradoresDaUnidade.some(m => m.tipo === 'proprietario'),
+          tem_inquilino: moradoresDaUnidade.some(m => m.tipo === 'inquilino')
         }
       })
     )

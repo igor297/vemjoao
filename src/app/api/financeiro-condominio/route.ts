@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FinanceiroCondominio from '@/models/FinanceiroCondominio'
 import mongoose from 'mongoose'
+import { cache } from '@/lib/cache'
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB()
+    await FinanceiroCondominio.syncIndexes() // Garante que os índices estão criados
     
     const url = new URL(request.url)
     const masterId = url.searchParams.get('master_id')
@@ -28,6 +30,9 @@ export async function GET(request: NextRequest) {
       tipo
     })
     
+    console.log('🔍 DEBUG: Model sendo usado:', FinanceiroCondominio.modelName)
+    console.log('🔍 DEBUG: Collection sendo consultada:', FinanceiroCondominio.collection.name)
+    
     if (!masterId || !tipoUsuario || !condominioId) {
       console.log('❌ Parâmetros obrigatórios faltando:', { masterId, tipoUsuario, condominioId })
       return NextResponse.json({
@@ -36,10 +41,32 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Gerar chave de cache
+    const cacheKey = cache.generateKey('financeiro', {
+      masterId,
+      condominioId,
+      relatorio: relatorio || 'list',
+      origemSistema,
+      status,
+      tipo,
+      page,
+      limit
+    })
+
+    // Verificar cache (especialmente para relatórios que são consultados frequentemente)
+    if (relatorio) {
+      const cachedResult = cache.get(cacheKey)
+      if (cachedResult) {
+        console.log('📋 Cache hit para:', relatorio)
+        return NextResponse.json(cachedResult)
+      }
+    }
+
     const filter: any = {
       master_id: new mongoose.Types.ObjectId(masterId),
       condominio_id: new mongoose.Types.ObjectId(condominioId),
-      ativo: true
+      ativo: true,
+      origem_sistema: { $nin: ['morador', 'colaborador'] } // Excluir lançamentos de moradores e colaboradores
     }
 
     if (origemSistema) filter.origem_sistema = origemSistema
@@ -48,7 +75,15 @@ export async function GET(request: NextRequest) {
 
     if (relatorio === 'resumo') {
       const pipeline = [
-        { $match: filter },
+        { 
+          $match: {
+            ...filter,
+            // Otimização: filtros mais específicos primeiro
+            master_id: filter.master_id,
+            condominio_id: filter.condominio_id,
+            ativo: filter.ativo
+          }
+        },
         {
           $group: {
             _id: null,
@@ -102,15 +137,27 @@ export async function GET(request: NextRequest) {
 
       resultado.resultado_liquido = resultado.total_receitas - resultado.total_despesas
 
-      return NextResponse.json({
+      const response = {
         success: true,
         resumo: resultado
-      })
+      }
+
+      // Cache por 3 minutos (relatórios são consultados frequentemente)
+      cache.set(cacheKey, response, 3)
+
+      return NextResponse.json(response)
     }
 
     if (relatorio === 'por_origem') {
       const pipeline = [
-        { $match: filter },
+        { 
+          $match: {
+            ...filter,
+            master_id: filter.master_id,
+            condominio_id: filter.condominio_id,
+            ativo: filter.ativo
+          }
+        },
         {
           $group: {
             _id: {
@@ -120,20 +167,34 @@ export async function GET(request: NextRequest) {
             total_valor: { $sum: '$valor' },
             count: { $sum: 1 }
           }
-        }
+        },
+        { $sort: { total_valor: -1 } }
       ]
 
       const origens = await FinanceiroCondominio.aggregate(pipeline)
+        .hint({ origem_sistema: 1, condominio_id: 1, ativo: 1 })
 
-      return NextResponse.json({
+      const response = {
         success: true,
         por_origem: origens
-      })
+      }
+
+      // Cache por 5 minutos
+      cache.set(cacheKey, response, 5)
+
+      return NextResponse.json(response)
     }
 
     if (relatorio === 'por_categoria') {
       const pipeline = [
-        { $match: filter },
+        { 
+          $match: {
+            ...filter,
+            master_id: filter.master_id,
+            condominio_id: filter.condominio_id,
+            ativo: filter.ativo
+          }
+        },
         {
           $group: {
             _id: '$categoria',
@@ -146,16 +207,29 @@ export async function GET(request: NextRequest) {
       ]
 
       const categorias = await FinanceiroCondominio.aggregate(pipeline)
+        .hint({ master_id: 1, condominio_id: 1, ativo: 1, categoria: 1 })
 
-      return NextResponse.json({
+      const response = {
         success: true,
         categorias
-      })
+      }
+
+      // Cache por 10 minutos (categorias mudam menos)
+      cache.set(cacheKey, response, 10)
+
+      return NextResponse.json(response)
     }
 
     if (relatorio === 'fluxo_mensal') {
       const pipeline = [
-        { $match: filter },
+        { 
+          $match: {
+            ...filter,
+            master_id: filter.master_id,
+            condominio_id: filter.condominio_id,
+            ativo: filter.ativo
+          }
+        },
         {
           $group: {
             _id: {
@@ -179,19 +253,28 @@ export async function GET(request: NextRequest) {
       ]
 
       const fluxo_mensal = await FinanceiroCondominio.aggregate(pipeline)
+        .hint({ master_id: 1, condominio_id: 1, ativo: 1, data_vencimento: 1 })
 
-      return NextResponse.json({
+      const response = {
         success: true,
         fluxo_mensal
-      })
+      }
+
+      // Cache por 15 minutos (dados históricos mudam pouco)
+      cache.set(cacheKey, response, 15)
+
+      return NextResponse.json(response)
     }
 
     const skip = (page - 1) * limit
     
-    // Otimização: usar hint de índice e executar consultas em paralelo
+    console.log('🔍 DEBUG: Filtro da consulta:', JSON.stringify(filter, null, 2))
+    
+    // Otimização: usar hint de índice e executar consultas em paralelo com projeção
     const [lancamentos, total] = await Promise.all([
       FinanceiroCondominio
         .find(filter)
+        .select('tipo categoria descricao valor data_vencimento data_pagamento status origem_sistema origem_nome data_criacao valor_total') // Projeção: só campos necessários
         .hint({ master_id: 1, condominio_id: 1, ativo: 1, data_vencimento: -1 }) // Usar índice otimizado
         .sort({ data_vencimento: -1 })
         .skip(skip)
@@ -204,6 +287,9 @@ export async function GET(request: NextRequest) {
         .hint({ master_id: 1, condominio_id: 1, ativo: 1 }) // Índice para contagem rápida
         .exec()
     ])
+    
+    console.log('🔍 DEBUG: Quantidade de lançamentos encontrados:', lancamentos.length)
+    console.log('🔍 DEBUG: Primeiro lançamento (se existir):', lancamentos[0] ? JSON.stringify(lancamentos[0], null, 2) : 'Nenhum')
 
     return NextResponse.json({
       success: true,
@@ -264,13 +350,19 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
+    // Criar data corretamente sem problema de timezone
+    const criarDataLocal = (dataString: string) => {
+      const [ano, mes, dia] = dataString.split('-').map(Number)
+      return new Date(ano, mes - 1, dia) // mes - 1 porque Date() usa índice 0-11 para meses
+    }
+
     // Criar lançamento
     const novoLancamento = new FinanceiroCondominio({
       tipo,
       categoria,
       descricao,
       valor: parseFloat(valor),
-      data_vencimento: new Date(data_vencimento + 'T12:00:00'),
+      data_vencimento: criarDataLocal(data_vencimento),
       observacoes,
       recorrente: recorrente || false,
       periodicidade: recorrente ? periodicidade : undefined,
@@ -285,12 +377,12 @@ export async function POST(request: NextRequest) {
 
     // Definir data de pagamento se status for 'pago'
     if (status === 'pago') {
-      novoLancamento.data_pagamento = data_pagamento ? new Date(data_pagamento + 'T12:00:00') : new Date()
+      novoLancamento.data_pagamento = data_pagamento ? criarDataLocal(data_pagamento) : new Date()
     } else {
       // Calcular status baseado na data de vencimento se não foi fornecido
       if (!status) {
         const hoje = new Date()
-        const vencimento = new Date(data_vencimento + 'T12:00:00')
+        const vencimento = criarDataLocal(data_vencimento)
         
         if (vencimento < hoje) {
           novoLancamento.status = 'atrasado'
@@ -359,12 +451,18 @@ export async function PUT(request: NextRequest) {
       data_atualizacao: new Date()
     }
 
+    // Função para criar data local (reutilizada do POST)
+    const criarDataLocal = (dataString: string) => {
+      const [ano, mes, dia] = dataString.split('-').map(Number)
+      return new Date(ano, mes - 1, dia) // mes - 1 porque Date() usa índice 0-11 para meses
+    }
+
     // Lógica específica para mudança de status
     if (status && status !== lancamento.status) {
       dadosAtualizacao.status = status
       
       if (status === 'pago' && data_pagamento) {
-        dadosAtualizacao.data_pagamento = new Date(data_pagamento + 'T12:00:00')
+        dadosAtualizacao.data_pagamento = criarDataLocal(data_pagamento)
       } else if (status === 'pago' && !data_pagamento) {
         dadosAtualizacao.data_pagamento = new Date()
       }

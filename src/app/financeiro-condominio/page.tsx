@@ -10,8 +10,6 @@ import { safeJsonParse } from '@/lib/api-utils'
 // Categorias predefinidas para condomínio
 const CATEGORIAS_CONDOMINIO = {
   receitas: [
-    { value: 'taxa_condominio', label: '🏢 Taxa de Condomínio' },
-    { value: 'multas', label: '⚠️ Multas e Penalidades' },
     { value: 'juros_atraso', label: '💰 Juros de Atraso' },
     { value: 'taxa_extra', label: '📋 Taxa Extra/Especial' },
     { value: 'renda_salao', label: '🎉 Aluguel Salão de Festas' },
@@ -362,8 +360,12 @@ export default function FinanceiroCondominioPage() {
         categoria: item.categoria,
         descricao: item.descricao,
         valor: formatCurrencyForEdit(item.valor_total || item.valor),
-        data_vencimento: format(new Date(item.data_vencimento), 'yyyy-MM-dd'),
-        data_pagamento: item.data_pagamento ? format(new Date(item.data_pagamento), 'yyyy-MM-dd') : '',
+        data_vencimento: item.data_vencimento
+          ? format(new Date(item.data_vencimento.includes('T') ? item.data_vencimento : item.data_vencimento + 'T12:00:00'), 'yyyy-MM-dd')
+          : '',
+        data_pagamento: item.data_pagamento
+          ? format(new Date(item.data_pagamento.includes('T') ? item.data_pagamento : item.data_pagamento + 'T12:00:00'), 'yyyy-MM-dd')
+          : '',
         status: item.status,
         origem_nome: item.origem_nome || '',
         origem_cpf: item.origem_cpf || '',
@@ -814,8 +816,14 @@ export default function FinanceiroCondominioPage() {
                         {item.unidade && `Unidade: ${item.unidade}`}
                       </td>
                       <td>
-                        <Button variant="warning" size="sm" className="me-2" onClick={() => handleShowModal(item)}>Editar</Button>
-                        <Button variant="danger" size="sm" onClick={() => handleDeleteConfirm(item)}>Excluir</Button>
+                        <div className="d-flex gap-1">
+                          <Button variant="warning" size="sm" onClick={() => handleShowModal(item)} title="Editar">
+                            ✏️
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteConfirm(item)} title="Excluir">
+                            🗑️
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
