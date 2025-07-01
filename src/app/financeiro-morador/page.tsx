@@ -1181,7 +1181,7 @@ export default function FinanceiroMoradorPage() {
 
             {/* Dashboard Cards */}
             <Row className="mb-4">
-              <Col md={3}>
+              <Col md={2}>
                 <Card className="border-primary">
                   <Card.Body className="text-center">
                     <div className="text-primary display-6 mb-2">💰</div>
@@ -1190,7 +1190,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
+              <Col md={2}>
                 <Card className="border-danger">
                   <Card.Body className="text-center">
                     <div className="text-danger display-6 mb-2">💸</div>
@@ -1199,7 +1199,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
+              <Col md={2}>
                 <Card className="border-warning">
                   <Card.Body className="text-center">
                     <div className="text-warning display-6 mb-2">⏳</div>
@@ -1209,7 +1209,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
+              <Col md={2}>
                 <Card className="border-danger">
                   <Card.Body className="text-center">
                     <div className="text-danger display-6 mb-2">⚠️</div>
@@ -1223,7 +1223,7 @@ export default function FinanceiroMoradorPage() {
 
             {/* Gráficos */}
             <Row className="mb-4 justify-content-center">
-              <Col md={4}>
+              <Col md={3}>
                 <Card>
                   <Card.Header>
                     <h6 className="mb-0">📊 Lançamentos por Categoria</h6>
@@ -1262,7 +1262,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={4}>
+              <Col md={3}>
                 <Card>
                   <Card.Header>
                     <h6 className="mb-0">📈 Fluxo Mensal</h6>

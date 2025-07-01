@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     const filterBase = {
       master_id: new mongoose.Types.ObjectId(masterId),
       condominio_id: new mongoose.Types.ObjectId(condominioId),
-      ativo: true
+      ativo: true,
+      origem_sistema: { $nin: ['morador', 'colaborador'] } // Excluir lançamentos duplicados de morador/colaborador
     }
 
     // 1. DADOS DOS MORADORES POR UNIDADE

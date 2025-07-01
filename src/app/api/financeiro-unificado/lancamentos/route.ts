@@ -65,7 +65,13 @@ export async function GET(request: NextRequest) {
 
     // Buscar dados baseado no filtro de origem
     if (!origem || origem === 'condominio') {
-      const lancamentosCondominio = await FinanceiroCondominio.find(condominioFilter)
+      // Filtrar apenas lançamentos genuínos do condomínio (não originados de morador/colaborador)
+      const condominioFilterFiltrado = {
+        ...condominioFilter,
+        origem_sistema: { $nin: ['morador', 'colaborador'] } // Excluir os que vieram de morador/colaborador
+      };
+      
+      const lancamentosCondominio = await FinanceiroCondominio.find(condominioFilterFiltrado)
         .lean()
         .exec();
 
@@ -130,6 +136,13 @@ export async function GET(request: NextRequest) {
     if (tipo) {
       allLancamentos = allLancamentos.filter(l => l.tipo === tipo);
     }
+
+    console.log('🔍 DEBUG: Total de lançamentos encontrados antes da ordenação:', allLancamentos.length)
+    console.log('🔍 DEBUG: Por origem:', {
+      condominio: allLancamentos.filter(l => l.origem_sistema === 'condominio').length,
+      morador: allLancamentos.filter(l => l.origem_sistema === 'morador').length,
+      colaborador: allLancamentos.filter(l => l.origem_sistema === 'colaborador').length
+    })
 
     // Ordenar por data de vencimento (mais recente primeiro)
     allLancamentos.sort((a, b) => {
