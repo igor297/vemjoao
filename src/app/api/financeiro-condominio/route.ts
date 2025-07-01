@@ -18,7 +18,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1')
     const limit = parseInt(url.searchParams.get('limit') || '50')
     
+    console.log('📊 API financeiro-condominio GET - Parâmetros recebidos:', {
+      masterId,
+      condominioId,
+      tipoUsuario,
+      relatorio,
+      origemSistema,
+      status,
+      tipo
+    })
+    
     if (!masterId || !tipoUsuario || !condominioId) {
+      console.log('❌ Parâmetros obrigatórios faltando:', { masterId, tipoUsuario, condominioId })
       return NextResponse.json({
         success: false,
         error: 'Master ID, tipo de usuário e condomínio são obrigatórios'
