@@ -88,6 +88,8 @@ export async function GET(request: NextRequest) {
       ]
 
       const resumo = await FinanceiroCondominio.aggregate(pipeline)
+        .hint({ master_id: 1, condominio_id: 1, ativo: 1 }) // Usar índice otimizado
+        .allowDiskUse(false) // Forçar uso de memória para consultas pequenas
       const resultado = resumo[0] || {
         total_receitas: 0,
         total_despesas: 0,
@@ -139,7 +141,7 @@ export async function GET(request: NextRequest) {
             count: { $sum: 1 }
           }
         },
-        { $sort: { total_valor: -1 } },
+        { $sort: { total_valor: -1 as const } },
         { $limit: 10 }
       ]
 
@@ -172,7 +174,7 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        { $sort: { '_id.ano': -1, '_id.mes': -1 } },
+        { $sort: { '_id.ano': -1 as const, '_id.mes': -1 as const } },
         { $limit: 12 }
       ]
 
@@ -186,14 +188,22 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
     
-    const lancamentos = await FinanceiroCondominio
-      .find(filter)
-      .sort({ data_vencimento: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
-
-    const total = await FinanceiroCondominio.countDocuments(filter)
+    // Otimização: usar hint de índice e executar consultas em paralelo
+    const [lancamentos, total] = await Promise.all([
+      FinanceiroCondominio
+        .find(filter)
+        .hint({ master_id: 1, condominio_id: 1, ativo: 1, data_vencimento: -1 }) // Usar índice otimizado
+        .sort({ data_vencimento: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      
+      FinanceiroCondominio
+        .countDocuments(filter)
+        .hint({ master_id: 1, condominio_id: 1, ativo: 1 }) // Índice para contagem rápida
+        .exec()
+    ])
 
     return NextResponse.json({
       success: true,
@@ -409,15 +419,8 @@ export async function DELETE(request: NextRequest) {
       }, { status: 403 })
     }
 
-    // Soft delete
-    const lancamento = await FinanceiroCondominio.findByIdAndUpdate(
-      id,
-      { 
-        ativo: false,
-        data_atualizacao: new Date()
-      },
-      { new: true }
-    )
+    // Hard delete - remove fisicamente do MongoDB
+    const lancamento = await FinanceiroCondominio.findByIdAndDelete(id)
 
     if (!lancamento) {
       return NextResponse.json({

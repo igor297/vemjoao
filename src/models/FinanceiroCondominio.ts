@@ -219,16 +219,17 @@ const FinanceiroCondominioSchema = new mongoose.Schema({
   }]
 }, {
   timestamps: true,
-  collection: 'financeiro_condominios'
+  collection: 'financeiro-condominios'
 })
 
-// Índices compostos para performance
-FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, data_vencimento: -1 })
-FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, status: 1 })
-FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, tipo: 1 })
-FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, categoria: 1 })
+// Índices compostos para performance otimizada
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, data_vencimento: -1 }) // Índice principal otimizado
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, status: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, tipo: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1, categoria: 1 })
+FinanceiroCondominioSchema.index({ master_id: 1, condominio_id: 1, ativo: 1 }) // Para contagens rápidas
 FinanceiroCondominioSchema.index({ origem_cpf: 1, condominio_id: 1 })
-FinanceiroCondominioSchema.index({ origem_sistema: 1, condominio_id: 1 })
+FinanceiroCondominioSchema.index({ origem_sistema: 1, condominio_id: 1, ativo: 1 })
 
 // Middleware para calcular valor total automaticamente
 FinanceiroCondominioSchema.pre('save', function(next) {
@@ -318,6 +319,39 @@ FinanceiroCondominioSchema.statics.relatorioPorCargo = function(condominioId: st
       $sort: { total_valor: -1 }
     }
   ])
+}
+
+import crypto from 'crypto';
+
+interface DadosLancamentoParaHash {
+  _id: string;
+  tipo: string;
+  categoria: string;
+  descricao: string;
+  valor: number;
+  data_vencimento: Date;
+  status: string;
+  condominio_id: string;
+  master_id: string;
+  origem_sistema?: string;
+  origem_identificacao?: string;
+}
+
+export function gerarHashSincronizacao(dados: DadosLancamentoParaHash): string {
+  const dataString = [
+    dados._id.toString(),
+    dados.tipo,
+    dados.categoria,
+    dados.descricao,
+    dados.valor.toFixed(2),
+    dados.data_vencimento.toISOString().split('T')[0],
+    dados.status,
+    dados.condominio_id.toString(),
+    dados.master_id.toString(),
+    dados.origem_sistema || '',
+    dados.origem_identificacao || ''
+  ].join('|');
+  return crypto.createHash('sha256').update(dataString).digest('hex');
 }
 
 export default mongoose.models.FinanceiroCondominio || mongoose.model('FinanceiroCondominio', FinanceiroCondominioSchema)

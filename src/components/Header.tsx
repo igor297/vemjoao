@@ -113,7 +113,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
       case 'colaborador':
         return [
           ...baseItems,
-          { icon: '💰', label: 'Financeiro', path: '/financeiro-colaborador' },
+          { icon: '💰', label: 'Financeiro', path: '/financeiro-colaboradores' },
           { icon: '📅', label: 'Eventos', path: '/eventos' }
         ]
       case 'morador':
@@ -132,7 +132,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
   const financeiroLinks = {
     master: '/financeiro-condominio',
     adm: '/financeiro-condominio',
-    colaborador: '/financeiro-colaborador',
+    colaborador: '/financeiro-colaboradores',
     morador: '/financeiro-morador'
   }
 
@@ -260,7 +260,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   <Dropdown.Menu>
                     <Dropdown.Item onClick={() => router.push('/financeiro')}>Dashboard Financeiro</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-condominio')}>Financeiro do Condomínio</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-colaborador')}>Financeiro do Colaborador</Dropdown.Item>
+                    <Dropdown.Item onClick={() => router.push('/financeiro-colaboradores')}>Financeiro do Colaborador</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-morador')}>Financeiro do Morador</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -309,7 +309,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   <Dropdown.Menu>
                     <Dropdown.Item onClick={() => router.push('/financeiro')}>Dashboard Financeiro</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-condominio')}>Financeiro do Condomínio</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-colaborador')}>Financeiro do Colaborador</Dropdown.Item>
+                    <Dropdown.Item onClick={() => router.push('/financeiro-colaboradores')}>Financeiro do Colaborador</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-morador')}>Financeiro do Morador</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -338,7 +338,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   <Dropdown.Menu>
                     <Dropdown.Item onClick={() => router.push('/financeiro')}>Dashboard Financeiro</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-condominio')}>Financeiro do Condomínio</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-colaborador')}>Financeiro do Colaborador</Dropdown.Item>
+                    <Dropdown.Item onClick={() => router.push('/financeiro-colaboradores')}>Financeiro do Colaborador</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-morador')}>Financeiro do Morador</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -377,7 +377,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   <Dropdown.Menu>
                     <Dropdown.Item onClick={() => router.push('/financeiro')}>Dashboard Financeiro</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-condominio')}>Financeiro do Condomínio</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-colaborador')}>Financeiro do Colaborador</Dropdown.Item>
+                    <Dropdown.Item onClick={() => router.push('/financeiro-colaboradores')}>Financeiro do Colaborador</Dropdown.Item>
                     <Dropdown.Item onClick={() => router.push('/financeiro-morador')}>Financeiro do Morador</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>

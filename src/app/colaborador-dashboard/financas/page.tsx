@@ -54,7 +54,7 @@ export default function ColaboradorFinancasPage() {
     try {
       setLoading(true)
       
-      const response = await fetch(`/api/financeiro-colaborador?master_id=${user.master_id}&condominio_id=${user.condominio_id}&tipo_usuario=${user.tipo}&usuario_id=${user.id}`)
+      const response = await fetch(`/api/financeiro-colaboradores?master_id=${user.master_id}&condominio_id=${user.condominio_id}&tipo_usuario=${user.tipo}&usuario_id=${user.id}`)
       const data = await response.json()
       
       if (data.success) {

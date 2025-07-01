@@ -428,40 +428,40 @@ export async function POST(request: NextRequest) {
     await novoLancamento.save()
 
     // Sincronizar com financeiro do condomínio
-    try {
-      const dadosSincronizacao = {
-        _id: novoLancamento._id.toString(),
-        tipo: 'receita' as const,
-        categoria,
-        descricao,
-        valor: parseFloat(valor),
-        data_vencimento: new Date(data_vencimento),
-        data_pagamento: novoLancamento.data_pagamento,
-        status: novoLancamento.status,
-        condominio_id: condominio_id,
-        master_id: master_id,
-        criado_por_tipo: tipo_usuario,
-        criado_por_id: usuario_id,
-        criado_por_nome,
-        observacoes,
-        recorrente: recorrente || false,
-        periodicidade: recorrente ? periodicidade : undefined,
-        mes_referencia: `${new Date(data_vencimento).getMonth() + 1}/${new Date(data_vencimento).getFullYear()}`,
-        origem_nome: morador.nome,
-        origem_identificacao: morador.cpf,
-        bloco: morador.bloco || '',
-        unidade: morador.unidade || ''
-      }
+    const dadosSincronizacao = {
+      _id: novoLancamento._id.toString(),
+      tipo: 'receita' as const,
+      categoria,
+      descricao,
+      valor: parseFloat(valor),
+      data_vencimento: new Date(data_vencimento),
+      data_pagamento: novoLancamento.data_pagamento,
+      status: novoLancamento.status,
+      condominio_id: condominio_id,
+      master_id: master_id,
+      criado_por_tipo: tipo_usuario,
+      criado_por_id: usuario_id,
+      criado_por_nome,
+      observacoes,
+      recorrente: recorrente || false,
+      periodicidade: recorrente ? periodicidade : undefined,
+      mes_referencia: `${new Date(data_vencimento).getMonth() + 1}/${new Date(data_vencimento).getFullYear()}`,
+      origem_nome: morador.nome,
+      origem_identificacao: morador.cpf,
+      bloco: morador.bloco || '',
+      unidade: morador.unidade || ''
+    }
 
-      await SincronizacaoFinanceira.sincronizarMorador(dadosSincronizacao)
-      console.log('✅ Lançamento de morador sincronizado com condomínio')
-    } catch (syncError) {
-      console.error('⚠️ Erro na sincronização, mas lançamento foi criado:', syncError)
+    const syncSuccess = await SincronizacaoFinanceira.sincronizarMorador(dadosSincronizacao);
+
+    if (!syncSuccess) {
+      console.error('⚠️ Falha crítica na sincronização do lançamento do morador.');
+      // Opcional: poderia-se reverter a criação do lançamento aqui se a sincronização for crítica
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Lançamento de morador criado com sucesso',
+      message: 'Lançamento de morador criado e sincronizado com sucesso',
       lancamento: novoLancamento
     })
 
@@ -540,6 +540,42 @@ export async function PUT(request: NextRequest) {
       { new: true, runValidators: true }
     )
 
+    // Sincronizar com financeiro do condomínio
+    if (lancamentoAtualizado) {
+      try {
+        const morador = await Morador.findById(lancamentoAtualizado.morador_id).lean();
+        if (morador) {
+          const dadosSincronizacao = {
+            _id: lancamentoAtualizado._id.toString(),
+            tipo: 'receita' as const,
+            categoria: lancamentoAtualizado.categoria,
+            descricao: lancamentoAtualizado.descricao,
+            valor: lancamentoAtualizado.valor,
+            data_vencimento: lancamentoAtualizado.data_vencimento,
+            data_pagamento: lancamentoAtualizado.data_pagamento,
+            status: lancamentoAtualizado.status,
+            condominio_id: lancamentoAtualizado.condominio_id.toString(),
+            master_id: lancamentoAtualizado.master_id.toString(),
+            criado_por_tipo: lancamentoAtualizado.criado_por_tipo,
+            criado_por_id: lancamentoAtualizado.criado_por_id.toString(),
+            criado_por_nome: lancamentoAtualizado.criado_por_nome,
+            observacoes: lancamentoAtualizado.observacoes,
+            recorrente: lancamentoAtualizado.recorrente,
+            periodicidade: lancamentoAtualizado.periodicidade,
+            mes_referencia: `${new Date(lancamentoAtualizado.data_vencimento).getMonth() + 1}/${new Date(lancamentoAtualizado.data_vencimento).getFullYear()}`,
+            origem_nome: morador.nome,
+            origem_identificacao: morador.cpf,
+            bloco: morador.bloco || '',
+            unidade: morador.unidade || ''
+          };
+          await SincronizacaoFinanceira.sincronizarMorador(dadosSincronizacao);
+          console.log('✅ Lançamento de morador atualizado e sincronizado com condomínio');
+        }
+      } catch (syncError) {
+        console.error('⚠️ Erro na sincronização da atualização, mas lançamento foi atualizado:', syncError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Lançamento atualizado com sucesso',
@@ -578,21 +614,26 @@ export async function DELETE(request: NextRequest) {
       }, { status: 403 })
     }
 
-    // Soft delete
-    const lancamento = await FinanceiroMorador.findByIdAndUpdate(
-      id,
-      { 
-        ativo: false,
-        data_atualizacao: new Date()
-      },
-      { new: true }
-    )
+    // Hard delete
+    const lancamento = await FinanceiroMorador.findByIdAndDelete(id);
 
     if (!lancamento) {
       return NextResponse.json({
         success: false,
         error: 'Lançamento não encontrado'
       }, { status: 404 })
+    }
+
+    // Remover sincronização
+    try {
+      await SincronizacaoFinanceira.removerSincronizacao(
+        'morador',
+        lancamento._id.toString(),
+        lancamento.condominio_id.toString()
+      );
+      console.log('✅ Sincronização do lançamento de morador removida');
+    } catch (syncError) {
+      console.error('⚠️ Erro ao remover a sincronização, mas lançamento foi excluído:', syncError);
     }
 
     return NextResponse.json({

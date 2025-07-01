@@ -326,14 +326,14 @@ export default function FinanceiroColaboradorPage() {
   const loadDashboard = async (user: any, colaboradorId: string) => {
     try {
       const response = await fetch(
-        `/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=resumo`
+        `/api/financeiro-colaboradores?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=resumo`
       )
       const data = await response.json()
       
       if (data.success) {
         const [categoriasResponse, fluxoResponse] = await Promise.all([
-          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=por_categoria`),
-          fetch(`/api/financeiro-colaborador?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=fluxo_mensal`)
+          fetch(`/api/financeiro-colaboradores?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=por_categoria`),
+          fetch(`/api/financeiro-colaboradores?master_id=${user.master_id || user.id}&colaborador_id=${colaboradorId}&tipo_usuario=${user.tipo}&condominio_id=${selectedCondominiumId}&relatorio=fluxo_mensal`)
         ])
 
         const categoriasData = await categoriasResponse.json()
@@ -389,7 +389,7 @@ export default function FinanceiroColaboradorPage() {
         ...(filtros.data_fim && { data_fim: filtros.data_fim })
       })
 
-      const response = await fetch(`/api/financeiro-colaborador?${params}`)
+      const response = await fetch(`/api/financeiro-colaboradores?${params}`)
       const data = await response.json()
       
       if (data.success) {
@@ -503,7 +503,7 @@ export default function FinanceiroColaboradorPage() {
         recorrente: formData.recorrente
       }
 
-      const url = '/api/financeiro-colaborador'
+      const url = '/api/financeiro-colaboradores'
       const method = editingItem ? 'PUT' : 'POST'
       
       if (editingItem) {
@@ -607,7 +607,7 @@ export default function FinanceiroColaboradorPage() {
 
     try {
       const response = await fetch(
-        `/api/financeiro-colaborador?id=${itemToDelete._id}&tipo_usuario=${currentUser?.tipo}`,
+        `/api/financeiro-colaboradores?id=${itemToDelete._id}&tipo_usuario=${currentUser?.tipo}`,
         { method: 'DELETE' }
       )
       

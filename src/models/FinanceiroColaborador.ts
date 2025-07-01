@@ -145,7 +145,8 @@ const FinanceiroColaboradorSchema: Schema = new Schema({
     default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'financeiro-colaboradores'
 })
 
 // Índices para otimização

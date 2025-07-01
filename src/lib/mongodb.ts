@@ -36,13 +36,17 @@ async function connectDB() {
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 5000, // Reduzido de 30s para 5s
+      socketTimeoutMS: 10000, // Reduzido de 45s para 10s
+      connectTimeoutMS: 5000, // Reduzido de 30s para 5s
       family: 4,
-      maxIdleTimeMS: 30000,
+      maxIdleTimeMS: 10000, // Reduzido de 30s para 10s
       retryWrites: true,
       retryReads: true,
+      // Otimizações para localhost
+      directConnection: true,
+      readPreference: 'primary' as const,
+      compressors: ['zstd', 'zlib'] as ('zstd' | 'zlib')[]
     }
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {

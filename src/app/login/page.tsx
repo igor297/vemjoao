@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap'
+import { safeJsonParse } from '@/lib/api-utils'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -38,25 +39,24 @@ export default function LoginPage() {
         })
       })
 
-      const data = await response.json()
+      const result = await safeJsonParse(response)
 
-      if (response.ok && data.success) {
-        localStorage.setItem('userData', JSON.stringify(data.user))
+      if (result.success && result.data?.success) {
+        localStorage.setItem('userData', JSON.stringify(result.data.user))
         
         // Redirecionar baseado no tipo de usuário
-        if (data.user.tipo === 'master') {
+        if (result.data.user.tipo === 'master') {
           router.push('/dashboard')
-        } else if (data.user.tipo === 'adm') {
+        } else if (result.data.user.tipo === 'adm') {
           router.push('/adm-dashboard')
         } else {
           router.push('/dashboard')
         }
       } else {
-        alert('Email ou senha incorretos')
-        setError(data.error || 'Email ou senha incorretos')
+        const errorMsg = result.error || result.data?.error || 'Email ou senha incorretos'
+        setError(errorMsg)
       }
     } catch (err) {
-      alert('Email ou senha incorretos')
       setError('Erro ao fazer login. Tente novamente.')
     } finally {
       setIsLoading(false)

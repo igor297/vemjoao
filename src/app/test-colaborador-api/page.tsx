@@ -25,7 +25,7 @@ export default function TestColaboradorAPI() {
         tipo_usuario: testUser.tipo
       })
 
-      const response = await fetch(`/api/financeiro-colaborador?${params}`)
+      const response = await fetch(`/api/financeiro-colaboradores?${params}`)
       const data = await response.json()
       
       setResult(JSON.stringify(data, null, 2))

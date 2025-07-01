@@ -1,0 +1,1 @@
+db.getCollectionNames().forEach(function(collection) { print(collection); });

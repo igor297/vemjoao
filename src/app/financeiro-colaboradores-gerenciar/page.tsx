@@ -175,7 +175,7 @@ export default function FinanceiroColaboradoresGerenciarPage() {
         usuario_id: currentUser?.id || ''
       });
       
-      const response = await fetch(`/api/financeiro-colaborador?${params.toString()}`);
+      const response = await fetch(`/api/financeiro-colaboradores?${params.toString()}`);
       const data = await response.json();
       if (data.success) {
         setFinanceiroColaborador(data.lancamentos);
@@ -251,7 +251,7 @@ export default function FinanceiroColaboradoresGerenciarPage() {
 
     try {
       const masterId = currentUser?.tipo === 'master' ? currentUser.id : currentUser?.master_id;
-      const response = await fetch('/api/financeiro-colaborador', {
+      const response = await fetch('/api/financeiro-colaboradores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

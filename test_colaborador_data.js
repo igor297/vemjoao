@@ -21,7 +21,7 @@ async function testarDadosColaborador() {
     });
     
     // 2. Verificar lançamentos de colaboradores
-    console.log('\n=== LANÇAMENTOS FINANCEIRO-COLABORADOR ===');
+    console.log('\n=== LANÇAMENTOS FINANCEIRO-COLABORADORES ===');
     const lancamentosColab = await db.collection('financeiro_colaboradors').find({
       ativo: true
     }).limit(5).toArray();

@@ -14,6 +14,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js'
+import { safeJsonParse } from '@/lib/api-utils'
 
 ChartJS.register(
   CategoryScale,
@@ -261,9 +262,11 @@ export default function FinanceiroMoradorPage() {
   const loadCondominiums = async (masterId: string) => {
     try {
       const response = await fetch(`/api/condominios?master_id=${encodeURIComponent(masterId)}`)
-      const data = await response.json()
-      if (data.success) {
-        setCondominiums(data.condominios)
+      const result = await safeJsonParse(response)
+      if (result.success && result.data?.success) {
+        setCondominiums(result.data.condominios)
+      } else {
+        console.error('Erro ao carregar condomínios:', result.error)
       }
     } catch (error) {
       console.error('Erro ao carregar condomínios:', error)
@@ -280,11 +283,13 @@ export default function FinanceiroMoradorPage() {
       
       console.log('🔍 Carregando moradores com URL:', url)
       const response = await fetch(url)
-      const data = await response.json()
+      const result = await safeJsonParse(response)
       
-      if (data.success) {
-        console.log('✅ Moradores carregados:', data.moradores.length)
-        setMoradores(data.moradores)
+      if (result.success && result.data?.success) {
+        console.log('✅ Moradores carregados:', result.data.moradores.length)
+        setMoradores(result.data.moradores)
+      } else {
+        console.error('Erro ao carregar moradores:', result.error)
       }
     } catch (error) {
       console.error('Erro ao carregar moradores:', error)
@@ -295,16 +300,16 @@ export default function FinanceiroMoradorPage() {
     try {
       console.log('🔍 Buscando dados completos do morador:', moradorId)
       const response = await fetch(`/api/moradores?id=${moradorId}`)
-      const data = await response.json()
+      const result = await safeJsonParse(response)
       
-      console.log('📋 Resposta da API:', data)
+      console.log('📋 Resposta da API:', result)
       
-      if (data.success && data.morador) {
-        console.log('✅ Morador encontrado:', data.morador.nome)
-        setSelectedMorador(data.morador)
-        return data.morador
+      if (result.success && result.data?.success && result.data.morador) {
+        console.log('✅ Morador encontrado:', result.data.morador.nome)
+        setSelectedMorador(result.data.morador)
+        return result.data.morador
       } else {
-        console.log('❌ Erro na resposta da API:', data.error)
+        console.log('❌ Erro na resposta da API:', result.error)
       }
     } catch (error) {
       console.error('❌ Erro ao carregar dados completos do morador:', error)
@@ -316,14 +321,14 @@ export default function FinanceiroMoradorPage() {
     try {
       console.log('🏢 Buscando configurações do condomínio:', condominiumId)
       const response = await fetch(`/api/condominios?id=${condominiumId}`)
-      const data = await response.json()
+      const result = await safeJsonParse(response)
       
-      if (data.success && data.condominio) {
-        console.log('✅ Configurações do condomínio carregadas:', data.condominio.nome)
-        setSelectedCondominium(data.condominio)
-        return data.condominio
+      if (result.success && result.data?.success && result.data.condominio) {
+        console.log('✅ Configurações do condomínio carregadas:', result.data.condominio.nome)
+        setSelectedCondominium(result.data.condominio)
+        return result.data.condominio
       } else {
-        console.log('❌ Erro ao carregar configurações do condomínio:', data.error)
+        console.log('❌ Erro ao carregar configurações do condomínio:', result.error)
       }
     } catch (error) {
       console.error('❌ Erro ao carregar configurações do condomínio:', error)
@@ -1276,24 +1281,12 @@ export default function FinanceiroMoradorPage() {
                                   </small>
                                 </td>
                                 <td>
-                                  <Dropdown>
-                                    <Dropdown.Toggle variant="outline-secondary" size="sm">
-                                      <i className="fas fa-ellipsis-v"></i>
-                                    </Dropdown.Toggle>
-                                    <Dropdown.Menu>
-                                      <Dropdown.Item onClick={() => handleEdit(item)}>
-                                        <i className="fas fa-edit me-2"></i>Editar
-                                      </Dropdown.Item>
-                                      <Dropdown.Item onClick={() => handleDelete(item._id)}>
-                                        <i className="fas fa-trash me-2"></i>Excluir
-                                      </Dropdown.Item>
-                                      {item.status === 'pendente' && (
-                                        <Dropdown.Item onClick={() => handleMarcarPago(item._id)}>
-                                          <i className="fas fa-check me-2"></i>Marcar como Pago
-                                        </Dropdown.Item>
-                                      )}
-                                    </Dropdown.Menu>
-                                  </Dropdown>
+                                  <Button variant="outline-primary" size="sm" onClick={() => handleEdit(item)} className="me-2">
+                                    <i className="fas fa-edit me-2"></i>Editar
+                                  </Button>
+                                  <Button variant="outline-danger" size="sm" onClick={() => handleDelete(item._id)}>
+                                    <i className="fas fa-trash me-2"></i>Excluir
+                                  </Button>
                                 </td>
                               </tr>
                             ))
