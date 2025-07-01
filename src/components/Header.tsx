@@ -119,7 +119,6 @@ export default function Header({ showLogout = true }: HeaderProps) {
       case 'morador':
         return [
           ...baseItems,
-          { icon: '👤', label: 'Perfil', path: '/morador-dashboard' },
           { icon: '📅', label: 'Eventos', path: '/eventos' },
           { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' }
         ]
@@ -348,16 +347,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
           
           {userType === 'morador' && (
             <>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
-                  onClick={() => router.push('/morador-dashboard')}
-                  className="ms-2"
-                >
-                  Meu Perfil
-                </Button>
-              </Nav.Item>
+              
               <Nav.Item>
                 <Button 
                   variant="outline-light" 
@@ -369,22 +359,8 @@ export default function Header({ showLogout = true }: HeaderProps) {
                 </Button>
               </Nav.Item>
               <Nav.Item>
-                {/* Menu suspenso para Financeiro */}
-                <Dropdown className="ms-2">
-                  <Dropdown.Toggle variant="outline-light" size="sm" id="dropdown-financeiro">
-                    💰 Financeiro
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu>
-                    <Dropdown.Item onClick={() => router.push('/financeiro')}>Dashboard Financeiro</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-condominio')}>Financeiro do Condomínio</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-colaboradores')}>Financeiro do Colaborador</Dropdown.Item>
-                    <Dropdown.Item onClick={() => router.push('/financeiro-morador')}>Financeiro do Morador</Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              </Nav.Item>
-              <Nav.Item>
                 <Button 
-                  variant="outline-success" 
+                  variant="outline-light" 
                   size="sm"
                   onClick={() => router.push('/portal-pagamento')}
                   className="ms-2"
@@ -400,7 +376,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                     onClick={() => router.push('/meu-inquilino')}
                     className="ms-2"
                   >
-                    Meus Inquilinos
+                    Meu Inquilino
                   </Button>
                 </Nav.Item>
               )}
