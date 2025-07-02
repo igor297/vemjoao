@@ -282,12 +282,6 @@ export default function MoradorDashboardPage() {
                 </>
               )}
 
-              <Alert variant="info" className="mt-4">
-                <Alert.Heading>🏠 Área do Morador</Alert.Heading>
-                <p className="mb-0">
-                  Bem-vindo ao seu painel pessoal! Aqui você pode acessar informações específicas da sua unidade e do condomínio.
-                </p>
-              </Alert>
             </Col>
           </Row>
         </Container>
