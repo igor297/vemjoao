@@ -93,7 +93,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
   const fetchDependentes = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/dependentes?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       

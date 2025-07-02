@@ -63,7 +63,7 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
   const fetchAnimais = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/animais?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       

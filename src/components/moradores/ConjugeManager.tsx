@@ -61,7 +61,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
   const fetchConjuges = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/conjuges?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       
