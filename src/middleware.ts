@@ -31,6 +31,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Redirecionar inquilinos para o dashboard de morador
+  if (user && user.tipo === 'inquilino' && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/')) {
+    return NextResponse.redirect(new URL('/morador-dashboard', request.url));
+  }
+
   return NextResponse.next()
 }
 

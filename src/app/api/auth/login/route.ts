@@ -208,6 +208,8 @@ export async function POST(request: NextRequest) {
         }
       }
       
+      const redirectTo = (moradorUser.tipo === 'inquilino' || moradorUser.tipo === 'proprietario') ? '/morador-dashboard' : undefined;
+
       return NextResponse.json({
         success: true,
         user: {
@@ -228,7 +230,8 @@ export async function POST(request: NextRequest) {
           isAdm: false,
           isColaborador: false,
           isMorador: true
-        }
+        },
+        redirectTo
       })
     }
     

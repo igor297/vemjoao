@@ -44,8 +44,10 @@ export default function LoginPage() {
       if (result.success && result.data?.success) {
         localStorage.setItem('userData', JSON.stringify(result.data.user))
         
-        // Redirecionar baseado no tipo de usuário
-        if (result.data.user.tipo === 'master') {
+        // Redirecionar baseado no campo redirectTo ou no tipo de usuário
+        if (result.data.redirectTo) {
+          router.push(result.data.redirectTo)
+        } else if (result.data.user.tipo === 'master') {
           router.push('/dashboard')
         } else if (result.data.user.tipo === 'adm') {
           router.push('/adm-dashboard')
