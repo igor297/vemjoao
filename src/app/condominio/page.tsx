@@ -95,6 +95,12 @@ export default function CondominioPage() {
   const [selectedCondominioForContas, setSelectedCondominioForContas] = useState<string>('')
   const [loadingConta, setLoadingConta] = useState(false)
   
+  // Estados para configuração de gateways
+  const [showGatewaysModal, setShowGatewaysModal] = useState(false)
+  const [selectedCondominioForGateways, setSelectedCondominioForGateways] = useState<string>('')
+  const [configuracaoFinanceira, setConfiguracaoFinanceira] = useState<any>(null)
+  const [loadingGateways, setLoadingGateways] = useState(false)
+  
   // Formulário de conta bancária
   const [contaFormData, setContaFormData] = useState({
     nome_conta: '',
@@ -664,6 +670,66 @@ export default function CondominioPage() {
     loadStatusPagamentos(condominioId)
   }
 
+  // Funções para configuração de gateways
+  const loadConfiguracaoFinanceira = async (condominioId: string) => {
+    try {
+      setLoadingGateways(true)
+      const response = await fetch(`/api/configuracao-financeira?condominio_id=${condominioId}&master_id=${currentUser?.id}&tipo_usuario=master`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setConfiguracaoFinanceira(data.configuracao)
+      } else {
+        showAlert('danger', data.error || 'Erro ao carregar configuração financeira')
+      }
+    } catch (error) {
+      showAlert('danger', 'Erro ao carregar configuração financeira')
+    } finally {
+      setLoadingGateways(false)
+    }
+  }
+
+  const handleConfigureGateways = (condominioId: string) => {
+    setSelectedCondominioForGateways(condominioId)
+    setShowGatewaysModal(true)
+    loadConfiguracaoFinanceira(condominioId)
+  }
+
+  const toggleGateway = async (gateway: string, ativo: boolean) => {
+    try {
+      const updatedConfig = {
+        ...configuracaoFinanceira,
+        [gateway]: {
+          ...configuracaoFinanceira[gateway],
+          ativo: ativo
+        }
+      }
+
+      const response = await fetch('/api/configuracao-financeira', {
+        method: configuracaoFinanceira._id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updatedConfig,
+          condominio_id: selectedCondominioForGateways,
+          master_id: currentUser?.id,
+          criado_por_id: currentUser?.id,
+          criado_por_nome: currentUser?.nome || currentUser?.email
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        showAlert('success', `${gateway} ${ativo ? 'ativado' : 'desativado'} com sucesso!`)
+        loadConfiguracaoFinanceira(selectedCondominioForGateways)
+      } else {
+        showAlert('danger', data.error || 'Erro ao atualizar gateway')
+      }
+    } catch (error) {
+      showAlert('danger', 'Erro ao atualizar gateway')
+    }
+  }
+
   return (
     <>
       <Container fluid className="py-4">
@@ -751,6 +817,13 @@ export default function CondominioPage() {
                                 onClick={() => handleViewContas(cond._id!)}
                               >
                                 🏦 Contas Bancárias
+                              </Button>
+                              <Button 
+                                variant="outline-warning" 
+                                size="sm"
+                                onClick={() => handleConfigureGateways(cond._id!)}
+                              >
+                                ⚙️ Configurar Cobradores
                               </Button>
                               <Button 
                                 variant="outline-danger" 
@@ -1799,6 +1872,172 @@ export default function CondominioPage() {
               }}
             >
               {loadingConta ? 'Salvando...' : (editingConta ? '💾 Atualizar Conta' : '💾 Salvar Conta')}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal de Configuração de Gateways */}
+        <Modal show={showGatewaysModal} onHide={() => setShowGatewaysModal(false)} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>⚙️ Configurar Cobradores de Pagamento</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 className="mb-0">Condomínio Selecionado</h6>
+                <small className="text-muted">
+                  {condominios?.find(c => c._id === selectedCondominioForGateways)?.nome || 'N/A'}
+                </small>
+              </div>
+            </div>
+
+            {loadingGateways ? (
+              <Alert variant="info" className="text-center">
+                <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                Carregando configurações...
+              </Alert>
+            ) : configuracaoFinanceira ? (
+              <div className="space-y-4">
+                {/* Mercado Pago */}
+                <Card className="mb-3">
+                  <Card.Header className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <div className="me-3">
+                        <img 
+                          src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzAwOUVFMyIvPgo8cGF0aCBkPSJNMTIgMTZIMjhWMjRIMTJWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" 
+                          alt="Mercado Pago" 
+                          width="40" 
+                          height="40" 
+                        />
+                      </div>
+                      <div>
+                        <h6 className="mb-0">Mercado Pago</h6>
+                        <small className="text-muted">Gateway de pagamento com PIX, Boleto e Cartão</small>
+                      </div>
+                    </div>
+                    <Form.Check
+                      type="switch"
+                      id="mercado-pago-switch"
+                      checked={configuracaoFinanceira.mercado_pago?.ativo || false}
+                      onChange={(e) => toggleGateway('mercado_pago', e.target.checked)}
+                    />
+                  </Card.Header>
+                  {configuracaoFinanceira.mercado_pago?.ativo && (
+                    <Card.Body>
+                      <div className="row">
+                        <div className="col-md-6">
+                          <small><strong>Taxa PIX:</strong> {configuracaoFinanceira.mercado_pago.taxa_pix || 0}%</small>
+                        </div>
+                        <div className="col-md-6">
+                          <small><strong>Taxa Boleto:</strong> {configuracaoFinanceira.mercado_pago.taxa_boleto || 0}%</small>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  )}
+                </Card>
+
+                {/* Stone */}
+                <Card className="mb-3">
+                  <Card.Header className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <div className="me-3">
+                        <div className="bg-success rounded d-flex align-items-center justify-content-center" style={{width: '40px', height: '40px'}}>
+                          <span className="text-white fw-bold">ST</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h6 className="mb-0">Stone</h6>
+                        <small className="text-muted">Gateway especializado em cartões</small>
+                      </div>
+                    </div>
+                    <Form.Check
+                      type="switch"
+                      id="stone-switch"
+                      checked={configuracaoFinanceira.stone?.ativo || false}
+                      onChange={(e) => toggleGateway('stone', e.target.checked)}
+                    />
+                  </Card.Header>
+                  {configuracaoFinanceira.stone?.ativo && (
+                    <Card.Body>
+                      <div className="row">
+                        <div className="col-md-6">
+                          <small><strong>Taxa Cartão:</strong> {configuracaoFinanceira.stone.taxa_cartao_credito || 0}%</small>
+                        </div>
+                        <div className="col-md-6">
+                          <small><strong>Taxa Débito:</strong> {configuracaoFinanceira.stone.taxa_cartao_debito || 0}%</small>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  )}
+                </Card>
+
+                {/* PagSeguro */}
+                <Card className="mb-3">
+                  <Card.Header className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                      <div className="me-3">
+                        <div className="bg-warning rounded d-flex align-items-center justify-content-center" style={{width: '40px', height: '40px'}}>
+                          <span className="text-white fw-bold">PS</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h6 className="mb-0">PagSeguro</h6>
+                        <small className="text-muted">Gateway com ampla aceitação de métodos</small>
+                      </div>
+                    </div>
+                    <Form.Check
+                      type="switch"
+                      id="pagseguro-switch"
+                      checked={configuracaoFinanceira.pagseguro?.ativo || false}
+                      onChange={(e) => toggleGateway('pagseguro', e.target.checked)}
+                    />
+                  </Card.Header>
+                  {configuracaoFinanceira.pagseguro?.ativo && (
+                    <Card.Body>
+                      <div className="row">
+                        <div className="col-md-6">
+                          <small><strong>Taxa PIX:</strong> {configuracaoFinanceira.pagseguro.taxa_pix || 0}%</small>
+                        </div>
+                        <div className="col-md-6">
+                          <small><strong>Taxa Boleto:</strong> {configuracaoFinanceira.pagseguro.taxa_boleto || 0}%</small>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  )}
+                </Card>
+
+                <Alert variant="info" className="mt-3">
+                  <Alert.Heading>ℹ️ Como funciona</Alert.Heading>
+                  <p className="mb-2">
+                    <strong>Ative os gateways</strong> que deseja usar para processar pagamentos.
+                  </p>
+                  <ul className="mb-2">
+                    <li><strong>Mercado Pago:</strong> Ideal para PIX e pagamentos rápidos</li>
+                    <li><strong>Stone:</strong> Melhor para processamento de cartões</li>
+                    <li><strong>PagSeguro:</strong> Opção versátil com múltiplos métodos</li>
+                  </ul>
+                  <p className="mb-0">
+                    <small>O sistema escolherá automaticamente o gateway mais econômico para cada transação.</small>
+                  </p>
+                </Alert>
+              </div>
+            ) : (
+              <Alert variant="warning" className="text-center">
+                <h6>⚠️ Configuração não encontrada</h6>
+                <p className="mb-2">Ainda não há configuração financeira para este condomínio.</p>
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  onClick={() => loadConfiguracaoFinanceira(selectedCondominioForGateways)}
+                >
+                  🔄 Carregar Configuração
+                </Button>
+              </Alert>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowGatewaysModal(false)}>
+              Fechar
             </Button>
           </Modal.Footer>
         </Modal>

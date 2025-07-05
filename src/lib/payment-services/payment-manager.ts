@@ -1,28 +1,49 @@
 import { IConfiguracaoFinanceira } from '@/models/ConfiguracaoFinanceira'
-import { MercadoPagoService, BoletoData as MPBoletoData, PixData as MPPixData, CartaoData as MPCartaoData } from './mercado-pago'
-import { StoneService, StoneBoletoData, StonePixData, StoneCartaoData } from './stone'
-import { PagSeguroService, PagSeguroBoletoData, PagSeguroPixData, PagSeguroCartaoData } from './pagseguro'
+import { MercadoPagoService, PixData, BoletoData, CartaoData, PaymentResponse } from './mercado-pago'
 
-export type PaymentProvider = 'mercado_pago' | 'stone' | 'pagseguro'
-export type PaymentMethod = 'boleto' | 'pix' | 'cartao_debito' | 'cartao_credito'
-
-export interface UnifiedBoletoData {
+export interface UnifiedPixData {
+  condominio_id: string
+  master_id: string
   valor: number
-  vencimento: Date
   descricao: string
   referencia: string
+  chave_pix: string
+  expiracao_minutos?: number
   pagador: {
     nome: string
-    documento: string
     email: string
-    telefone?: string
+    telefone: string
+    documento: string
     endereco: {
+      cep: string
       logradouro: string
       numero: string
       bairro: string
       cidade: string
       uf: string
+    }
+  }
+}
+
+export interface UnifiedBoletoData {
+  condominio_id: string
+  master_id: string
+  valor: number
+  descricao: string
+  referencia: string
+  vencimento: Date
+  pagador: {
+    nome: string
+    email: string
+    telefone: string
+    documento: string
+    endereco: {
       cep: string
+      logradouro: string
+      numero: string
+      bairro: string
+      cidade: string
+      uf: string
     }
   }
   beneficiario: {
@@ -32,517 +53,121 @@ export interface UnifiedBoletoData {
   instrucoes: string[]
 }
 
-export interface UnifiedPixData {
-  valor: number
-  descricao: string
-  referencia: string
-  expiracao_minutos?: number
-  pagador: {
-    nome: string
-    documento: string
-    email: string
-  }
-}
-
 export interface UnifiedCartaoData {
+  condominio_id: string
+  master_id: string
   valor: number
   descricao: string
   referencia: string
+  token_cartao: string
   parcelas: number
   pagador: {
     nome: string
-    documento: string
     email: string
-    telefone?: string
-    endereco?: {
+    telefone: string
+    documento: string
+    endereco: {
+      cep: string
       logradouro: string
       numero: string
       bairro: string
       cidade: string
       uf: string
-      cep: string
     }
   }
-  cartao: {
-    numero?: string
-    cvv?: string
-    validade_mes?: string
-    validade_ano?: string
-    nome_portador?: string
-    token?: string
-    hash?: string
-  }
-}
-
-export interface UnifiedPaymentResponse {
-  success: boolean
-  provider: PaymentProvider
-  payment_id?: string
-  transaction_id?: string
-  qr_code?: string
-  qr_code_base64?: string
-  boleto_url?: string
-  linha_digitavel?: string
-  link_pagamento?: string
-  status?: string
-  error?: string
-  taxa_aplicada?: number
-  valor_original: number
-  valor_final?: number
-  metodo_pagamento: PaymentMethod
-}
-
-export interface PaymentStatusResponse {
-  success: boolean
-  status: string
-  valor: number
-  data_criacao: string
-  data_aprovacao?: string
-  provider: PaymentProvider
-  error?: string
 }
 
 export class PaymentManager {
-  private configuracao: IConfiguracaoFinanceira
-  private mercadoPago?: MercadoPagoService
-  private stone?: StoneService
-  private pagseguro?: PagSeguroService
+  private mercadoPagoService: MercadoPagoService
 
   constructor(configuracao: IConfiguracaoFinanceira) {
-    this.configuracao = configuracao
-    this.initializeServices()
+    this.mercadoPagoService = new MercadoPagoService(configuracao)
   }
 
-  private initializeServices() {
-    if (this.configuracao.mercado_pago.ativo) {
-      this.mercadoPago = new MercadoPagoService(this.configuracao)
-    }
+  async gerarPix(data: UnifiedPixData): Promise<PaymentResponse> {
+    console.log('<� [PaymentManager] Gerando PIX')
     
-    if (this.configuracao.stone.ativo) {
-      this.stone = new StoneService(this.configuracao)
-    }
-    
-    if (this.configuracao.pagseguro.ativo) {
-      this.pagseguro = new PagSeguroService(this.configuracao)
-    }
-  }
-
-  getActiveProviders(): PaymentProvider[] {
-    const providers: PaymentProvider[] = []
-    
-    if (this.configuracao.mercado_pago.ativo && this.mercadoPago?.isConfigured()) {
-      providers.push('mercado_pago')
-    }
-    
-    if (this.configuracao.stone.ativo && this.stone?.isConfigured()) {
-      providers.push('stone')
-    }
-    
-    if (this.configuracao.pagseguro.ativo && this.pagseguro?.isConfigured()) {
-      providers.push('pagseguro')
-    }
-    
-    return providers
-  }
-
-  isMethodAvailable(provider: PaymentProvider, method: PaymentMethod): boolean {
-    const activeProviders = this.getActiveProviders()
-    return activeProviders.includes(provider)
-  }
-
-  getTaxasPorProvider(provider: PaymentProvider) {
-    switch (provider) {
-      case 'mercado_pago':
-        return this.mercadoPago?.getTaxas()
-      case 'stone':
-        return this.stone?.getTaxas()
-      case 'pagseguro':
-        return this.pagseguro?.getTaxas()
-      default:
-        return null
-    }
-  }
-
-  calcularMelhorProvider(valor: number, metodo: PaymentMethod): { provider: PaymentProvider, taxaAplicada: number, valorFinal: number } | null {
-    const activeProviders = this.getActiveProviders()
-    let melhorOpcao: { provider: PaymentProvider, taxaAplicada: number, valorFinal: number } | null = null
-    
-    for (const provider of activeProviders) {
-      const taxas = this.getTaxasPorProvider(provider)
-      if (!taxas) continue
-      
-      const configProvider = this.configuracao[provider]
-      const taxaConfig = taxas[metodo] || 0
-      
-      let taxaAplicada: number
-      if (configProvider.tipo_taxa === 'percentual') {
-        taxaAplicada = valor * (taxaConfig / 100)
-      } else {
-        taxaAplicada = taxaConfig
-      }
-      
-      const valorFinal = valor + taxaAplicada
-      
-      if (!melhorOpcao || valorFinal < melhorOpcao.valorFinal) {
-        melhorOpcao = { provider, taxaAplicada, valorFinal }
+    const pixData: PixData = {
+      valor: data.valor,
+      descricao: data.descricao,
+      chave_pix: data.chave_pix,
+      expiracao_minutos: data.expiracao_minutos || 30,
+      pagador: {
+        nome: data.pagador.nome,
+        documento: data.pagador.documento,
+        email: data.pagador.email
       }
     }
-    
-    return melhorOpcao
+
+    return await this.mercadoPagoService.gerarPix(pixData)
   }
 
-  async gerarBoleto(data: UnifiedBoletoData, provider?: PaymentProvider): Promise<UnifiedPaymentResponse> {
-    try {
-      // Se não especificado, escolhe o melhor provider
-      const selectedProvider = provider || this.calcularMelhorProvider(data.valor, 'boleto')?.provider
-      
-      if (!selectedProvider) {
-        return {
-          success: false,
-          error: 'Nenhum provedor disponível para boleto',
-          provider: 'mercado_pago',
-          valor_original: data.valor,
-          metodo_pagamento: 'boleto'
+  async gerarBoleto(data: UnifiedBoletoData): Promise<PaymentResponse> {
+    console.log('<� [PaymentManager] Gerando Boleto')
+    
+    const boletoData: BoletoData = {
+      valor: data.valor,
+      vencimento: data.vencimento,
+      descricao: data.descricao,
+      pagador: {
+        nome: data.pagador.nome,
+        documento: data.pagador.documento,
+        email: data.pagador.email,
+        endereco: {
+          logradouro: data.pagador.endereco.logradouro,
+          numero: data.pagador.endereco.numero,
+          bairro: data.pagador.endereco.bairro,
+          cidade: data.pagador.endereco.cidade,
+          uf: data.pagador.endereco.uf,
+          cep: data.pagador.endereco.cep
         }
-      }
-
-      let result: any
-
-      switch (selectedProvider) {
-        case 'mercado_pago':
-          if (!this.mercadoPago) throw new Error('Mercado Pago não inicializado')
-          
-          const mpData: MPBoletoData = {
-            valor: data.valor,
-            vencimento: data.vencimento,
-            descricao: data.descricao,
-            pagador: data.pagador,
-            beneficiario: data.beneficiario,
-            instrucoes: data.instrucoes
-          }
-          result = await this.mercadoPago.gerarBoleto(mpData)
-          break
-
-        case 'stone':
-          if (!this.stone) throw new Error('Stone não inicializado')
-          
-          const stoneData: StoneBoletoData = {
-            valor: data.valor,
-            vencimento: data.vencimento,
-            descricao: data.descricao,
-            pagador: data.pagador,
-            beneficiario: {
-              ...data.beneficiario,
-              conta_banco: '12345',
-              agencia: '1234'
-            },
-            instrucoes: data.instrucoes
-          }
-          result = await this.stone.gerarBoleto(stoneData)
-          break
-
-        case 'pagseguro':
-          if (!this.pagseguro) throw new Error('PagSeguro não inicializado')
-          
-          const psData: PagSeguroBoletoData = {
-            valor: data.valor,
-            vencimento: data.vencimento,
-            descricao: data.descricao,
-            pagador: {
-              ...data.pagador,
-              telefone: data.pagador.telefone || '11999999999'
-            },
-            instrucoes: data.instrucoes
-          }
-          result = await this.pagseguro.gerarBoleto(psData)
-          break
-
-        default:
-          throw new Error('Provider não suportado')
-      }
-
-      return {
-        ...result,
-        provider: selectedProvider,
-        valor_original: data.valor,
-        metodo_pagamento: 'boleto'
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider: provider || 'mercado_pago',
-        valor_original: data.valor,
-        metodo_pagamento: 'boleto'
-      }
+      },
+      beneficiario: data.beneficiario,
+      instrucoes: data.instrucoes || [
+        'Pagamento referente a taxas condominiais',
+        'N�o aceitar pagamento em cheque',
+        'N�o receber ap�s o vencimento'
+      ]
     }
+
+    return await this.mercadoPagoService.gerarBoleto(boletoData)
   }
 
-  async gerarPix(data: UnifiedPixData, provider?: PaymentProvider): Promise<UnifiedPaymentResponse> {
-    try {
-      const selectedProvider = provider || this.calcularMelhorProvider(data.valor, 'pix')?.provider
-      
-      if (!selectedProvider) {
-        return {
-          success: false,
-          error: 'Nenhum provedor disponível para PIX',
-          provider: 'mercado_pago',
-          valor_original: data.valor,
-          metodo_pagamento: 'pix'
-        }
-      }
-
-      let result: any
-
-      switch (selectedProvider) {
-        case 'mercado_pago':
-          if (!this.mercadoPago) throw new Error('Mercado Pago não inicializado')
-          
-          const mpData: MPPixData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            chave_pix: 'auto',
-            expiracao_minutos: data.expiracao_minutos,
-            pagador: data.pagador
-          }
-          result = await this.mercadoPago.gerarPix(mpData)
-          break
-
-        case 'stone':
-          if (!this.stone) throw new Error('Stone não inicializado')
-          
-          const stoneData: StonePixData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            chave_pix: 'auto',
-            expiracao_minutos: data.expiracao_minutos,
-            pagador: data.pagador
-          }
-          result = await this.stone.gerarPix(stoneData)
-          break
-
-        case 'pagseguro':
-          if (!this.pagseguro) throw new Error('PagSeguro não inicializado')
-          
-          const psData: PagSeguroPixData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            expiracao_segundos: (data.expiracao_minutos || 60) * 60,
-            pagador: data.pagador
-          }
-          result = await this.pagseguro.gerarPix(psData)
-          break
-
-        default:
-          throw new Error('Provider não suportado')
-      }
-
-      return {
-        ...result,
-        provider: selectedProvider,
-        valor_original: data.valor,
-        metodo_pagamento: 'pix'
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider: provider || 'mercado_pago',
-        valor_original: data.valor,
-        metodo_pagamento: 'pix'
+  async processarCartao(data: UnifiedCartaoData, tipo: 'debito' | 'credito'): Promise<PaymentResponse> {
+    console.log('<� [PaymentManager] Processando Cart�o:', tipo)
+    
+    const cartaoData: CartaoData = {
+      valor: data.valor,
+      descricao: data.descricao,
+      token_cartao: data.token_cartao,
+      parcelas: data.parcelas,
+      pagador: {
+        nome: data.pagador.nome,
+        documento: data.pagador.documento,
+        email: data.pagador.email
       }
     }
+
+    return await this.mercadoPagoService.processarCartao(cartaoData, tipo)
   }
 
-  async processarCartao(data: UnifiedCartaoData, tipo: 'debito' | 'credito', provider?: PaymentProvider): Promise<UnifiedPaymentResponse> {
-    try {
-      const metodo = tipo === 'debito' ? 'cartao_debito' : 'cartao_credito'
-      const selectedProvider = provider || this.calcularMelhorProvider(data.valor, metodo)?.provider
-      
-      if (!selectedProvider) {
-        return {
-          success: false,
-          error: `Nenhum provedor disponível para cartão de ${tipo}`,
-          provider: 'mercado_pago',
-          valor_original: data.valor,
-          metodo_pagamento: metodo
-        }
-      }
-
-      let result: any
-
-      switch (selectedProvider) {
-        case 'mercado_pago':
-          if (!this.mercadoPago) throw new Error('Mercado Pago não inicializado')
-          
-          const mpData: MPCartaoData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            token_cartao: data.cartao.token || '',
-            parcelas: data.parcelas,
-            pagador: data.pagador
-          }
-          result = await this.mercadoPago.processarCartao(mpData, tipo)
-          break
-
-        case 'stone':
-          if (!this.stone) throw new Error('Stone não inicializado')
-          
-          const stoneData: StoneCartaoData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            numero_cartao: data.cartao.numero || '',
-            cvv: data.cartao.cvv || '',
-            validade_mes: data.cartao.validade_mes || '',
-            validade_ano: data.cartao.validade_ano || '',
-            nome_portador: data.cartao.nome_portador || data.pagador.nome,
-            documento_portador: data.pagador.documento,
-            parcelas: data.parcelas
-          }
-          result = await this.stone.processarCartao(stoneData, tipo)
-          break
-
-        case 'pagseguro':
-          if (!this.pagseguro) throw new Error('PagSeguro não inicializado')
-          
-          const psData: PagSeguroCartaoData = {
-            valor: data.valor,
-            descricao: data.descricao,
-            hash_cartao: data.cartao.hash || '',
-            parcelas: data.parcelas,
-            pagador: {
-              ...data.pagador,
-              telefone: data.pagador.telefone || '11999999999',
-              endereco: data.pagador.endereco || {
-                logradouro: '',
-                numero: '',
-                bairro: '',
-                cidade: '',
-                uf: '',
-                cep: ''
-              }
-            }
-          }
-          result = await this.pagseguro.processarCartao(psData, tipo)
-          break
-
-        default:
-          throw new Error('Provider não suportado')
-      }
-
-      return {
-        ...result,
-        provider: selectedProvider,
-        valor_original: data.valor,
-        metodo_pagamento: metodo
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider: provider || 'mercado_pago',
-        valor_original: data.valor,
-        metodo_pagamento: tipo === 'debito' ? 'cartao_debito' : 'cartao_credito'
-      }
-    }
+  async consultarPagamento(paymentId: string) {
+    return await this.mercadoPagoService.consultarPagamento(paymentId)
   }
 
-  async consultarStatus(paymentId: string, provider: PaymentProvider): Promise<PaymentStatusResponse> {
-    try {
-      let result: any
-
-      switch (provider) {
-        case 'mercado_pago':
-          if (!this.mercadoPago) throw new Error('Mercado Pago não inicializado')
-          result = await this.mercadoPago.consultarPagamento(paymentId)
-          break
-
-        case 'stone':
-          if (!this.stone) throw new Error('Stone não inicializado')
-          result = await this.stone.consultarTransacao(paymentId)
-          break
-
-        case 'pagseguro':
-          if (!this.pagseguro) throw new Error('PagSeguro não inicializado')
-          result = await this.pagseguro.consultarTransacao(paymentId)
-          break
-
-        default:
-          throw new Error('Provider não suportado')
-      }
-
-      return {
-        ...result,
-        provider
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        status: 'error',
-        valor: 0,
-        data_criacao: '',
-        provider,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
-      }
-    }
+  async estornarPagamento(paymentId: string) {
+    return await this.mercadoPagoService.estornarPagamento(paymentId)
   }
 
-  async estornarPagamento(paymentId: string, provider: PaymentProvider, valor?: number) {
-    try {
-      let result: any
-
-      switch (provider) {
-        case 'mercado_pago':
-          if (!this.mercadoPago) throw new Error('Mercado Pago não inicializado')
-          result = await this.mercadoPago.estornarPagamento(paymentId)
-          break
-
-        case 'stone':
-          if (!this.stone) throw new Error('Stone não inicializado')
-          result = await this.stone.estornarTransacao(paymentId, valor)
-          break
-
-        case 'pagseguro':
-          if (!this.pagseguro) throw new Error('PagSeguro não inicializado')
-          result = await this.pagseguro.estornarTransacao(paymentId)
-          break
-
-        default:
-          throw new Error('Provider não suportado')
-      }
-
-      return {
-        ...result,
-        provider
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider
-      }
-    }
+  isConfigured(): boolean {
+    return this.mercadoPagoService.isConfigured()
   }
 
-  getResumoConfiguracao() {
-    const activeProviders = this.getActiveProviders()
-    const resumo = {
-      cobranca_automatica_ativa: this.configuracao.cobranca_automatica_ativa,
-      providers_ativos: activeProviders.length,
-      providers_disponiveis: activeProviders,
-      configuracoes_gerais: this.configuracao.configuracoes_gerais,
-      taxas_por_provider: {} as any
-    }
+  getPublicKey(): string {
+    return this.mercadoPagoService.getPublicKey()
+  }
 
-    activeProviders.forEach(provider => {
-      resumo.taxas_por_provider[provider] = this.getTaxasPorProvider(provider)
-    })
-
-    return resumo
+  getTaxas() {
+    return this.mercadoPagoService.getTaxas()
   }
 }

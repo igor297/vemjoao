@@ -142,24 +142,41 @@ export async function POST(request: NextRequest) {
   try {
     const contaData = await request.json()
     
+    // Log dos dados recebidos para debug
+    console.log('Dados recebidos para criação de conta:', {
+      ...contaData,
+      titular_documento: contaData.titular_documento ? '***MASKED***' : undefined
+    })
+    
     // Validação básica
     const requiredFields = [
       'condominio_id', 'master_id', 'nome_conta', 'banco', 'codigo_banco',
-      'agencia', 'numero_conta', 'digito_conta', 'titular_nome', 'titular_documento'
+      'agencia', 'numero_conta', 'digito_conta', 'titular_nome', 'titular_documento',
+      'criado_por_id', 'criado_por_nome'
     ]
     
+    const missingFields = []
     for (const field of requiredFields) {
-      if (!contaData[field]) {
-        return NextResponse.json(
-          { error: `Campo ${field} é obrigatório` },
-          { status: 400 }
-        )
+      if (!contaData[field] || (typeof contaData[field] === 'string' && contaData[field].trim() === '')) {
+        missingFields.push(field)
       }
+    }
+    
+    if (missingFields.length > 0) {
+      console.log('Campos obrigatórios faltando:', missingFields)
+      return NextResponse.json(
+        { 
+          error: `Campos obrigatórios faltando: ${missingFields.join(', ')}`,
+          missing_fields: missingFields
+        },
+        { status: 400 }
+      )
     }
 
     // Validar dados da conta
     const validacao = validarContaBancaria(contaData)
     if (!validacao.valida) {
+      console.log('Erros de validação:', validacao.erros)
       return NextResponse.json(
         { error: 'Dados inválidos', detalhes: validacao.erros },
         { status: 400 }
@@ -207,9 +224,16 @@ export async function POST(request: NextRequest) {
       aceita_boleto: contaData.aceita_boleto !== false,
       aceita_pix: contaData.aceita_pix !== false,
       aceita_ted_doc: contaData.aceita_ted_doc !== false,
+      tipo_conta: contaData.tipo_conta || 'corrente',
+      titular_tipo: contaData.titular_tipo || (contaData.titular_documento?.replace(/\D/g, '').length === 11 ? 'cpf' : 'cnpj'),
       data_criacao: new Date(),
       data_atualizacao: new Date(),
-      ativo: true
+      ativo: true,
+      // Garantir que os campos obrigatórios estejam presentes
+      criado_por_id: new mongoose.Types.ObjectId(contaData.criado_por_id),
+      criado_por_nome: contaData.criado_por_nome,
+      condominio_id: new mongoose.Types.ObjectId(contaData.condominio_id),
+      master_id: new mongoose.Types.ObjectId(contaData.master_id)
     }
 
     // Se esta conta será principal, desativar outras principais

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       filter.condominio_id = condominioId
     }
     
-    const configuracao = await configuracoes.findOne(filter)
+    const configuracao = await ConfiguracaoFinanceira.findOne(filter)
     
     // Se não existe configuração, retornar configuração padrão
     if (!configuracao && condominioId) {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB()
     // Verificar se já existe configuração para este condomínio
-    const configExistente = await configuracoes.findOne({
+    const configExistente = await ConfiguracaoFinanceira.findOne({
       condominio_id: configData.condominio_id,
       master_id: configData.master_id,
       ativo: true
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Gerar ID único
-    const lastConfig = await configuracoes.findOne(
+    const lastConfig = await ConfiguracaoFinanceira.findOne(
       {},
       { sort: { data_criacao: -1 } }
     )
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       ativo: true
     }
 
-    const result = await configuracoes.insertOne(newConfig)
+    const result = await ConfiguracaoFinanceira.create(newConfig)
     
     return NextResponse.json({
       success: true,
@@ -198,7 +198,7 @@ export async function PUT(request: NextRequest) {
 
     await connectDB()
     // Buscar configuração existente
-    const configExistente = await configuracoes.findOne({ _id: new mongoose.Types.ObjectId(_id) })
+    const configExistente = await ConfiguracaoFinanceira.findOne({ _id: new mongoose.Types.ObjectId(_id) })
     if (!configExistente) {
       return NextResponse.json(
         { error: 'Configuração não encontrada' },
@@ -211,7 +211,7 @@ export async function PUT(request: NextRequest) {
       data_atualizacao: new Date()
     }
 
-    const result = await configuracoes.updateOne(
+    const result = await ConfiguracaoFinanceira.updateOne(
       { _id: new mongoose.Types.ObjectId(_id) },
       { $set: updateData }
     )

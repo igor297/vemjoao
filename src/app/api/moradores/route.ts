@@ -363,13 +363,25 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // Limpar campos ObjectId vazios
+    const cleanObjectIdField = (field) => {
+      if (!field || field === '' || field === 'null' || field === 'undefined') {
+        return undefined
+      }
+      return field
+    }
+
     const updateData = {
       ...moradorData,
       ...(moradorData.cpf && { cpf: moradorData.cpf.replace(/[^\d]/g, '') }),
       ...(moradorData.email && { email: moradorData.email.toLowerCase() }),
       ...(moradorData.data_nasc && { data_nasc: new Date(moradorData.data_nasc) }),
       ...(moradorData.data_inicio && { data_inicio: new Date(moradorData.data_inicio) }),
-      ...(moradorData.data_fim && { data_fim: new Date(moradorData.data_fim) })
+      ...(moradorData.data_fim && { data_fim: new Date(moradorData.data_fim) }),
+      // Limpar campos ObjectId vazios
+      responsavel_id: cleanObjectIdField(moradorData.responsavel_id),
+      proprietario_id: cleanObjectIdField(moradorData.proprietario_id),
+      imobiliaria_id: cleanObjectIdField(moradorData.imobiliaria_id)
     }
 
     // Buscar dados atuais do morador para comparação

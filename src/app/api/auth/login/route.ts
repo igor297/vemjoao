@@ -241,8 +241,22 @@ export async function POST(request: NextRequest) {
     const masterCount = await Master.countDocuments()
     console.log('🔄 [LOGIN] Total de masters no banco:', masterCount)
     
+    // Verificar se existe um usuário com esse email
+    const existeEmail = await Promise.all([
+      Master.findOne({ email: emailLower }),
+      Adm.findOne({ email: emailLower }),
+      Colaborador.findOne({ email: emailLower }),
+      Morador.findOne({ email: emailLower })
+    ])
+    
+    const emailEncontrado = existeEmail.some(user => user !== null)
+    
     return NextResponse.json(
-      { error: 'Email ou senha incorretos' },
+      { 
+        error: 'Email ou senha errada',
+        errorType: 'INVALID_CREDENTIALS',
+        message: 'Email ou senha errada. Verifique seus dados e tente novamente.'
+      },
       { status: 401 }
     )
     
@@ -251,7 +265,11 @@ export async function POST(request: NextRequest) {
     console.error('❌ [LOGIN] Stack trace:', error instanceof Error ? error.stack : 'N/A')
     console.error('❌ [LOGIN] Objeto completo do erro:', JSON.stringify(error, null, 2))
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: 'Ops! Algo deu errado',
+        errorType: 'SERVER_ERROR',
+        message: 'Nosso sistema está passando por um pequeno soluço. Aguarde alguns segundos e tente novamente. Se persistir, entre em contato conosco!'
+      },
       { status: 500 }
     )
   }

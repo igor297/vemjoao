@@ -4,56 +4,75 @@ import dbConnect from '@/lib/mongodb';
 import Transacao from '@/models/Transacao';
 import ConfiguracaoFinanceira from '@/models/ConfiguracaoFinanceira';
 import FinancialDataEncryption from '@/lib/encryption';
+import { WebhookRetryService } from '@/lib/webhook-retry-service';
 
 export async function POST(request: NextRequest) {
-  try {
-    await dbConnect();
-    
-    const body = await request.text();
-    const headersList = headers();
-    
-    // Validação da assinatura do webhook
-    const signature = headersList.get('x-signature');
-    const requestId = headersList.get('x-request-id');
-    
-    if (!signature) {
-      return NextResponse.json({ error: 'Assinatura não encontrada' }, { status: 401 });
+  const body = await request.text();
+  const headersList = headers();
+  
+  // Preparar dados do webhook para o sistema de retry
+  const webhookRetryData = {
+    webhook_id: `mp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    provider: 'mercado_pago' as const,
+    webhook_type: 'payment_notification',
+    payload: JSON.parse(body),
+    headers: Object.fromEntries(headersList.entries()),
+    signature: headersList.get('x-signature') || undefined,
+    request_id: headersList.get('x-request-id') || undefined
+  };
+  
+  // Log do webhook recebido
+  console.log('Webhook Mercado Pago recebido:', {
+    webhook_id: webhookRetryData.webhook_id,
+    type: webhookRetryData.payload.type,
+    action: webhookRetryData.payload.action,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Processar com sistema de retry
+  const resultado = await WebhookRetryService.processarWebhook(
+    webhookRetryData,
+    async (payload, headers) => {
+      await dbConnect();
+      
+      // Validação da assinatura do webhook
+      const signature = headers['x-signature'];
+      if (!signature) {
+        throw new Error('Assinatura não encontrada');
+      }
+      
+      // Processa diferentes tipos de notificação
+      switch (payload.type) {
+        case 'payment':
+          await processPaymentWebhook(payload, JSON.stringify(payload), signature);
+          break;
+        case 'merchant_order':
+          await processMerchantOrderWebhook(payload);
+          break;
+        case 'point_integration_wh':
+          await processPointIntegrationWebhook(payload);
+          break;
+        default:
+          console.log('Tipo de webhook não reconhecido:', payload.type);
+      }
     }
-    
-    // Parse do corpo da requisição
-    const webhookData = JSON.parse(body);
-    
-    // Log do webhook recebido
-    console.log('Webhook Mercado Pago recebido:', {
-      id: webhookData.id,
-      type: webhookData.type,
-      action: webhookData.action,
-      timestamp: new Date().toISOString()
+  );
+  
+  if (resultado.sucesso) {
+    return NextResponse.json({ 
+      success: true, 
+      processed: true,
+      webhook_id: webhookRetryData.webhook_id
     });
-    
-    // Processa diferentes tipos de notificação
-    switch (webhookData.type) {
-      case 'payment':
-        await processPaymentWebhook(webhookData, body, signature);
-        break;
-      case 'merchant_order':
-        await processMerchantOrderWebhook(webhookData);
-        break;
-      case 'point_integration_wh':
-        await processPointIntegrationWebhook(webhookData);
-        break;
-      default:
-        console.log('Tipo de webhook não reconhecido:', webhookData.type);
-    }
-    
-    return NextResponse.json({ success: true, processed: true });
-    
-  } catch (error) {
-    console.error('Erro ao processar webhook Mercado Pago:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' }, 
-      { status: 500 }
-    );
+  } else {
+    // Webhook foi agendado para retry
+    return NextResponse.json({ 
+      success: true, 
+      scheduled_for_retry: true,
+      retry_id: resultado.retry_id,
+      webhook_id: webhookRetryData.webhook_id,
+      error: resultado.erro
+    });
   }
 }
 

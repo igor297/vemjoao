@@ -65,8 +65,35 @@ export default function PortalPagamentoPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('')
   const [processandoPagamento, setProcessandoPagamento] = useState(false)
   
+  // Modal de QR Code PIX
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [qrCodeData, setQrCodeData] = useState<{
+    qr_code: string
+    qr_code_base64: string
+    valor: number
+    payment_id: string
+  } | null>(null)
+
+  // Modal de Boleto
+  const [showBoletoModal, setShowBoletoModal] = useState(false)
+  const [boletoData, setBoletoData] = useState<{
+    boleto_url: string
+    linha_digitavel: string
+    payment_id: string
+    valor: number
+  } | null>(null)
+  
   // Aba ativa
   const [activeTab, setActiveTab] = useState<'pendencias' | 'historico'>('pendencias')
+  
+  // Dados do cartão
+  const [dadosCartao, setDadosCartao] = useState({
+    numero: '',
+    cvv: '',
+    mes_vencimento: '',
+    ano_vencimento: '',
+    parcelas: 1
+  })
 
   const paymentMethods: PaymentMethod[] = [
     {
@@ -151,12 +178,39 @@ export default function PortalPagamentoPage() {
     setSelectedItem(null)
     setSelectedPaymentMethod('')
     setProcessandoPagamento(false)
+    // Limpar dados do cartão
+    setDadosCartao({
+      numero: '',
+      cvv: '',
+      mes_vencimento: '',
+      ano_vencimento: '',
+      parcelas: 1
+    })
   }
 
   const handleProcessPayment = async () => {
     if (!selectedItem || !selectedPaymentMethod) {
       showAlert('warning', 'Selecione um método de pagamento')
       return
+    }
+
+    // Validar dados do cartão se método for cartão
+    if (selectedPaymentMethod.includes('cartao')) {
+      if (!dadosCartao.numero || !dadosCartao.cvv || !dadosCartao.mes_vencimento || !dadosCartao.ano_vencimento) {
+        showAlert('warning', 'Preencha todos os dados do cartão')
+        return
+      }
+      
+      // Validar se cartão não está vencido
+      const mesAtual = new Date().getMonth() + 1
+      const anoAtual = new Date().getFullYear()
+      const mesVencimento = parseInt(dadosCartao.mes_vencimento)
+      const anoVencimento = parseInt(dadosCartao.ano_vencimento)
+      
+      if (anoVencimento < anoAtual || (anoVencimento === anoAtual && mesVencimento < mesAtual)) {
+        showAlert('error', 'Cartão vencido')
+        return
+      }
     }
 
     try {
@@ -169,7 +223,11 @@ export default function PortalPagamentoPage() {
         master_id: selectedItem.master_id,
         valor: selectedItem.valor,
         metodo_pagamento: selectedPaymentMethod,
-        descricao: selectedItem.descricao
+        descricao: selectedItem.descricao,
+        // Incluir dados do cartão se método for cartão
+        ...(selectedPaymentMethod.includes('cartao') && {
+          dados_cartao: dadosCartao
+        })
       }
 
       const response = await fetch('/api/portal-pagamento', {
@@ -185,18 +243,26 @@ export default function PortalPagamentoPage() {
         
         // Se for PIX, mostrar QR Code
         if (selectedPaymentMethod === 'pix' && data.qr_code) {
-          showAlert('info', 'QR Code PIX gerado! Escaneie para pagar.')
-          
-          // Opcionalmente, mostrar o QR Code em um modal
-          if (data.qr_code_base64) {
-            // Implementar modal de QR Code se necessário
-          }
+          setQrCodeData({
+            qr_code: data.qr_code,
+            qr_code_base64: data.qr_code_base64,
+            valor: data.valor,
+            payment_id: data.payment_id
+          })
+          setShowQrModal(true)
+          showAlert('success', 'QR Code PIX gerado! Escaneie para pagar.')
         }
         
-        // Se for boleto, abrir em nova aba
+        // Se for boleto, mostrar dados do boleto
         if (selectedPaymentMethod === 'boleto' && data.boleto_url) {
-          window.open(data.boleto_url, '_blank')
-          showAlert('info', 'Boleto gerado! Verifique a nova aba para imprimir.')
+          setBoletoData({
+            boleto_url: data.boleto_url,
+            linha_digitavel: data.linha_digitavel,
+            payment_id: data.payment_id,
+            valor: data.valor_final || data.valor
+          })
+          setShowBoletoModal(true)
+          showAlert('success', 'Boleto gerado com sucesso!')
         }
         
         // Se for cartão e foi aprovado imediatamente
@@ -528,6 +594,100 @@ export default function PortalPagamentoPage() {
                     </Row>
                   </Card.Body>
                 </Card>
+
+                {/* Interface de dados do cartão */}
+                {selectedPaymentMethod.includes('cartao') && (
+                  <Card className="mt-4">
+                    <Card.Header><h6 className="mb-0">💳 Dados do Cartão</h6></Card.Header>
+                    <Card.Body>
+                      <Row>
+                        <Col md={12} className="mb-3">
+                          <Form.Group>
+                            <Form.Label>Número do Cartão</Form.Label>
+                            <Form.Control
+                              type="text"
+                              placeholder="1234 5678 9012 3456"
+                              value={dadosCartao.numero}
+                              onChange={(e) => {
+                                // Formatar número do cartão
+                                let valor = e.target.value.replace(/\D/g, '').substring(0, 16)
+                                valor = valor.replace(/(\d{4})(?=\d)/g, '$1 ')
+                                setDadosCartao(prev => ({ ...prev, numero: valor }))
+                              }}
+                              maxLength={19}
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={4} className="mb-3">
+                          <Form.Group>
+                            <Form.Label>CVV</Form.Label>
+                            <Form.Control
+                              type="text"
+                              placeholder="123"
+                              value={dadosCartao.cvv}
+                              onChange={(e) => {
+                                const valor = e.target.value.replace(/\D/g, '').substring(0, 4)
+                                setDadosCartao(prev => ({ ...prev, cvv: valor }))
+                              }}
+                              maxLength={4}
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={4} className="mb-3">
+                          <Form.Group>
+                            <Form.Label>Mês/Ano</Form.Label>
+                            <Row>
+                              <Col xs={6}>
+                                <Form.Select
+                                  value={dadosCartao.mes_vencimento}
+                                  onChange={(e) => setDadosCartao(prev => ({ ...prev, mes_vencimento: e.target.value }))}
+                                >
+                                  <option value="">Mês</option>
+                                  {Array.from({ length: 12 }, (_, i) => (
+                                    <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                                      {String(i + 1).padStart(2, '0')}
+                                    </option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                              <Col xs={6}>
+                                <Form.Select
+                                  value={dadosCartao.ano_vencimento}
+                                  onChange={(e) => setDadosCartao(prev => ({ ...prev, ano_vencimento: e.target.value }))}
+                                >
+                                  <option value="">Ano</option>
+                                  {Array.from({ length: 10 }, (_, i) => {
+                                    const ano = new Date().getFullYear() + i
+                                    return (
+                                      <option key={ano} value={ano}>{ano}</option>
+                                    )
+                                  })}
+                                </Form.Select>
+                              </Col>
+                            </Row>
+                          </Form.Group>
+                        </Col>
+                        {selectedPaymentMethod === 'cartao_credito' && (
+                          <Col md={4} className="mb-3">
+                            <Form.Group>
+                              <Form.Label>Parcelas</Form.Label>
+                              <Form.Select
+                                value={dadosCartao.parcelas}
+                                onChange={(e) => setDadosCartao(prev => ({ ...prev, parcelas: parseInt(e.target.value) }))}
+                              >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                  <option key={i + 1} value={i + 1}>
+                                    {i + 1}x {i === 0 ? 'à vista' : `de ${formatCurrency(selectedItem.valor / (i + 1))}`}
+                                  </option>
+                                ))}
+                              </Form.Select>
+                            </Form.Group>
+                          </Col>
+                        )}
+                      </Row>
+                    </Card.Body>
+                  </Card>
+                )}
               </>
             )}
           </Modal.Body>
@@ -549,6 +709,203 @@ export default function PortalPagamentoPage() {
                 `💳 Pagar ${selectedItem ? formatCurrency(selectedItem.valor) : ''}`
               )}
             </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal QR Code PIX */}
+        <Modal show={showQrModal} onHide={() => setShowQrModal(false)} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              ⚡ Pagamento PIX - {qrCodeData ? formatCurrency(qrCodeData.valor) : ''}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="text-center">
+            {qrCodeData && (
+              <>
+                <Alert variant="info" className="mb-4">
+                  <h6>📱 Como pagar com PIX:</h6>
+                  <ol className="text-start mb-0">
+                    <li>Abra o app do seu banco</li>
+                    <li>Escolha a opção PIX</li>
+                    <li>Escaneie o QR Code abaixo ou copie o código</li>
+                    <li>Confirme o pagamento</li>
+                  </ol>
+                </Alert>
+
+                <Card className="mb-4">
+                  <Card.Body>
+                    <h5 className="mb-3">QR Code PIX</h5>
+                    <div className="d-flex justify-content-center mb-3">
+                      <div style={{
+                        padding: '20px',
+                        backgroundColor: 'white',
+                        border: '2px solid #dee2e6',
+                        borderRadius: '8px',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData.qr_code)}`}
+                          alt="QR Code PIX"
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            border: '2px solid #000'
+                          }}
+                          onError={(e) => {
+                            // Fallback se a API não funcionar
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.nextElementSibling.style.display = 'flex'
+                          }}
+                        />
+                        <div 
+                          style={{
+                            width: '200px',
+                            height: '200px',
+                            backgroundColor: '#f8f9fa',
+                            border: '2px solid #000',
+                            display: 'none',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '48px',
+                            flexDirection: 'column'
+                          }}
+                        >
+                          📱<br />
+                          <small style={{fontSize: '12px'}}>QR Code</small>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-muted">
+                      QR Code gerado para pagamento de <strong>{formatCurrency(qrCodeData.valor)}</strong>
+                    </p>
+                  </Card.Body>
+                </Card>
+
+                <Card>
+                  <Card.Header>
+                    <h6 className="mb-0">📋 Código PIX para Cópia e Cola</h6>
+                  </Card.Header>
+                  <Card.Body>
+                    <Form.Control
+                      as="textarea"
+                      rows={4}
+                      value={qrCodeData.qr_code}
+                      readOnly
+                      className="font-monospace small"
+                    />
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(qrCodeData.qr_code)
+                        showAlert('success', 'Código PIX copiado para a área de transferência!')
+                      }}
+                    >
+                      📋 Copiar Código PIX
+                    </Button>
+                  </Card.Body>
+                </Card>
+
+                <Alert variant="warning" className="mt-3">
+                  <small>
+                    <strong>⏰ Atenção:</strong> Este QR Code expira em 30 minutos. 
+                    ID do pagamento: <code>{qrCodeData.payment_id}</code>
+                  </small>
+                </Alert>
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowQrModal(false)}>
+              Fechar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal do Boleto */}
+        <Modal show={showBoletoModal} onHide={() => setShowBoletoModal(false)} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              🧾 Boleto Bancário - {boletoData ? formatCurrency(boletoData.valor) : ''}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="text-center">
+            {boletoData && (
+              <>
+                <Alert variant="success" className="mb-4">
+                  <h6>✅ Boleto gerado com sucesso!</h6>
+                  <p className="mb-0">Você pode pagar no banco, lotérica, caixa eletrônico ou internet banking.</p>
+                </Alert>
+
+                <Card className="mb-4">
+                  <Card.Body>
+                    <h5 className="mb-3">Dados do Boleto</h5>
+                    
+                    <div className="mb-3">
+                      <strong>Payment ID:</strong>
+                      <br />
+                      <code>{boletoData.payment_id}</code>
+                    </div>
+
+                    {boletoData.linha_digitavel && (
+                      <div className="mb-3">
+                        <strong>Linha Digitável:</strong>
+                        <br />
+                        <code style={{ fontSize: '0.9em', wordBreak: 'break-all' }}>
+                          {boletoData.linha_digitavel}
+                        </code>
+                        <br />
+                        <small className="text-muted">Use este código para pagar no internet banking</small>
+                      </div>
+                    )}
+
+                    <div className="d-grid gap-2">
+                      <Button 
+                        variant="primary" 
+                        onClick={() => window.open(boletoData.boleto_url, '_blank')}
+                        size="lg"
+                      >
+                        🖨️ Visualizar e Imprimir Boleto
+                      </Button>
+                      
+                      {boletoData.linha_digitavel && (
+                        <Button 
+                          variant="outline-secondary"
+                          onClick={() => {
+                            navigator.clipboard.writeText(boletoData.linha_digitavel)
+                            showAlert('info', 'Linha digitável copiada!')
+                          }}
+                        >
+                          📋 Copiar Linha Digitável
+                        </Button>
+                      )}
+                    </div>
+                  </Card.Body>
+                </Card>
+
+                <Alert variant="info" className="mt-3">
+                  <small>
+                    <strong>💡 Dica:</strong> O pagamento pode levar até 3 dias úteis para ser confirmado.
+                    <br />
+                    <strong>📱 Status:</strong> Acompanhe o status do pagamento nesta mesma tela.
+                  </small>
+                </Alert>
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowBoletoModal(false)}>
+              Fechar
+            </Button>
+            {boletoData && (
+              <Button 
+                variant="primary" 
+                onClick={() => window.open(boletoData.boleto_url, '_blank')}
+              >
+                🖨️ Abrir Boleto
+              </Button>
+            )}
           </Modal.Footer>
         </Modal>
       </Container>

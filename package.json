@@ -35,7 +35,8 @@
     "react-dom": "^19.0.0",
     "react-input-mask": "^2.0.4",
     "react-leaflet": "^5.0.0",
-    "yarn": "^1.22.22"
+    "yarn": "^1.22.22",
+    "mercadopago": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

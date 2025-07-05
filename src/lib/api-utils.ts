@@ -7,9 +7,24 @@ interface ApiResponse<T = any> {
 export async function safeJsonParse<T = any>(response: Response): Promise<ApiResponse<T>> {
   try {
     if (!response.ok) {
+      // Tentar obter mensagem personalizada do servidor
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          return {
+            success: false,
+            data: errorData,
+            error: errorData.message || errorData.error || 'Algo deu errado'
+          };
+        }
+      } catch (jsonError) {
+        // Se não conseguir fazer parse do JSON, usar mensagem genérica
+      }
+      
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`
+        error: 'Algo não funcionou como esperado'
       };
     }
 
@@ -21,13 +36,13 @@ export async function safeJsonParse<T = any>(response: Response): Promise<ApiRes
       if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
         return {
           success: false,
-          error: 'Servidor retornou HTML ao invés de JSON. Verifique a URL da API.'
+          error: 'Algo não funcionou como esperado. Tente novamente.'
         };
       }
       
       return {
         success: false,
-        error: `Tipo de conteúdo inválido: ${contentType || 'não especificado'}`
+        error: 'Algo não funcionou como esperado. Tente novamente.'
       };
     }
 
@@ -37,16 +52,9 @@ export async function safeJsonParse<T = any>(response: Response): Promise<ApiRes
       data
     };
   } catch (error) {
-    if (error instanceof SyntaxError && error.message.includes('Unexpected token')) {
-      return {
-        success: false,
-        error: 'Resposta não é um JSON válido. Verifique se a API está retornando o formato correto.'
-      };
-    }
-    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Erro desconhecido ao processar resposta'
+      error: 'Algo não funcionou como esperado. Tente novamente.'
     };
   }
 }
@@ -58,7 +66,7 @@ export async function safeFetch<T = any>(url: string, options?: RequestInit): Pr
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Erro de rede'
+      error: 'Não conseguimos conectar ao servidor. Verifique sua internet.'
     };
   }
 }

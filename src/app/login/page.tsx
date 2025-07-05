@@ -11,8 +11,45 @@ export default function LoginPage() {
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertData, setAlertData] = useState({ type: '', message: '', icon: '' })
+  const [fieldError, setFieldError] = useState('')
   const router = useRouter()
+
+  const showCustomAlert = (errorType: string, message: string) => {
+    let icon = '⚠️'
+    let type = 'error'
+    
+    switch (errorType) {
+      case 'INVALID_CREDENTIALS':
+        icon = '🔐'
+        type = 'credentials-error'
+        break
+      case 'NETWORK_ERROR':
+        icon = '🌐'
+        type = 'network-error'
+        break
+      case 'SERVER_ERROR':
+        icon = '🛠️'
+        type = 'server-error'
+        break
+      default:
+        icon = '😕'
+        type = 'general-error'
+    }
+    
+    setAlertData({ type, message, icon })
+    setShowAlert(true)
+    
+    // Para credenciais inválidas, não destacar campo específico
+    setFieldError('')
+    
+    // Esconder alerta após 8 segundos (mais tempo para ler)
+    setTimeout(() => {
+      setShowAlert(false)
+    }, 8000)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -25,7 +62,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError('')
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -55,18 +91,205 @@ export default function LoginPage() {
           router.push('/dashboard')
         }
       } else {
-        const errorMsg = result.error || result.data?.error || 'Email ou senha incorretos'
-        setError(errorMsg)
+        const errorData = result.data || result
+        const errorType = errorData.errorType || 'GENERAL_ERROR'
+        const errorMessage = errorData.message || 'Algo não funcionou como esperado. Tente novamente em alguns instantes.'
+        
+        // Mostrar alerta customizado baseado no tipo de erro
+        showCustomAlert(errorType, errorMessage)
       }
     } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.')
+      const errorMessage = 'Não conseguimos conectar ao servidor. Verifique sua internet e tente novamente em alguns segundos.'
+      showCustomAlert('NETWORK_ERROR', errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-vh-100 bg-primary d-flex align-items-center justify-content-center">
+    <>
+      <style jsx>{`
+        .modern-alert {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 90%;
+          max-width: 420px;
+          z-index: 10000;
+          border-radius: 16px;
+          background: white;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          display: ${showAlert ? 'block' : 'none'};
+        }
+        
+        .alert-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(4px);
+          z-index: 9999;
+          display: ${showAlert ? 'block' : 'none'};
+        }
+        
+        @keyframes slideInScale {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
+        
+        .alert-header {
+          padding: 24px 24px 16px 24px;
+          border-bottom: 1px solid #f1f1f1;
+          display: flex;
+          align-items: center;
+        }
+        
+        .alert-icon-container {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 16px;
+          font-size: 24px;
+        }
+        
+        .alert-icon-container.credentials-error {
+          background: linear-gradient(135deg, #ff6b6b20, #ee5a2420);
+          color: #e55353;
+        }
+        
+        .alert-icon-container.network-error {
+          background: linear-gradient(135deg, #6c5ce720, #a29bfe20);
+          color: #6c5ce7;
+        }
+        
+        .alert-icon-container.general-error {
+          background: linear-gradient(135deg, #ff767520, #d6303120);
+          color: #e74c3c;
+        }
+        
+        .alert-icon-container.server-error {
+          background: linear-gradient(135deg, #fd7f6f20, #bd5eff20);
+          color: #9d4edd;
+        }
+        
+        .alert-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #2d3748;
+          margin: 0;
+          line-height: 1.3;
+        }
+        
+        .alert-body {
+          padding: 0 24px 24px 24px;
+        }
+        
+        .alert-message {
+          font-size: 14px;
+          color: #4a5568;
+          line-height: 1.5;
+          margin: 8px 0 24px 0;
+        }
+        
+        .alert-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+        }
+        
+        .alert-button {
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: none;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .alert-button.primary {
+          background: #3182ce;
+          color: white;
+        }
+        
+        .alert-button.primary:hover {
+          background: #2c5aa0;
+          transform: translateY(-1px);
+        }
+        
+        .alert-button.secondary {
+          background: #f7fafc;
+          color: #4a5568;
+          border: 1px solid #e2e8f0;
+        }
+        
+        .alert-button.secondary:hover {
+          background: #edf2f7;
+        }
+        
+        .input-error {
+          border: 2px solid #e53e3e !important;
+          background-color: #fed7d7 !important;
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+      `}</style>
+
+      {/* Overlay */}
+      {showAlert && (
+        <div className="alert-overlay" onClick={() => setShowAlert(false)}></div>
+      )}
+
+      {/* Alerta Moderno */}
+      {showAlert && (
+        <div className="modern-alert">
+          <div className="alert-header">
+            <div className={`alert-icon-container ${alertData.type}`}>
+              {alertData.icon}
+            </div>
+            <div>
+              <h3 className="alert-title">
+                {alertData.type === 'credentials-error' ? 'Email ou senha errada' :
+                 alertData.type === 'network-error' ? 'Problemas de conexão' :
+                 alertData.type === 'server-error' ? 'Nosso servidor está ocupado' :
+                 'Algo não funcionou como esperado'}
+              </h3>
+            </div>
+          </div>
+          <div className="alert-body">
+            <p className="alert-message">{alertData.message}</p>
+            <div className="alert-actions">
+              <button 
+                className="alert-button primary"
+                onClick={() => setShowAlert(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-vh-100 bg-primary d-flex align-items-center justify-content-center">
       <Container>
         <Row className="justify-content-center">
           <Col md={6} lg={4}>
@@ -84,11 +307,7 @@ export default function LoginPage() {
                 </div>
 
                 <Form onSubmit={handleSubmit}>
-                  {error && (
-                    <Alert variant="danger" className="mb-3">
-                      {error}
-                    </Alert>
-                  )}
+                  
 
                   <Form.Group className="mb-3">
                     <Form.Label>Email</Form.Label>
@@ -96,9 +315,13 @@ export default function LoginPage() {
                       type="email"
                       name="email"
                       value={formData.email}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        handleInputChange(e)
+                        setFieldError('')
+                      }}
                       placeholder="seu@email.com"
                       required
+                      className={fieldError === 'email' ? 'input-error' : ''}
                     />
                   </Form.Group>
 
@@ -108,9 +331,13 @@ export default function LoginPage() {
                       type="password"
                       name="password"
                       value={formData.password}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        handleInputChange(e)
+                        setFieldError('')
+                      }}
                       placeholder="••••••••"
                       required
+                      className={fieldError === 'password' ? 'input-error' : ''}
                       style={{
                         WebkitTextSecurity: 'disc',
                         color: '#000000'
@@ -157,6 +384,7 @@ export default function LoginPage() {
           </Col>
         </Row>
       </Container>
-    </div>
+      </div>
+    </>
   )
 }
