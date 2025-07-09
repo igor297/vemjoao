@@ -12,6 +12,13 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js'
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
+import { Document, Packer, Paragraph, Table as DocxTable, TableRow, TableCell, WidthType } from 'docx'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 ChartJS.register(
   CategoryScale,
@@ -361,6 +368,10 @@ export default function FinanceiroPage() {
     origem: ''
   })
 
+  // Estados para controle de período de exportação
+  const [dataInicial, setDataInicial] = useState<Date | null>(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [dataFinal, setDataFinal] = useState<Date | null>(new Date())
+
   const loadResumoUnificado = useCallback(async (user: any, condominioId: string) => {
     setLoading(true)
     setAlert(null)
@@ -527,6 +538,268 @@ export default function FinanceiroPage() {
     }
   }
 
+  // Funções de Exportação
+  const exportToExcel = () => {
+    if (!resumoUnificado || !dadosUnificados) {
+      setAlert({ type: 'warning', message: 'Nenhum dado disponível para exportação' })
+      return
+    }
+
+    if (!dataInicial || !dataFinal) {
+      setAlert({ type: 'warning', message: 'Por favor, selecione o período para exportação' })
+      return
+    }
+
+    const wb = XLSX.utils.book_new()
+    
+    // Aba 1: Resumo Geral
+    const resumoData = [
+      ['RELATÓRIO FINANCEIRO - RESUMO GERAL'],
+      ['Data de Geração:', new Date().toLocaleDateString('pt-BR')],
+      ['Período:', `${dataInicial.toLocaleDateString('pt-BR')} até ${dataFinal.toLocaleDateString('pt-BR')}`],
+      [''],
+      ['RECEITAS E DESPESAS'],
+      ['A Receber (Moradores):', formatCurrency(totalAtrasadoMoradores)],
+      ['A Pagar (Colaboradores):', formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)],
+      ['Saldo Líquido Condomínio:', formatCurrency(dadosUnificados?.condominio?.saldo_liquido || 0)],
+      ['Resultado Operacional:', formatCurrency(resumoGeral?.resultado_liquido || 0)],
+      [''],
+      ['ESTATÍSTICAS DE UNIDADES'],
+      ['Total de Unidades:', dadosUnificados.moradores.estatisticas.total_unidades],
+      ['Unidades em Dia:', dadosUnificados.moradores.em_dia.length],
+      ['Unidades Atrasadas:', moradoresAtrasados.length],
+      [''],
+      ['ESTATÍSTICAS DE COLABORADORES'],
+      ['Total de Colaboradores:', dadosUnificados.colaboradores.estatisticas.total],
+      ['Em Dia:', dadosUnificados.colaboradores.em_dia.length],
+      ['Pendentes:', colaboradoresPendentes.length],
+      ['Atrasados:', colaboradoresAtrasados.length]
+    ]
+    const wsResumo = XLSX.utils.aoa_to_sheet(resumoData)
+    XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo Geral')
+
+    // Aba 2: Moradores Atrasados
+    if (moradoresAtrasados.length > 0) {
+      const moradoresData = [
+        ['MORADORES COM ATRASO'],
+        ['Nome', 'Unidade', 'Valor Devido', 'Dias Atraso'],
+        ...moradoresAtrasados.map(m => [
+          m.nome,
+          `${m.bloco ? `${m.bloco}-` : ''}${m.unidade}`,
+          m.total_atrasado || 0,
+          m.dias_atraso || 'N/A'
+        ])
+      ]
+      const wsMoradores = XLSX.utils.aoa_to_sheet(moradoresData)
+      XLSX.utils.book_append_sheet(wb, wsMoradores, 'Moradores Atrasados')
+    }
+
+    // Aba 3: Colaboradores Pendentes
+    if (colaboradoresPendentes.length > 0 || colaboradoresAtrasados.length > 0) {
+      const colaboradoresData = [
+        ['COLABORADORES COM PENDÊNCIAS'],
+        ['Nome', 'Cargo', 'Status', 'Valor a Pagar'],
+        ...colaboradoresPendentes.map(c => [
+          c.nome,
+          c.cargo || 'N/A',
+          'Pendente',
+          c.total_a_receber || 0
+        ]),
+        ...colaboradoresAtrasados.map(c => [
+          c.nome,
+          c.cargo || 'N/A',
+          'Atrasado',
+          c.total_atrasado || 0
+        ])
+      ]
+      const wsColaboradores = XLSX.utils.aoa_to_sheet(colaboradoresData)
+      XLSX.utils.book_append_sheet(wb, wsColaboradores, 'Colaboradores')
+    }
+
+    // Aba 4: Lançamentos (se disponíveis)
+    if (lancamentos.length > 0) {
+      const lancamentosData = [
+        ['LANÇAMENTOS FINANCEIROS'],
+        ['Data Vencimento', 'Origem', 'Pessoa/Local', 'Descrição', 'Tipo', 'Valor', 'Status'],
+        ...lancamentos.map(l => [
+          new Date(l.data_vencimento).toLocaleDateString('pt-BR'),
+          l.origem_nome,
+          l.pessoa_nome,
+          l.descricao,
+          l.tipo === 'receita' ? 'Receita' : 'Despesa',
+          l.valor,
+          l.status
+        ])
+      ]
+      const wsLancamentos = XLSX.utils.aoa_to_sheet(lancamentosData)
+      XLSX.utils.book_append_sheet(wb, wsLancamentos, 'Lançamentos')
+    }
+
+    const fileName = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+    setAlert({ type: 'success', message: 'Relatório Excel exportado com sucesso!' })
+  }
+
+  const exportToPDF = () => {
+    if (!resumoUnificado || !dadosUnificados) {
+      setAlert({ type: 'warning', message: 'Nenhum dado disponível para exportação' })
+      return
+    }
+
+    if (!dataInicial || !dataFinal) {
+      setAlert({ type: 'warning', message: 'Por favor, selecione o período para exportação' })
+      return
+    }
+
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    
+    // Cabeçalho
+    doc.setFontSize(18)
+    doc.text('RELATÓRIO FINANCEIRO', pageWidth / 2, 20, { align: 'center' })
+    
+    doc.setFontSize(12)
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth / 2, 30, { align: 'center' })
+    doc.text(`Período: ${dataInicial.toLocaleDateString('pt-BR')} até ${dataFinal.toLocaleDateString('pt-BR')}`, pageWidth / 2, 40, { align: 'center' })
+    
+    let yPosition = 60
+    
+    // Resumo Financeiro
+    doc.setFontSize(14)
+    doc.text('RESUMO FINANCEIRO', 20, yPosition)
+    yPosition += 15
+    
+    doc.setFontSize(11)
+    const resumoItems = [
+      ['A Receber (Moradores):', formatCurrency(totalAtrasadoMoradores)],
+      ['A Pagar (Colaboradores):', formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)],
+      ['Saldo Líquido:', formatCurrency(dadosUnificados?.condominio?.saldo_liquido || 0)],
+      ['Resultado:', formatCurrency(resumoGeral?.resultado_liquido || 0)]
+    ]
+    
+    resumoItems.forEach(([label, value]) => {
+      doc.text(label, 20, yPosition)
+      doc.text(value, 120, yPosition)
+      yPosition += 8
+    })
+    
+    yPosition += 10
+    
+    // Estatísticas
+    doc.setFontSize(14)
+    doc.text('ESTATÍSTICAS', 20, yPosition)
+    yPosition += 15
+    
+    doc.setFontSize(11)
+    const estatisticas = [
+      ['Unidades em Dia:', `${dadosUnificados.moradores.em_dia.length}/${dadosUnificados.moradores.estatisticas.total_unidades}`],
+      ['Unidades Atrasadas:', moradoresAtrasados.length.toString()],
+      ['Colaboradores em Dia:', dadosUnificados.colaboradores.em_dia.length.toString()],
+      ['Colaboradores Pendentes:', (colaboradoresPendentes.length + colaboradoresAtrasados.length).toString()]
+    ]
+    
+    estatisticas.forEach(([label, value]) => {
+      doc.text(label, 20, yPosition)
+      doc.text(value, 120, yPosition)
+      yPosition += 8
+    })
+    
+    // Tabela de Moradores Atrasados
+    if (moradoresAtrasados.length > 0) {
+      yPosition += 15
+      doc.setFontSize(14)
+      doc.text('MORADORES EM ATRASO', 20, yPosition)
+      yPosition += 10
+      
+      const moradoresTableData = moradoresAtrasados.map(m => [
+        m.nome,
+        `${m.bloco ? `${m.bloco}-` : ''}${m.unidade}`,
+        formatCurrency(m.total_atrasado || 0),
+        `${m.dias_atraso || 'N/A'}d`
+      ])
+      
+      ;(doc as any).autoTable({
+        head: [['Nome', 'Unidade', 'Valor Devido', 'Dias Atraso']],
+        body: moradoresTableData,
+        startY: yPosition,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [220, 53, 69] }
+      })
+    }
+    
+    const fileName = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(fileName)
+    setAlert({ type: 'success', message: 'Relatório PDF exportado com sucesso!' })
+  }
+
+  const exportToWord = async () => {
+    if (!resumoUnificado || !dadosUnificados) {
+      setAlert({ type: 'warning', message: 'Nenhum dado disponível para exportação' })
+      return
+    }
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            text: 'RELATÓRIO FINANCEIRO',
+            heading: 'Title',
+            alignment: 'center'
+          }),
+          new Paragraph({
+            text: `Data: ${new Date().toLocaleDateString('pt-BR')}`,
+            alignment: 'center'
+          }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+            text: 'RESUMO FINANCEIRO',
+            heading: 'Heading1'
+          }),
+          new Paragraph({
+            text: `A Receber (Moradores): ${formatCurrency(totalAtrasadoMoradores)}`
+          }),
+          new Paragraph({
+            text: `A Pagar (Colaboradores): ${formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)}`
+          }),
+          new Paragraph({
+            text: `Saldo Líquido: ${formatCurrency(dadosUnificados?.condominio?.saldo_liquido || 0)}`
+          }),
+          new Paragraph({
+            text: `Resultado: ${formatCurrency(resumoGeral?.resultado_liquido || 0)}`
+          }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+            text: 'ESTATÍSTICAS',
+            heading: 'Heading1'
+          }),
+          new Paragraph({
+            text: `Unidades em Dia: ${dadosUnificados.moradores.em_dia.length}/${dadosUnificados.moradores.estatisticas.total_unidades}`
+          }),
+          new Paragraph({
+            text: `Unidades Atrasadas: ${moradoresAtrasados.length}`
+          }),
+          new Paragraph({
+            text: `Colaboradores em Dia: ${dadosUnificados.colaboradores.em_dia.length}`
+          }),
+          new Paragraph({
+            text: `Colaboradores Pendentes: ${colaboradoresPendentes.length + colaboradoresAtrasados.length}`
+          })
+        ]
+      }]
+    })
+
+    try {
+      const buffer = await Packer.toBuffer(doc)
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+      const fileName = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.docx`
+      saveAs(blob, fileName)
+      setAlert({ type: 'success', message: 'Relatório Word exportado com sucesso!' })
+    } catch (error) {
+      setAlert({ type: 'danger', message: 'Erro ao gerar arquivo Word' })
+    }
+  }
+
   const dadosUnificados = resumoUnificado?.dados_unificados
   const resumoGeral = resumoUnificado?.resumo_geral
 
@@ -573,6 +846,147 @@ export default function FinanceiroPage() {
           onCondominioChange={handleCondominioChange}
           currentUser={currentUser}
       />
+
+      {/* Seleção de Período para Exportação */}
+      {selectedCondominiumId && resumoUnificado && (
+        <Row className="mb-3">
+          <Col>
+            <Card className="shadow-sm border-info">
+              <Card.Header className="bg-info text-white">
+                <h6 className="mb-0">
+                  <i className="fas fa-calendar-alt me-2"></i>
+                  Período para Exportação
+                </h6>
+              </Card.Header>
+              <Card.Body>
+                <Row className="align-items-end">
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Data Inicial</Form.Label>
+                      <DatePicker
+                        selected={dataInicial}
+                        onChange={(date) => setDataInicial(date)}
+                        dateFormat="dd/MM/yyyy"
+                        className="form-control"
+                        placeholderText="Selecione a data inicial"
+                        maxDate={dataFinal || new Date()}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Data Final</Form.Label>
+                      <DatePicker
+                        selected={dataFinal}
+                        onChange={(date) => setDataFinal(date)}
+                        dateFormat="dd/MM/yyyy"
+                        className="form-control"
+                        placeholderText="Selecione a data final"
+                        minDate={dataInicial || undefined}
+                        maxDate={new Date()}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <div className="d-flex gap-2">
+                      <Button 
+                        variant="outline-secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          const hoje = new Date()
+                          setDataInicial(new Date(hoje.getFullYear(), hoje.getMonth(), 1))
+                          setDataFinal(hoje)
+                        }}
+                      >
+                        <i className="fas fa-calendar-week me-1"></i>
+                        Mês Atual
+                      </Button>
+                      <Button 
+                        variant="outline-secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          const hoje = new Date()
+                          setDataInicial(new Date(hoje.getFullYear(), 0, 1))
+                          setDataFinal(hoje)
+                        }}
+                      >
+                        <i className="fas fa-calendar-year me-1"></i>
+                        Ano Atual
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+                <Row className="mt-2">
+                  <Col>
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle me-1"></i>
+                      Período selecionado: {dataInicial ? dataInicial.toLocaleDateString('pt-BR') : 'N/A'} até {dataFinal ? dataFinal.toLocaleDateString('pt-BR') : 'N/A'}
+                    </small>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* Botões de Exportação */}
+      {selectedCondominiumId && resumoUnificado && (
+        <Row className="mb-4">
+          <Col>
+            <Card className="shadow-sm border-primary">
+              <Card.Header className="bg-primary text-white">
+                <Row className="align-items-center">
+                  <Col>
+                    <h6 className="mb-0">
+                      <i className="fas fa-download me-2"></i>
+                      Exportar Relatórios Financeiros
+                    </h6>
+                  </Col>
+                  <Col xs="auto">
+                    <div className="d-flex gap-2">
+                      <Button 
+                        variant="success" 
+                        size="sm" 
+                        onClick={exportToExcel}
+                        disabled={loading}
+                      >
+                        <i className="fas fa-file-excel me-1"></i>
+                        Excel
+                      </Button>
+                      <Button 
+                        variant="danger" 
+                        size="sm" 
+                        onClick={exportToPDF}
+                        disabled={loading}
+                      >
+                        <i className="fas fa-file-pdf me-1"></i>
+                        PDF
+                      </Button>
+                      <Button 
+                        variant="info" 
+                        size="sm" 
+                        onClick={exportToWord}
+                        disabled={loading}
+                      >
+                        <i className="fas fa-file-word me-1"></i>
+                        Word
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Header>
+              <Card.Body className="py-2">
+                <small className="text-muted">
+                  <i className="fas fa-info-circle me-1"></i>
+                  Exporte os dados financeiros em diferentes formatos para análise e compartilhamento.
+                  Os relatórios incluem resumo geral, moradores em atraso, colaboradores pendentes e lançamentos detalhados.
+                </small>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {!selectedCondominiumId ? (
         <Alert variant="info" className="text-center shadow-sm">
