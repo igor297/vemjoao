@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert, Badge } from 'react-bootstrap'
 import MoradorSelector from '@/components/MoradorSelector'
 import DateInput from '@/components/DateInput'
@@ -33,6 +33,18 @@ interface Adm {
   morador_origem_id?: string
 }
 
+interface Morador {
+  _id: string;
+  nome: string;
+  cpf: string;
+  data_nasc: string;
+  email: string;
+  bloco?: string;
+  unidade: string;
+  celular1?: string;
+  celular2?: string;
+}
+
 interface Condominium {
   _id: string
   nome: string
@@ -50,7 +62,7 @@ export default function AdmPage() {
   const [showMoradorSelector, setShowMoradorSelector] = useState(false)
   const [isAdmInterno, setIsAdmInterno] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [calculatedAge, setCalculatedAge] = useState<number | null>(null)
+  
 
   // Função auxiliar para acessar localStorage com segurança
   const getLocalStorage = (key: string) => {
@@ -118,6 +130,32 @@ export default function AdmPage() {
     morador_origem_id: ''
   })
 
+  // Função para carregar administradores
+  const loadAdms = useCallback(async (masterId: string, condominioId?: string) => {
+    try {
+      let url = `/api/adms?master_id=${encodeURIComponent(masterId)}`
+      if (condominioId) {
+        url += `&condominio_id=${encodeURIComponent(condominioId)}`
+      }
+      
+      const response = await fetch(url)
+      const data = await response.json()
+      if (data.success) {
+        setAdms(data.adms)
+      } else {
+        showAlert('danger', data.error || 'Erro ao carregar administradores')
+      }
+    } catch (err) {
+      console.error('Erro ao carregar administradores:', err)
+      showAlert('danger', 'Erro ao carregar administradores')
+    }
+  }, [])
+
+  const showAlert = (type: string, message: string) => {
+    setAlert({ type, message })
+    setTimeout(() => setAlert(null), 5000)
+  }
+
   useEffect(() => {
     setIsClient(true)
     
@@ -165,7 +203,7 @@ export default function AdmPage() {
         window.removeEventListener('condominioChanged', handleStorageChange)
       }
     }
-  }, [])
+  }, [loadAdms, selectedCondominiumId])
 
   const loadCondominiums = async (masterId: string) => {
     try {
@@ -174,36 +212,10 @@ export default function AdmPage() {
       if (data.success) {
         setCondominiums(data.condominios)
       }
-    } catch (error) {
-      console.error('Erro ao carregar condomínios:', error)
+    } catch (_error) {
+      console.error('Erro ao carregar condomínios:', _error)
     }
   }
-
-  const loadAdms = async (masterId: string, condominioId?: string) => {
-    try {
-      let url = `/api/adms?master_id=${encodeURIComponent(masterId)}`
-      if (condominioId) {
-        url += `&condominio_id=${encodeURIComponent(condominioId)}`
-      }
-      
-      const response = await fetch(url)
-      const data = await response.json()
-      if (data.success) {
-        setAdms(data.adms)
-      } else {
-        showAlert('danger', data.error || 'Erro ao carregar administradores')
-      }
-    } catch (err) {
-      console.error('Erro ao carregar administradores:', err)
-      showAlert('danger', 'Erro ao carregar administradores')
-    }
-  }
-
-  const showAlert = (type: string, message: string) => {
-    setAlert({ type, message })
-    setTimeout(() => setAlert(null), 5000)
-  }
-
 
   const handleCondominiumChange = (condominioId: string) => {
     setSelectedCondominiumId(condominioId)
@@ -331,7 +343,7 @@ export default function AdmPage() {
       } else {
         showAlert('danger', data.error || 'Erro ao excluir administrador')
       }
-    } catch (error) {
+    } catch (_error) {
       showAlert('danger', 'Erro ao excluir administrador')
     }
   }
@@ -414,7 +426,7 @@ export default function AdmPage() {
     return <Badge bg={colors[tipo as keyof typeof colors]}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</Badge>
   }
 
-  const handleMoradorSelect = (morador: any) => {
+  const handleMoradorSelect = (morador: Morador) => {
     setFormData(prev => ({
       ...prev,
       nome: morador.nome,
@@ -670,7 +682,6 @@ export default function AdmPage() {
                     disabled={isAdmInterno}
                     className={isAdmInterno ? 'bg-light' : ''}
                     showAge={true}
-                    onAgeCalculated={setCalculatedAge}
                   />
                   {isAdmInterno && (
                     <Form.Text className="text-success">

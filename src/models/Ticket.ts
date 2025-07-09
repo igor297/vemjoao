@@ -14,6 +14,7 @@ export interface ITicket extends Document {
   solicitante_tipo: 'colaborador' | 'morador' | 'inquilino' | 'conjuge' | 'dependente'
   solicitante_id: mongoose.Types.ObjectId // Reference to user._id
   solicitante_nome: string
+  solicitante_cpf?: string
   solicitante_apartamento?: string
   solicitante_bloco?: string
   
@@ -99,6 +100,11 @@ const TicketSchema: Schema = new Schema({
   solicitante_nome: {
     type: String,
     required: true,
+    trim: true
+  },
+  solicitante_cpf: {
+    type: String,
+    required: false,
     trim: true
   },
   solicitante_apartamento: {
@@ -202,18 +208,20 @@ export const verificarPermissaoTicket = (
   tipoUsuario: string,
   isProprioTicket: boolean = false
 ) => {
-  // Master, Síndico e Subsíndico podem tudo
-  if (['master', 'sindico', 'subsindico'].includes(tipoUsuario)) {
-    return true
+  // Master, Admin, Síndico e Subsíndico podem ver, responder e fechar
+  if (['master', 'adm', 'sindico', 'subsindico'].includes(tipoUsuario)) {
+    if (acao === 'criar') return false; // Não podem criar
+    return true; // Podem ver, responder e fechar
   }
   
-  // Colaborador e moradores podem criar e ver seus próprios tickets
+  // Colaborador, Morador, Inquilino, Cônjuge e Dependente podem criar e ver seus próprios tickets
   if (['colaborador', 'morador', 'inquilino', 'conjuge', 'dependente'].includes(tipoUsuario)) {
-    if (acao === 'criar') return true
-    if (acao === 'ver' && isProprioTicket) return true
-    if (acao === 'responder' && isProprioTicket) return true
+    if (acao === 'criar') return true; // Podem criar
+    if (acao === 'ver' && isProprioTicket) return true; // Podem ver seus próprios
+    if (acao === 'responder') return false; // Não podem responder
+    if (acao === 'fechar') return false; // Não podem fechar
   }
   
   // Outros não têm acesso
-  return false
+  return false;
 }

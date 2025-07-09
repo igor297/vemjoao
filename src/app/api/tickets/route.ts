@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Ticket from '@/models/Ticket'
+import Morador from '@/models/Morador'
+import Conjuge from '@/models/Conjuge'
+import Dependente from '@/models/Dependente'
 import mongoose from 'mongoose'
 import { verificarPermissaoTicket } from '@/models/Ticket'
 
@@ -12,9 +15,17 @@ export async function GET(request: NextRequest) {
     const tipoUsuario = url.searchParams.get('tipo_usuario')
     const usuarioId = url.searchParams.get('usuario_id')
     
-    if (!masterId || !tipoUsuario || !condominioId) {
+    if (!masterId || !tipoUsuario) {
       return NextResponse.json(
-        { error: 'Master ID, tipo de usuário e condomínio são obrigatórios' },
+        { error: 'Master ID e tipo de usuário são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Validar se condominio_id não é undefined ou string vazia
+    if (!condominioId || condominioId === 'undefined' || condominioId === 'null') {
+      return NextResponse.json(
+        { error: 'Condomínio deve ser selecionado' },
         { status: 400 }
       )
     }
@@ -40,7 +51,7 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    const result = await Ticket.find(filter).sort({ data_abertura: -1 }).toArray()
+    const result = await Ticket.find(filter).sort({ data_abertura: -1 })
     
     return NextResponse.json({
       success: true,
@@ -64,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Validação básica
     const requiredFields = [
       'titulo', 'descricao', 'categoria', 'solicitante_tipo', 
-      'solicitante_id', 'solicitante_nome', 'condominio_id', 'master_id'
+      'solicitante_id', 'condominio_id', 'master_id'
     ]
     
     for (const field of requiredFields) {
@@ -76,6 +87,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validação de tamanho dos campos
+    if (ticketData.titulo && ticketData.titulo.length < 5) {
+      return NextResponse.json(
+        { error: 'Título deve ter pelo menos 5 caracteres' },
+        { status: 400 }
+      )
+    }
+
+    if (ticketData.descricao && ticketData.descricao.length < 10) {
+      return NextResponse.json(
+        { error: 'Descrição deve ter pelo menos 10 caracteres' },
+        { status: 400 }
+      )
+    }
+
     // Verificar permissão para criar
     if (!verificarPermissaoTicket('criar', ticketData.solicitante_tipo)) {
       return NextResponse.json(
@@ -85,6 +111,50 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB()
+
+    // Buscar dados completos do solicitante baseado no tipo
+    let solicitanteData = null
+    let solicitante_nome = ''
+    let solicitante_cpf = ''
+    let solicitante_apartamento = ''
+    let solicitante_bloco = ''
+
+    if (ticketData.solicitante_tipo === 'morador' || ticketData.solicitante_tipo === 'inquilino') {
+      // Buscar no modelo Morador
+      solicitanteData = await Morador.findById(ticketData.solicitante_id)
+      if (solicitanteData) {
+        solicitante_nome = solicitanteData.nome
+        solicitante_cpf = solicitanteData.cpf
+        solicitante_apartamento = solicitanteData.unidade
+        solicitante_bloco = solicitanteData.bloco || ''
+      }
+    } else if (ticketData.solicitante_tipo === 'conjuge') {
+      // Buscar no modelo Conjuge
+      solicitanteData = await Conjuge.findById(ticketData.solicitante_id)
+      if (solicitanteData) {
+        solicitante_nome = solicitanteData.nome
+        solicitante_cpf = solicitanteData.cpf || ''
+        solicitante_apartamento = solicitanteData.unidade
+        solicitante_bloco = solicitanteData.bloco || ''
+      }
+    } else if (ticketData.solicitante_tipo === 'dependente') {
+      // Buscar no modelo Dependente
+      solicitanteData = await Dependente.findById(ticketData.solicitante_id)
+      if (solicitanteData) {
+        solicitante_nome = solicitanteData.nome
+        solicitante_cpf = solicitanteData.cpf || ''
+        solicitante_apartamento = solicitanteData.unidade
+        solicitante_bloco = solicitanteData.bloco || ''
+      }
+    }
+
+    // Se não encontrou dados do solicitante, retornar erro
+    if (!solicitanteData) {
+      return NextResponse.json(
+        { error: 'Dados do solicitante não encontrados' },
+        { status: 404 }
+      )
+    }
     // Gerar ID único
     const lastTicket = await Ticket.findOne(
       {},
@@ -102,13 +172,23 @@ export async function POST(request: NextRequest) {
       id: new mongoose.Types.ObjectId().toString(),
       remetente_tipo: ticketData.solicitante_tipo,
       remetente_id: ticketData.solicitante_id,
-      remetente_nome: ticketData.solicitante_nome,
+      remetente_nome: solicitante_nome,
       mensagem: ticketData.descricao,
       data: new Date()
     }
     
-    const newTicket = {
-      ...ticketData,
+    const newTicket: any = {
+      titulo: ticketData.titulo,
+      descricao: ticketData.descricao,
+      categoria: ticketData.categoria,
+      solicitante_tipo: ticketData.solicitante_tipo,
+      solicitante_id: ticketData.solicitante_id,
+      solicitante_nome: solicitante_nome,
+      solicitante_cpf: solicitante_cpf,
+      solicitante_apartamento: solicitante_apartamento,
+      solicitante_bloco: solicitante_bloco,
+      condominio_id: ticketData.condominio_id,
+      master_id: ticketData.master_id,
       id_ticket: `TK${nextId.toString().padStart(6, '0')}`,
       status: 'aberto',
       prioridade: ticketData.prioridade || 'media',

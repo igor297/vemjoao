@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap'
 
+interface UserInfo {
+  nome: string;
+  email: string;
+  subtipo: string;
+  condominio_nome: string;
+}
+
 export default function AdmDashboardPage() {
-  const [userInfo, setUserInfo] = useState<any>(null)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
 
   useEffect(() => {
     const userData = localStorage.getItem('userData')

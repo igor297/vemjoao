@@ -48,7 +48,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
     }
 
     // Escutar mudanças no localStorage (quando condomínio ativo é alterado)
-    const handleStorageChange = (e: any) => {
+    const handleStorageChange = () => {
       // Também escutar eventos custom disparados pelo dashboard
       loadUserData()
     }
@@ -100,7 +100,8 @@ export default function Header({ showLogout = true }: HeaderProps) {
           { icon: '🏢', label: 'Condomínios', path: '/condominio' },
           { icon: '👥', label: 'Moradores', path: '/moradores' },
           { icon: '💰', label: 'Financeiro', path: '/financeiro' },
-          { icon: '📅', label: 'Eventos', path: '/eventos' }
+          { icon: '📅', label: 'Eventos', path: '/eventos' },
+          { icon: '🎫', label: 'Ticket', path: '/tickets' }
         ]
       case 'adm':
         return [
@@ -108,40 +109,29 @@ export default function Header({ showLogout = true }: HeaderProps) {
           { icon: '👥', label: 'Moradores', path: '/moradores' },
           { icon: '🤝', label: 'Colaborador', path: '/colaborador' },
           { icon: '💰', label: 'Financeiro', path: '/financeiro' },
-          { icon: '📅', label: 'Eventos', path: '/eventos' }
+          { icon: '📅', label: 'Eventos', path: '/eventos' },
+          { icon: '🎫', label: 'Ticket', path: '/tickets' }
         ]
       case 'colaborador':
         return [
           ...baseItems,
           { icon: '💰', label: 'Financeiro', path: '/financeiro-colaboradores' },
-          { icon: '📅', label: 'Eventos', path: '/eventos' }
+          { icon: '📅', label: 'Eventos', path: '/eventos' },
+          { icon: '🎫', label: 'Ticket', path: '/tickets' }
         ]
       case 'morador':
         return [
           ...baseItems,
           { icon: '📅', label: 'Eventos', path: '/eventos' },
-          { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' }
+          { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' },
+          { icon: '🎫', label: 'Ticket', path: '/tickets' }
         ]
       default:
         return baseItems
     }
   }
 
-  // URLs para os subitens do menu financeiro
-  const financeiroLinks = {
-    master: '/financeiro-condominio',
-    adm: '/financeiro-condominio',
-    colaborador: '/financeiro-colaboradores',
-    morador: '/financeiro-morador'
-  }
-
-  // Label para o dashboard financeiro principal
-  const financeiroDashboardLabel = {
-    master: 'Financeiro do Condomínio',
-    adm: 'Financeiro do Condomínio',
-    colaborador: 'Financeiro do Colaborador',
-    morador: 'Financeiro do Morador'
-  }
+  
 
   const mobileMenuItems = getMobileMenuItems()
 
@@ -251,6 +241,16 @@ export default function Header({ showLogout = true }: HeaderProps) {
                 </Button>
               </Nav.Item>
               <Nav.Item>
+                <Button 
+                  variant="outline-light" 
+                  size="sm"
+                  onClick={() => router.push('/tickets')}
+                  className="ms-2"
+                >
+                  🎫 Ticket
+                </Button>
+              </Nav.Item>
+              <Nav.Item>
                 {/* Menu suspenso para Financeiro */}
                 <Dropdown className="ms-2">
                   <Dropdown.Toggle variant="outline-light" size="sm" id="dropdown-financeiro">
@@ -300,6 +300,16 @@ export default function Header({ showLogout = true }: HeaderProps) {
                 </Button>
               </Nav.Item>
               <Nav.Item>
+                <Button 
+                  variant="outline-light" 
+                  size="sm"
+                  onClick={() => router.push('/tickets')}
+                  className="ms-2"
+                >
+                  🎫 Ticket
+                </Button>
+              </Nav.Item>
+              <Nav.Item>
                 {/* Menu suspenso para Financeiro */}
                 <Dropdown className="ms-2">
                   <Dropdown.Toggle variant="outline-light" size="sm" id="dropdown-financeiro">
@@ -326,6 +336,16 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   className="ms-2"
                 >
                   📅 Eventos
+                </Button>
+              </Nav.Item>
+              <Nav.Item>
+                <Button 
+                  variant="outline-light" 
+                  size="sm"
+                  onClick={() => router.push('/tickets')}
+                  className="ms-2"
+                >
+                  🎫 Ticket
                 </Button>
               </Nav.Item>
               <Nav.Item>
@@ -366,6 +386,16 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   className="ms-2"
                 >
                   💳 Meus Pagamentos
+                </Button>
+              </Nav.Item>
+              <Nav.Item>
+                <Button 
+                  variant="outline-light" 
+                  size="sm"
+                  onClick={() => router.push('/tickets')}
+                  className="ms-2"
+                >
+                  🎫 Ticket
                 </Button>
               </Nav.Item>
               {userSubtipo === 'proprietario' && (
