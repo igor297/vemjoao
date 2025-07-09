@@ -71,6 +71,8 @@ interface Condominium {
 interface DashboardData {
   totalReceitas: number
   totalDespesas: number
+  totalReceitasPendentes: number
+  totalDespesasPendentes: number
   saldo: number
   receitasPorCategoria: { _id: string; total: number }[]
   despesasPorCategoria: { _id: string; total: number }[]
@@ -267,7 +269,8 @@ export default function FinanceiroCondominioPage() {
         condominio_id: selectedCondominiumId,
         master_id: currentUser.master_id || currentUser.id,
         tipo_usuario: currentUser.tipo,
-        relatorio: 'resumo'
+        relatorio: 'resumo',
+        _t: Date.now().toString() // Cache buster
       })
 
       const response = await fetch(`/api/financeiro-condominio?${params}`)
@@ -278,6 +281,8 @@ export default function FinanceiroCondominioPage() {
         setDashboardData({
           totalReceitas: resumo.total_receitas || 0,
           totalDespesas: resumo.total_despesas || 0,
+          totalReceitasPendentes: resumo.total_receitas_pendentes || 0,
+          totalDespesasPendentes: resumo.total_despesas_pendentes || 0,
           saldo: (resumo.total_receitas || 0) - (resumo.total_despesas || 0),
           receitasPorCategoria: resumo.receitas_por_categoria || [],
           despesasPorCategoria: resumo.despesas_por_categoria || [],
@@ -288,6 +293,8 @@ export default function FinanceiroCondominioPage() {
         setDashboardData({
           totalReceitas: 0,
           totalDespesas: 0,
+          totalReceitasPendentes: 0,
+          totalDespesasPendentes: 0,
           saldo: 0,
           receitasPorCategoria: [],
           despesasPorCategoria: [],
@@ -299,6 +306,8 @@ export default function FinanceiroCondominioPage() {
       setDashboardData({
         totalReceitas: 0,
         totalDespesas: 0,
+        totalReceitasPendentes: 0,
+        totalDespesasPendentes: 0,
         saldo: 0,
         receitasPorCategoria: [],
         despesasPorCategoria: [],
@@ -336,6 +345,19 @@ export default function FinanceiroCondominioPage() {
         [name]: value,
         tipo: tipo
       }))
+    } else if (name === 'status') {
+      // Atualização automática quando status for alterado para 'pago'
+      const newFormData = {
+        ...formData,
+        [name]: value
+      }
+      
+      if (value === 'pago' && !formData.data_pagamento) {
+        // Se não tem data de pagamento, define para hoje
+        newFormData.data_pagamento = format(new Date(), 'yyyy-MM-dd')
+      }
+      
+      setFormData(newFormData)
     } else {
       setFormData(prev => ({
         ...prev,
@@ -500,6 +522,41 @@ export default function FinanceiroCondominioPage() {
       setLoading(false)
       setShowDeleteModal(false)
       setItemToDelete(null)
+    }
+  }
+
+  const handleQuickStatusUpdate = async (item: FinanceiroCondominio, newStatus: string) => {
+    setLoading(true)
+    setAlert(null)
+
+    try {
+      const updateData = {
+        status: newStatus,
+        data_pagamento: newStatus === 'pago' ? format(new Date(), 'yyyy-MM-dd') : item.data_pagamento,
+        tipo_usuario: currentUser.tipo
+      }
+
+      const response = await fetch(`/api/financeiro-condominio/${item._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      const result = await safeJsonParse(response)
+      if (result.success) {
+        setAlert({ type: 'success', message: `Status atualizado para "${newStatus}" com sucesso!` })
+        fetchFinanceiroData()
+        fetchDashboardData()
+      } else {
+        setAlert({ type: 'danger', message: result.error || 'Erro ao atualizar status.' })
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+      setAlert({ type: 'danger', message: 'Erro de rede ao atualizar status.' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -677,32 +734,58 @@ export default function FinanceiroCondominioPage() {
         <Card.Header className="bg-primary text-white">Resumo Financeiro</Card.Header>
         <Card.Body>
           {dashboardData ? (
-            <Row>
-              <Col md={4} className="mb-3">
-                <Card className="text-center bg-light">
-                  <Card.Body>
-                    <Card.Title className="text-success">Receitas Totais</Card.Title>
-                    <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.totalReceitas)}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4} className="mb-3">
-                <Card className="text-center bg-light">
-                  <Card.Body>
-                    <Card.Title className="text-danger">Despesas Totais</Card.Title>
-                    <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.totalDespesas)}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4} className="mb-3">
-                <Card className={`text-center ${dashboardData.saldo >= 0 ? 'bg-success text-white' : 'bg-danger text-white'}`}>
-                  <Card.Body>
-                    <Card.Title>Saldo Atual</Card.Title>
-                    <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.saldo)}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+            <>
+              <Row className="mb-3">
+                <Col md={4} className="mb-3">
+                  <Card className="text-center bg-light">
+                    <Card.Body>
+                      <Card.Title className="text-success">Receitas Confirmadas</Card.Title>
+                      <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.totalReceitas)}</Card.Text>
+                      <small className="text-muted">Valores já pagos</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={4} className="mb-3">
+                  <Card className="text-center bg-light">
+                    <Card.Body>
+                      <Card.Title className="text-danger">Despesas Confirmadas</Card.Title>
+                      <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.totalDespesas)}</Card.Text>
+                      <small className="text-muted">Valores já pagos</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={4} className="mb-3">
+                  <Card className={`text-center ${dashboardData.saldo >= 0 ? 'bg-success text-white' : 'bg-danger text-white'}`}>
+                    <Card.Body>
+                      <Card.Title>Saldo Atual</Card.Title>
+                      <Card.Text className="fs-4 fw-bold">{formatCurrency(dashboardData.saldo)}</Card.Text>
+                      <small className="text-muted">Apenas valores pagos</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+              
+              <Row>
+                <Col md={6} className="mb-3">
+                  <Card className="text-center border-warning">
+                    <Card.Body>
+                      <Card.Title className="text-warning">⏳ Receitas Pendentes</Card.Title>
+                      <Card.Text className="fs-5 fw-bold">{formatCurrency(dashboardData.totalReceitasPendentes)}</Card.Text>
+                      <small className="text-muted">Valores a receber (pendentes/atrasados)</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={6} className="mb-3">
+                  <Card className="text-center border-info">
+                    <Card.Body>
+                      <Card.Title className="text-info">📋 Despesas Pendentes</Card.Title>
+                      <Card.Text className="fs-5 fw-bold">{formatCurrency(dashboardData.totalDespesasPendentes)}</Card.Text>
+                      <small className="text-muted">Valores a pagar (pendentes/atrasados)</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            </>
           ) : (
             <p>Carregando resumo financeiro...</p>
           )}
@@ -803,9 +886,22 @@ export default function FinanceiroCondominioPage() {
                       <td>{format(new Date(item.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}</td>
                       <td>{item.data_pagamento ? format(new Date(item.data_pagamento), 'dd/MM/yyyy', { locale: ptBR }) : 'N/A'}</td>
                       <td>
-                        <span className={`badge bg-${getStatusVariant(item.status)}`}>
-                          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                        </span>
+                        <div className="d-flex flex-column gap-1">
+                          <span className={`badge bg-${getStatusVariant(item.status)}`}>
+                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                          </span>
+                          {item.status !== 'pago' && (
+                            <Button 
+                              variant="outline-success" 
+                              size="sm" 
+                              onClick={() => handleQuickStatusUpdate(item, 'pago')}
+                              disabled={loading}
+                              title="Marcar como pago"
+                            >
+                              ✅ Pago
+                            </Button>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {item.origem_nome && `Nome: ${item.origem_nome}`}<br/>
@@ -983,8 +1079,11 @@ export default function FinanceiroCondominioPage() {
                         onChange={handleInputChange} 
                         className="form-control-lg"
                       />
-                      <Form.Text className="text-muted">
-                        Data em que foi realizado o pagamento (opcional)
+                      <Form.Text className={formData.status === 'pago' ? 'text-success' : 'text-muted'}>
+                        {formData.status === 'pago' ? 
+                          '✅ Obrigatório para status "Pago" - será definido automaticamente se não informado' : 
+                          'Data em que foi realizado o pagamento (opcional)'
+                        }
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -1108,4 +1207,3 @@ export default function FinanceiroCondominioPage() {
     </Container>
   )
 }
-o 

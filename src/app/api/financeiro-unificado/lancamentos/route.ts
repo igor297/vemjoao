@@ -98,7 +98,32 @@ export async function GET(request: NextRequest) {
             as: 'morador_info'
           }
         },
-        { $unwind: { path: '$morador_info', preserveNullAndEmptyArrays: true } }
+        { $unwind: { path: '$morador_info', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'moradors',
+            let: { 
+              bloco: '$bloco', 
+              unidade: '$apartamento',
+              condominio_id: '$condominio_id'
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$bloco', '$bloco'] },
+                      { $eq: ['$unidade', '$unidade'] },
+                      { $eq: ['$condominio_id', '$condominio_id'] },
+                      { $eq: ['$ativo', true] }
+                    ]
+                  }
+                }
+              }
+            ],
+            as: 'todos_moradores_unidade'
+          }
+        }
       ]);
 
       allLancamentos.push(...lancamentosMoradores.map(l => ({
@@ -106,10 +131,15 @@ export async function GET(request: NextRequest) {
         origem_sistema: 'morador',
         origem_nome: 'Morador',
         categoria_display: l.categoria,
-        pessoa_nome: l.morador_info?.nome || 'Morador não encontrado',
-        bloco: l.morador_info?.bloco || '',
-        unidade: l.morador_info?.unidade || '',
+        pessoa_nome: l.morador_info?.nome || l.morador_nome || 'Morador não encontrado',
+        bloco: l.morador_info?.bloco || l.bloco || '',
+        unidade: l.morador_info?.unidade || l.apartamento || '',
         cargo: '',
+        tipo_morador: l.morador_info?.tipo || 'proprietario',
+        cpf_morador: l.morador_info?.cpf || '',
+        email_morador: l.morador_info?.email || '',
+        telefone_morador: l.morador_info?.telefone || '',
+        todos_moradores_unidade: l.todos_moradores_unidade || [],
         tipo: 'receita' // Lançamentos de moradores são sempre receitas
       })));
     }

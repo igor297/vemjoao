@@ -1,0 +1,91 @@
+{
+  "ambiente": "desenvolvimento",
+  "api_base": "http://localhost:3000/api",
+  "configuracao_teste": {
+    "condominio_id": "684f0e3e5eb749bbecf97091",
+    "master_id": "684eec5c4af0e8961a18b1ff"
+  },
+  "dados_teste": {
+    "pagador": {
+      "nome": "João Silva Teste",
+      "documento": "12345678901",
+      "email": "joao.teste@email.com",
+      "telefone": "11999999999",
+      "endereco": {
+        "logradouro": "Rua Teste, 123",
+        "numero": "123",
+        "bairro": "Centro",
+        "cidade": "São Paulo",
+        "uf": "SP",
+        "cep": "01234567"
+      }
+    },
+    "beneficiario": {
+      "nome": "Condomínio Teste",
+      "documento": "12345678000195"
+    },
+    "cartao": {
+      "token": "token_teste_123",
+      "hash": "hash_teste_123",
+      "numero": "4111111111111111",
+      "cvv": "123",
+      "validade_mes": "12",
+      "validade_ano": "2025",
+      "nome_portador": "João Silva Teste"
+    }
+  },
+  "cenarios_teste": {
+    "pix": {
+      "valor_minimo": 5.00,
+      "valor_maximo": 500.00,
+      "expiracao_minutos": 60
+    },
+    "boleto": {
+      "valor_minimo": 10.00,
+      "valor_maximo": 1000.00,
+      "dias_vencimento": 30
+    },
+    "cartao_credito": {
+      "valor_minimo": 1.00,
+      "valor_maximo": 2000.00,
+      "parcelas_maximas": 12
+    },
+    "cartao_debito": {
+      "valor_minimo": 1.00,
+      "valor_maximo": 500.00,
+      "parcelas": 1
+    }
+  },
+  "providers_teste": {
+    "mercado_pago": {
+      "ativo": true,
+      "metodos_suportados": ["pix", "boleto", "cartao_credito", "cartao_debito"]
+    },
+    "stone": {
+      "ativo": true,
+      "metodos_suportados": ["pix", "boleto", "cartao_credito", "cartao_debito"]
+    },
+    "pagseguro": {
+      "ativo": true,
+      "metodos_suportados": ["pix", "boleto", "cartao_credito", "cartao_debito"]
+    }
+  },
+  "valores_teste": [
+    25.00,
+    50.00,
+    100.00,
+    150.00,
+    200.00,
+    350.00,
+    500.00
+  ],
+  "descricoes_teste": [
+    "Taxa Condominial",
+    "Multa por Atraso",
+    "Taxa de Limpeza",
+    "Manutenção Elevador",
+    "Segurança Predial",
+    "Reforma Área Comum",
+    "Fundo de Reserva"
+  ]
+}

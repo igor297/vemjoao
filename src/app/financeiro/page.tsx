@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Badge, Alert, Table, Form, Button } from 'react-bootstrap'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Container, Row, Col, Card, Badge, Alert, Table, Form, Button, Spinner, Dropdown } from 'react-bootstrap'
 import { Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -22,6 +22,7 @@ ChartJS.register(
   ArcElement
 )
 
+//<editor-fold desc="Interfaces">
 interface ResumoMorador {
   _id: string
   nome: string
@@ -128,19 +129,210 @@ interface PaginationData {
   total_items: number;
   items_per_page: number;
 }
+//</editor-fold>
 
-const CATEGORIAS_FINANCEIRO = [
-  { value: 'taxa_condominio', label: '🏢 Taxa Condomínio', tipo: 'receita' },
-  { value: 'multa_atraso', label: '⚠️ Multa Morador', tipo: 'receita' },
-  { value: 'salario', label: '💰 Salário Colaborador', tipo: 'despesa' },
-  { value: 'manutencao', label: '🛠️ Manutenção', tipo: 'despesa' },
-  { value: 'agua', label: '💧 Água', tipo: 'despesa' },
-  { value: 'luz', label: '💡 Luz', tipo: 'despesa' },
-  { value: 'limpeza', label: '🧹 Limpeza', tipo: 'despesa' },
-  { value: 'seguranca', label: ' vigilant Segurança', tipo: 'despesa' },
-  { value: 'outros_receita', label: '➕ Outras Receitas', tipo: 'receita' },
-  { value: 'outros_despesa', label: '➖ Outras Despesas', tipo: 'despesa' },
-];
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value)
+}
+
+const PageHeader = ({ lastUpdate, autoRefresh, onToggleAutoRefresh, onManualRefresh, loading, selectedCondominiumId, currentUser }) => (
+  <Row className="mb-4 align-items-center">
+    <Col md={6}>
+      <h1 className="h2 mb-0">Dashboard Financeiro</h1>
+      <p className="text-muted mb-0">Visão consolidada das finanças do condomínio.</p>
+    </Col>
+    <Col md={6} className="text-md-end">
+      {lastUpdate && (
+        <div className="d-flex align-items-center justify-content-md-end">
+          <small className="text-muted me-3">
+            Última atualização: {lastUpdate}
+          </small>
+          <Button variant="outline-secondary" size="sm" onClick={onToggleAutoRefresh} className="me-2">
+            <i className={`fas ${autoRefresh ? 'fa-pause' : 'fa-play'} me-1`}></i>
+            {autoRefresh ? 'Pausar' : 'Auto'}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => selectedCondominiumId && currentUser && onManualRefresh(currentUser, selectedCondominiumId)}
+            disabled={loading}
+          >
+            {loading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : <i className="fas fa-sync-alt"></i>}
+            <span className="ms-1">Atualizar</span>
+          </Button>
+        </div>
+      )}
+    </Col>
+  </Row>
+);
+
+const CondominiumSelector = ({ condominiums, selectedCondominiumId, onCondominioChange, currentUser }) => {
+    if (currentUser?.tipo !== 'master') return null;
+
+    return (
+        <Card className="shadow-sm mb-4">
+            <Card.Body>
+                <Row className="align-items-center">
+                    <Col md={2}>
+                        <h5 className="mb-0 text-primary">
+                            <i className="fas fa-building me-2"></i>
+                            Condomínio
+                        </h5>
+                    </Col>
+                    <Col md={5}>
+                        <Form.Select
+                            value={selectedCondominiumId}
+                            onChange={(e) => onCondominioChange(e.target.value)}
+                            aria-label="Selecionar Condomínio"
+                        >
+                            <option value="">Selecione um condomínio...</option>
+                            {condominiums.map((cond) => (
+                                <option key={cond._id} value={cond._id}>
+                                    {cond.nome}
+                                </option>
+                            ))}
+                        </Form.Select>
+                    </Col>
+                    <Col md={5}>
+                        {localStorage.getItem('activeCondominio') && localStorage.getItem('activeCondominio') === selectedCondominiumId && (
+                            <div className="d-flex align-items-center text-success">
+                                <i className="fas fa-check-circle me-2"></i>
+                                <small>Condomínio ativo selecionado.</small>
+                            </div>
+                        )}
+                    </Col>
+                </Row>
+            </Card.Body>
+        </Card>
+    );
+};
+
+const SummaryCard = ({ title, value, icon, variant, subValue, badgeText, badgeVariant }) => (
+    <Card className={`shadow-sm h-100 border-start border-${variant} border-4 position-relative overflow-hidden`}>
+        <Card.Body>
+            <Row className="align-items-center">
+                <Col xs={3}>
+                    <div className={`text-${variant} display-6`}>
+                        <i className={`fas ${icon}`}></i>
+                    </div>
+                </Col>
+                <Col xs={9}>
+                    <h6 className="text-muted mb-1">{title}</h6>
+                    <h4 className={`mb-0 text-${variant}`}>{value}</h4>
+                    {subValue && <small className="text-muted">{subValue}</small>}
+                </Col>
+            </Row>
+            {badgeText && (
+                <Badge pill bg={badgeVariant || variant} className="position-absolute top-0 end-0 m-2">
+                    {badgeText}
+                </Badge>
+            )}
+        </Card.Body>
+        {/* Efeito de gradiente sutil */}
+        <div className={`position-absolute bottom-0 end-0 w-25 h-25 opacity-10 bg-${variant}`} style={{
+            background: `linear-gradient(45deg, transparent, var(--bs-${variant}))`,
+            borderRadius: '50% 0 0 0'
+        }}></div>
+    </Card>
+);
+
+const FinancialAlerts = ({ moradoresAtrasados, colaboradoresAtrasados, colaboradoresPendentes, totalAtrasadoMoradores, totalAtrasadoColaboradores, totalPendenteColaboradores }) => {
+    const hasAlerts = moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0 || colaboradoresPendentes.length > 0;
+    if (!hasAlerts) {
+        return (
+            <Alert variant="success" className="d-flex align-items-center shadow-sm">
+                <i className="fas fa-check-circle fa-2x me-3"></i>
+                <div>
+                    <Alert.Heading>Parabéns! Situação financeira excelente!</Alert.Heading>
+                    <p className="mb-0">Não há pendências financeiras no momento.</p>
+                </div>
+            </Alert>
+        );
+    }
+
+    const isUrgent = moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0;
+
+    return (
+        <Alert variant={isUrgent ? "danger" : "warning"} className="d-flex align-items-center shadow-sm">
+            <i className={`fas ${isUrgent ? 'fa-exclamation-triangle' : 'fa-hourglass-half'} fa-2x me-3`}></i>
+            <div>
+                <Alert.Heading>{isUrgent ? 'Atenção! Existem itens em atraso' : 'Colaboradores com pagamentos pendentes'}</Alert.Heading>
+                {moradoresAtrasados.length > 0 && (
+                    <p className="mb-1">
+                        <strong>{moradoresAtrasados.length} unidade(s)</strong> em atraso, totalizando <strong>{formatCurrency(totalAtrasadoMoradores)}</strong>.
+                    </p>
+                )}
+                {colaboradoresAtrasados.length > 0 && (
+                    <p className="mb-1">
+                        <strong>{colaboradoresAtrasados.length} colaborador(es)</strong> em atraso, totalizando <strong>{formatCurrency(totalAtrasadoColaboradores)}</strong>.
+                    </p>
+                )}
+                {colaboradoresPendentes.length > 0 && (
+                    <p className="mb-1">
+                        <strong>{colaboradoresPendentes.length} colaborador(es)</strong> pendente(s), totalizando <strong>{formatCurrency(totalPendenteColaboradores)}</strong>.
+                    </p>
+                )}
+            </div>
+        </Alert>
+    );
+};
+
+const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChange, currentPage, totalPages, totalItems, itemsPerPage }) => {
+    const renderPagination = () => {
+        if (totalPages <= 1) return null;
+        return (
+            <div className="d-flex justify-content-between align-items-center mt-3">
+                <Button variant="outline-secondary" size="sm" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>
+                    <i className="fas fa-chevron-left"></i>
+                </Button>
+                <small className="text-muted">Página {currentPage} de {totalPages}</small>
+                <Button variant="outline-secondary" size="sm" disabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}>
+                    <i className="fas fa-chevron-right"></i>
+                </Button>
+            </div>
+        );
+    };
+
+    return (
+        <Card className="shadow-sm h-100">
+            <Card.Header className={`bg-${variant}-light`}>
+                <h6 className={`mb-0 text-${variant}`}>
+                    <i className={`fas ${icon} me-2`}></i>
+                    {title} ({totalItems})
+                </h6>
+            </Card.Header>
+            <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table hover size="sm" className="mb-0">
+                    <thead className="table-light sticky-top">
+                        <tr>
+                            {columns.map(col => <th key={col.key}>{col.label}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length} className="text-center text-muted py-4">
+                                    <i className="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <p className="mb-0">Nenhum item nesta categoria.</p>
+                                </td>
+                            </tr>
+                        ) : (
+                            items.map(item => (
+                                <tr key={item._id}>
+                                    {columns.map(col => <td key={col.key}>{col.render(item)}</td>)}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </Table>
+            </div>
+            {renderPagination()}
+        </Card>
+    );
+};
 
 export default function FinanceiroPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -151,108 +343,97 @@ export default function FinanceiroPage() {
   const [alert, setAlert] = useState<{type: string, message: string} | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [autoRefresh, setAutoRefresh] = useState(true)
-  
+
   // Pagination states
   const [moradoresAtrasadosPage, setMoradoresAtrasadosPage] = useState(1)
-  const [moradoresEmDiaPage, setMoradoresEmDiaPage] = useState(1)
-  const [colaboradoresAtrasadosPage, setColaboradoresAtrasadosPage] = useState(1)
   const [colaboradoresPendentesPage, setColaboradoresPendentesPage] = useState(1)
-  const [colaboradoresEmDiaPage, setColaboradoresEmDiaPage] = useState(1)
-  const itemsPerPage = 20
+  const itemsPerPage = 10
   
-  // Estados para lançamentos detalhados
+  // Lançamentos detalhados
+  const [showLancamentos, setShowLancamentos] = useState(false)
   const [lancamentos, setLancamentos] = useState<any[]>([])
   const [lancamentosPage, setLancamentosPage] = useState(1)
   const [lancamentosLoading, setLancamentosLoading] = useState(false)
   const [lancamentosPagination, setLancamentosPagination] = useState<any>(null)
-  const [lancamentosResumo, setLancamentosResumo] = useState<any>(null)
-  const [showLancamentos, setShowLancamentos] = useState(false)
   const [lancamentosFilters, setLancamentosFilters] = useState({
     status: '',
     tipo: '',
     origem: ''
   })
 
-  useEffect(() => {
-    const userData = localStorage.getItem('userData')
-    if (userData) {
-      try {
-        const user = JSON.parse(userData)
-        setCurrentUser(user)
-        
-        if (user.tipo === 'master') {
-          loadCondominiums(user.id)
-          
-          const activeCondominiumId = localStorage.getItem('activeCondominio')
-          if (activeCondominiumId) {
-            setSelectedCondominiumId(activeCondominiumId)
-            loadResumoUnificado(user, activeCondominiumId)
-          }
-        } else {
-          if (user.condominio_id) {
-            setSelectedCondominiumId(user.condominio_id)
-            loadResumoUnificado(user, user.condominio_id)
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error)
+  const loadResumoUnificado = useCallback(async (user: any, condominioId: string) => {
+    setLoading(true)
+    setAlert(null)
+    try {
+      const response = await fetch(
+        `/api/financeiro-unificado/resumo?master_id=${user.master_id || user.id}&condominio_id=${condominioId}&tipo_usuario=${user.tipo}`
+      )
+      const data = await response.json()
+      if (data.success) {
+        setResumoUnificado(data)
+        setLastUpdate(new Date(data.timestamp).toLocaleString('pt-BR'))
+      } else {
+        setAlert({ type: 'danger', message: data.error || 'Erro ao carregar dados financeiros' })
       }
-    }
-
-    // Listener para mudanças no condomínio ativo
-    const handleStorageChange = () => {
-      const userData = localStorage.getItem('userData')
-      if (userData) {
-        const user = JSON.parse(userData)
-        if (user.tipo === 'master') {
-          const activeCondominioId = localStorage.getItem('activeCondominio')
-          if (activeCondominioId && activeCondominioId !== selectedCondominiumId) {
-            setSelectedCondominiumId(activeCondominioId)
-            loadResumoUnificado(user, activeCondominioId)
-          }
-        }
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('condominioChanged', handleStorageChange)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('condominioChanged', handleStorageChange)
+    } catch (error) {
+      setAlert({ type: 'danger', message: 'Erro de rede ao carregar dados financeiros' })
+    } finally {
+      setLoading(false)
     }
   }, [])
 
-  // UseEffect para verificar condomínio ativo periodicamente
   useEffect(() => {
-    if (currentUser?.tipo === 'master') {
-      const interval = setInterval(() => {
-        const activeCondominio = localStorage.getItem('activeCondominio')
-        if (activeCondominio && activeCondominio !== selectedCondominiumId) {
-          setSelectedCondominiumId(activeCondominio)
-          loadResumoUnificado(currentUser, activeCondominio)
+    const userData = localStorage.getItem('userData')
+    if (userData) {
+      const user = JSON.parse(userData)
+      setCurrentUser(user)
+      if (user.tipo === 'master') {
+        const loadCondos = async (masterId) => {
+            try {
+                const response = await fetch(`/api/condominios?master_id=${encodeURIComponent(masterId)}`);
+                const data = await response.json();
+                if (data.success) setCondominiums(data.condominios);
+            } catch (e) { console.error(e); }
         }
-      }, 2000)
+        loadCondos(user.id);
+        const activeCondoId = localStorage.getItem('activeCondominio');
+        if (activeCondoId) {
+            setSelectedCondominiumId(activeCondoId);
+            loadResumoUnificado(user, activeCondoId);
+        }
+      } else if (user.condominio_id) {
+        setSelectedCondominiumId(user.condominio_id)
+        loadResumoUnificado(user, user.condominio_id)
+      }
+    }
 
+    const handleStorageChange = () => {
+        const activeCondoId = localStorage.getItem('activeCondominio');
+        if (activeCondoId && activeCondoId !== selectedCondominiumId) {
+            const user = JSON.parse(localStorage.getItem('userData') || '{}');
+            setSelectedCondominiumId(activeCondoId);
+            if(user) loadResumoUnificado(user, activeCondoId);
+        }
+    }
+    window.addEventListener('condominioChanged', handleStorageChange)
+    return () => window.removeEventListener('condominioChanged', handleStorageChange)
+  }, [loadResumoUnificado, selectedCondominiumId])
+
+  useEffect(() => {
+    if (autoRefresh && selectedCondominiumId && currentUser) {
+      const interval = setInterval(() => {
+        loadResumoUnificado(currentUser, selectedCondominiumId)
+      }, 30000)
       return () => clearInterval(interval)
     }
-  }, [currentUser, selectedCondominiumId])
+  }, [autoRefresh, selectedCondominiumId, currentUser, loadResumoUnificado])
 
-  const loadCondominiums = async (masterId: string) => {
-    try {
-      const response = await fetch(`/api/condominios?master_id=${encodeURIComponent(masterId)}`)
-      const data = await response.json()
-      if (data.success) {
-        setCondominiums(data.condominios)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar condomínios:', error)
-    }
-  }
-
-  const handleCondominioChange = async (condominioId: string) => {
+  const handleCondominioChange = (condominioId: string) => {
     setSelectedCondominiumId(condominioId)
-    
+    localStorage.setItem('activeCondominio', condominioId);
+    const condo = condominiums.find(c => c._id === condominioId);
+    if(condo) localStorage.setItem('activeCondominiumName', condo.nome);
+
     if (condominioId && currentUser) {
       loadResumoUnificado(currentUser, condominioId)
     } else {
@@ -260,105 +441,16 @@ export default function FinanceiroPage() {
     }
   }
 
-  // Auto refresh a cada 30 segundos
-  useEffect(() => {
-    if (autoRefresh && selectedCondominiumId && currentUser) {
-      const interval = setInterval(() => {
-        loadResumoUnificado(currentUser, selectedCondominiumId)
-      }, 30000) // 30 segundos
-
-      return () => clearInterval(interval)
-    }
-  }, [autoRefresh, selectedCondominiumId, currentUser])
-
-  const loadResumoUnificado = async (user: any, condominioId: string) => {
-    setLoading(true)
-    setAlert(null)
-    
-    try {
-      console.log('🔄 Carregando resumo unificado em tempo real...')
-      const response = await fetch(
-        `/api/financeiro-unificado/resumo?master_id=${user.master_id || user.id}&condominio_id=${condominioId}&tipo_usuario=${user.tipo}`
-      )
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setResumoUnificado(data)
-        setLastUpdate(new Date(data.timestamp).toLocaleString('pt-BR'))
-        console.log('✅ Resumo unificado carregado:', {
-          timestamp: data.timestamp,
-          moradores_atrasados: data.dados_unificados.moradores.atrasados.length,
-          colaboradores_pendentes: data.dados_unificados.colaboradores.pendentes.length + data.dados_unificados.colaboradores.atrasados.length,
-          saldo_condominio: data.dados_unificados.condominio.saldo_liquido
-        })
-      } else {
-        console.error('❌ Erro na API:', data.error)
-        setAlert({ type: 'danger', message: data.error || 'Erro ao carregar dados financeiros' })
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar resumo unificado:', error)
-      setAlert({ type: 'danger', message: 'Erro de rede ao carregar dados financeiros' })
-    } finally {
-      setLoading(false)
-    }
+  const getPaginatedData = (data: any[], page: number) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
   }
 
-  const formatCurrencyDisplay = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
-  
-  // Funções auxiliares de paginação
-  const getPaginatedData = (data: any[], page: number, itemsPerPage: number) => {
-    const startIndex = (page - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return data.slice(startIndex, endIndex)
-  }
-  
-  const getTotalPages = (totalItems: number, itemsPerPage: number) => {
-    return Math.ceil(totalItems / itemsPerPage)
-  }
-  
-  const renderPaginationControls = (currentPage: number, totalPages: number, onPageChange: (page: number) => void, dataLength: number) => {
-    if (totalPages <= 1) return null
-    
-    return (
-      <div className="d-flex justify-content-between align-items-center mt-3">
-        <Button 
-          variant="outline-secondary" 
-          size="sm" 
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          ← Anterior
-        </Button>
-        <div className="text-center">
-          <span className="badge bg-primary me-2">
-            Página {currentPage} de {totalPages}
-          </span>
-          <small className="text-muted">
-            ({dataLength} itens total)
-          </small>
-        </div>
-        <Button 
-          variant="outline-secondary" 
-          size="sm" 
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          Próxima →
-        </Button>
-      </div>
-    )
-  }
-  
+  const getTotalPages = (totalItems: number) => Math.ceil(totalItems / itemsPerPage);
+
   // Função para carregar lançamentos detalhados
   const loadLancamentos = async (user: any, condominioId: string, page: number = 1) => {
     setLancamentosLoading(true)
-    
     try {
       const params = new URLSearchParams({
         master_id: user.master_id || user.id,
@@ -367,7 +459,6 @@ export default function FinanceiroPage() {
         limit: itemsPerPage.toString()
       })
       
-      // Adicionar filtros se estiverem definidos
       if (lancamentosFilters.status) params.append('status', lancamentosFilters.status)
       if (lancamentosFilters.tipo) params.append('tipo', lancamentosFilters.tipo)
       if (lancamentosFilters.origem) params.append('origem', lancamentosFilters.origem)
@@ -378,1160 +469,609 @@ export default function FinanceiroPage() {
       if (data.success) {
         setLancamentos(data.lancamentos)
         setLancamentosPagination(data.pagination)
-        setLancamentosResumo(data.resumo)
-        console.log('✅ Lançamentos carregados:', {
-          total: data.pagination.total_items,
-          pagina: data.pagination.current_page,
-          filtros: lancamentosFilters
-        })
       } else {
-        console.error('❌ Erro na API de lançamentos:', data.error)
         setAlert({ type: 'danger', message: data.error || 'Erro ao carregar lançamentos' })
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar lançamentos:', error)
       setAlert({ type: 'danger', message: 'Erro de rede ao carregar lançamentos' })
     } finally {
       setLancamentosLoading(false)
     }
   }
-  
-  // Função para aplicar filtros de lançamentos
-  const applyLancamentosFilters = () => {
-    if (selectedCondominiumId && currentUser) {
-      setLancamentosPage(1)
-      loadLancamentos(currentUser, selectedCondominiumId, 1)
-    }
-  }
-  
-  // Função para limpar filtros de lançamentos
-  const clearLancamentosFilters = () => {
-    setLancamentosFilters({ status: '', tipo: '', origem: '' })
-    if (selectedCondominiumId && currentUser) {
-      setLancamentosPage(1)
-      loadLancamentos(currentUser, selectedCondominiumId, 1)
+
+  // Função para atualizar status de lançamento rapidamente
+  const handleQuickStatusUpdate = async (lancamento: any, newStatus: string) => {
+    setLancamentosLoading(true)
+    setAlert(null)
+
+    try {
+      let updateData: any = {
+        status: newStatus,
+        data_pagamento: newStatus === 'pago' ? new Date().toISOString().split('T')[0] : lancamento.data_pagamento,
+        tipo_usuario: currentUser.tipo
+      }
+
+      let apiUrl = ''
+      
+      if (lancamento.origem_sistema === 'morador') {
+        apiUrl = `/api/financeiro-morador/${lancamento._id}`
+      } else if (lancamento.origem_sistema === 'colaborador') {
+        apiUrl = `/api/financeiro-colaboradores`
+        updateData._id = lancamento._id
+      } else if (lancamento.origem_sistema === 'condominio') {
+        apiUrl = `/api/financeiro-condominio/${lancamento._id}`
+      } else {
+        throw new Error('Origem do lançamento não identificada')
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setAlert({ type: 'success', message: `Status atualizado para "${newStatus}" com sucesso!` })
+        loadLancamentos(currentUser, selectedCondominiumId, lancamentosPage)
+        loadResumoUnificado(currentUser, selectedCondominiumId)
+      } else {
+        setAlert({ type: 'danger', message: result.error || 'Erro ao atualizar status.' })
+      }
+    } catch (error) {
+      setAlert({ type: 'danger', message: 'Erro de rede ao atualizar status.' })
+    } finally {
+      setLancamentosLoading(false)
     }
   }
 
-  // Dados unificados em tempo real
   const dadosUnificados = resumoUnificado?.dados_unificados
   const resumoGeral = resumoUnificado?.resumo_geral
-  
-  const moradoresEmDia = dadosUnificados?.moradores.em_dia || []
+
   const moradoresAtrasados = dadosUnificados?.moradores.atrasados || []
-  const colaboradoresEmDia = dadosUnificados?.colaboradores.em_dia || []
   const colaboradoresPendentes = dadosUnificados?.colaboradores.pendentes || []
   const colaboradoresAtrasados = dadosUnificados?.colaboradores.atrasados || []
-  const dadosCondominio = dadosUnificados?.condominio
 
   const totalAtrasadoMoradores = resumoGeral?.total_a_receber_moradores || 0
   const totalPendenteColaboradores = resumoGeral?.total_a_pagar_colaboradores || 0
   const totalAtrasadoColaboradores = colaboradoresAtrasados.reduce((sum, c) => sum + (c.total_atrasado || 0), 0)
 
+  const moradoresColumns = [
+      { key: 'status', label: 'Status', render: (item) => <Badge bg="danger">Atrasado</Badge> },
+      { key: 'nome', label: 'Morador', render: (item) => <strong>{item.nome}</strong> },
+      { key: 'unidade', label: 'Unidade', render: (item) => <>{item.bloco ? `${item.bloco}-` : ''}{item.unidade}</> },
+      { key: 'valor', label: 'Valor Devido', render: (item) => <span className="text-danger">{formatCurrency(item.total_atrasado || 0)}</span> },
+      { key: 'dias', label: 'Dias Atraso', render: (item) => <Badge bg="dark">{item.dias_atraso || 'N/A'}d</Badge> },
+  ];
+
+  const colaboradoresColumns = [
+      { key: 'status', label: 'Status', render: (item) => <Badge bg={item.status_pagamento === 'atrasado' ? 'danger' : 'warning'}>{item.status_pagamento.toUpperCase()}</Badge> },
+      { key: 'nome', label: 'Colaborador', render: (item) => <strong>{item.nome}</strong> },
+      { key: 'cargo', label: 'Cargo', render: (item) => item.cargo || 'N/A' },
+      { key: 'valor', label: 'Valor a Pagar', render: (item) => <span className={item.status_pagamento === 'atrasado' ? 'text-danger' : 'text-warning'}>{formatCurrency(item.total_a_receber || item.total_atrasado || 0)}</span> },
+  ];
+
   return (
-    <>
-      <Container fluid className="mt-4">
-        {alert && (
-          <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
-            {alert.message}
-          </Alert>
-        )}
+    <Container fluid className="py-4">
+      {alert && <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>{alert.message}</Alert>}
 
-        <Row className="mb-4">
-          <Col>
-            <div className="text-center">
-              <h2 className="mb-1">💰 Resumo Financeiro Unificado</h2>
-              <p className="text-muted mb-0">Dados em tempo real: moradores, colaboradores e condomínio</p>
-              {lastUpdate && (
-                <div className="mt-2">
-                  <small className="text-success">
-                    🔄 Última atualização: {lastUpdate}
-                    {autoRefresh && <span className="ms-2 badge bg-success">Auto-refresh ativo</span>}
-                  </small>
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm" 
-                    className="ms-3"
-                    onClick={() => setAutoRefresh(!autoRefresh)}
-                  >
-                    {autoRefresh ? '⏸️ Pausar' : '▶️ Ativar'} Auto-refresh
-                  </Button>
-                  <Button 
-                    variant="outline-success" 
-                    size="sm" 
-                    className="ms-2"
-                    onClick={() => selectedCondominiumId && currentUser && loadResumoUnificado(currentUser, selectedCondominiumId)}
-                    disabled={loading}
-                  >
-                    🔄 Atualizar Agora
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Col>
-        </Row>
+      <PageHeader
+          lastUpdate={lastUpdate}
+          autoRefresh={autoRefresh}
+          onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
+          onManualRefresh={loadResumoUnificado}
+          loading={loading}
+          selectedCondominiumId={selectedCondominiumId}
+          currentUser={currentUser}
+      />
 
-        {currentUser?.tipo === 'master' && (
+      <CondominiumSelector
+          condominiums={condominiums}
+          selectedCondominiumId={selectedCondominiumId}
+          onCondominioChange={handleCondominioChange}
+          currentUser={currentUser}
+      />
+
+      {!selectedCondominiumId ? (
+        <Alert variant="info" className="text-center shadow-sm">
+          <h5 className="mb-0"><i className="fas fa-info-circle me-2"></i>Selecione um condomínio para visualizar os dados.</h5>
+        </Alert>
+      ) : loading && !resumoUnificado ? (
+        <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" style={{ width: '3rem', height: '3rem' }}/>
+            <h5 className="mt-3">Carregando dados financeiros...</h5>
+        </div>
+      ) : resumoUnificado && dadosUnificados && resumoGeral ? (
+        <>
           <Row className="mb-4">
-            <Col>
-              <Card>
-                <Card.Header className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">🏢 Seleção de Condomínio</h5>
-                </Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group>
-                        <Form.Label>Selecionar Condomínio *</Form.Label>
-                        <Form.Select
-                          value={selectedCondominiumId}
-                          onChange={(e) => handleCondominioChange(e.target.value)}
-                          required
-                        >
-                          <option value="">Selecione um condomínio</option>
-                          {condominiums.map((cond) => (
-                            <option key={cond._id} value={cond._id}>
-                              {cond.nome}
-                            </option>
-                          ))}
-                        </Form.Select>
-                        <Form.Text className="text-muted">
-                          {localStorage.getItem('activeCondominio') && localStorage.getItem('activeCondominio') === selectedCondominiumId ? (
-                            <span className="text-success">
-                              ✅ Condomínio ativo selecionado automaticamente
-                            </span>
-                          ) : (
-                            "Selecione o condomínio para visualizar o resumo financeiro"
-                          )}
-                        </Form.Text>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6} className="d-flex align-items-end">
-                      <div className="w-100">
-                        <small className="text-muted">
-                          <strong>Condomínios disponíveis:</strong> {condominiums.length}
-                        </small>
-                        {localStorage.getItem('activeCondominio') && (
-                          <div className="mt-1">
-                            <small className="text-success">
-                              🏢 <strong>Condomínio Ativo:</strong> {localStorage.getItem('activeCondominiumName') || 'Carregando...'}
-                            </small>
-                          </div>
-                        )}
-                      </div>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </Col>
+              <Col>
+                  <FinancialAlerts
+                      moradoresAtrasados={moradoresAtrasados}
+                      colaboradoresAtrasados={colaboradoresAtrasados}
+                      colaboradoresPendentes={colaboradoresPendentes}
+                      totalAtrasadoMoradores={totalAtrasadoMoradores}
+                      totalAtrasadoColaboradores={totalAtrasadoColaboradores}
+                      totalPendenteColaboradores={totalPendenteColaboradores}
+                  />
+              </Col>
           </Row>
-        )}
 
-        {!selectedCondominiumId ? (
-          <Alert variant="info" className="text-center">
-            <h5>🏢 Selecione um condomínio</h5>
-            <p className="mb-0">{currentUser?.tipo === 'master' ? 'Selecione um condomínio acima para ver o resumo financeiro' : 'Vá para qualquer página do sistema e selecione um condomínio para ver o resumo financeiro'}</p>
-          </Alert>
-        ) : loading ? (
-          <Alert variant="info" className="text-center">
-            <div className="spinner-border spinner-border-sm me-2"></div>
-            Carregando dados financeiros...
-          </Alert>
-        ) : (
-          <>
-            {/* Alertas de Status */}
-            {(moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0 || colaboradoresPendentes.length > 0) && (
-              <Row className="mb-4">
-                <Col>
-                  <Alert 
-                    variant={(moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0) ? "danger" : "warning"} 
-                    className="d-flex align-items-center"
-                  >
-                    <div className="me-3">
-                      {(moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0) ? (
-                        <i className="fas fa-exclamation-triangle fa-2x"></i>
-                      ) : (
-                        <i className="fas fa-hourglass-half fa-2x"></i>
-                      )}
-                    </div>
-                    <div className="flex-grow-1">
-                      <h6 className="alert-heading mb-2">
-                        {(moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0) ? 
-                          '🚨 Atenção! Existem itens em atraso' : 
-                          '⏰ Colaboradores pendentes de pagamento'}
-                      </h6>
-                      <div className="mb-0">
-                        {moradoresAtrasados.length > 0 && (
-                          <p className="mb-1">
-                            <strong>{moradoresAtrasados.length} unidade(s)</strong> em atraso totalizando <strong>{formatCurrencyDisplay(totalAtrasadoMoradores)}</strong>
-                          </p>
-                        )}
-                        {colaboradoresAtrasados.length > 0 && (
-                          <p className="mb-1">
-                            <strong>{colaboradoresAtrasados.length} colaborador(es)</strong> em atraso totalizando <strong>{formatCurrencyDisplay(totalAtrasadoColaboradores)}</strong>
-                          </p>
-                        )}
-                        {colaboradoresPendentes.length > 0 && (
-                          <p className="mb-1">
-                            <strong>{colaboradoresPendentes.length} colaborador(es)</strong> pendente(s) totalizando <strong>{formatCurrencyDisplay(totalPendenteColaboradores)}</strong>
-                          </p>
-                        )}
-                        <small>Verifique os detalhes abaixo para tomar as ações necessárias.</small>
-                      </div>
-                    </div>
-                  </Alert>
-                </Col>
-              </Row>
-            )}
-
-            {/* Alerta de sucesso quando tudo está em dia */}
-            {moradoresAtrasados.length === 0 && colaboradoresAtrasados.length === 0 && colaboradoresPendentes.length === 0 && moradoresEmDia.length > 0 && (
-              <Row className="mb-4">
-                <Col>
-                  <Alert variant="success" className="d-flex align-items-center">
-                    <div className="me-3">
-                      <i className="fas fa-check-circle fa-2x"></i>
-                    </div>
-                    <div className="flex-grow-1">
-                      <h6 className="alert-heading mb-2">🎉 Parabéns! Situação financeira excelente!</h6>
-                      <div className="mb-0">
-                        <p className="mb-1">
-                          <strong>Todas as {moradoresEmDia.length} unidades</strong> estão em dia com os pagamentos
-                        </p>
-                        <p className="mb-1">
-                          <strong>Todos os {colaboradoresEmDia.length} colaboradores</strong> foram pagos corretamente
-                        </p>
-                        <small>Continue assim! O condomínio está com a gestão financeira em ordem.</small>
-                      </div>
-                    </div>
-                  </Alert>
-                </Col>
-              </Row>
-            )}
-
-            {/* Cards de Resumo */}
-            <Row className="mb-4">
+          <Row className="mb-4 g-4">
               <Col md={3}>
-                <Card className={`border-success ${moradoresEmDia.length === 0 ? 'bg-light' : ''}`}>
-                  <Card.Body className="text-center position-relative">
-                    <div className="text-success display-6 mb-2">✅</div>
-                    <h6 className="text-muted">Unidades em Dia</h6>
-                    <h4 className="text-success">{moradoresEmDia.length}</h4>
-                    <small className="text-muted">
-                      de {moradoresEmDia.length + moradoresAtrasados.length} unidades
-                    </small>
-                    {moradoresEmDia.length === (moradoresEmDia.length + moradoresAtrasados.length) && 
-                     moradoresEmDia.length > 0 && (
-                      <div className="position-absolute top-0 end-0 p-2">
-                        <Badge bg="success">100%</Badge>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <SummaryCard title="Unidades em Dia" value={dadosUnificados.moradores.em_dia.length} icon="fa-check-circle" variant="success" subValue={`de ${dadosUnificados.moradores.estatisticas.total_unidades}`} />
               </Col>
               <Col md={3}>
-                <Card className={`border-danger ${moradoresAtrasados.length === 0 ? 'bg-light' : ''}`}>
-                  <Card.Body className="text-center position-relative">
-                    <div className="text-danger display-6 mb-2">⚠️</div>
-                    <h6 className="text-muted">Unidades Atrasadas</h6>
-                    <h4 className="text-danger">{moradoresAtrasados.length}</h4>
-                    <small className="text-muted">{formatCurrencyDisplay(totalAtrasadoMoradores)}</small>
-                    {moradoresAtrasados.length > 0 && (
-                      <div className="position-absolute top-0 end-0 p-2">
-                        <Badge bg="danger">URGENTE</Badge>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <SummaryCard title="Unidades Atrasadas" value={moradoresAtrasados.length} icon="fa-exclamation-triangle" variant="danger" subValue={formatCurrency(totalAtrasadoMoradores)} badgeText={moradoresAtrasados.length > 0 ? "URGENTE" : undefined} badgeVariant="danger" />
               </Col>
               <Col md={3}>
-                <Card className={`border-info ${colaboradoresEmDia.length === 0 ? 'bg-light' : ''}`}>
-                  <Card.Body className="text-center position-relative">
-                    <div className="text-info display-6 mb-2">👥</div>
-                    <h6 className="text-muted">Colaboradores em Dia</h6>
-                    <h4 className="text-info">{colaboradoresEmDia.length}</h4>
-                    <small className="text-muted">
-                      de {colaboradoresEmDia.length + colaboradoresAtrasados.length + colaboradoresPendentes.length} colaboradores
-                    </small>
-                    {colaboradoresEmDia.length === (colaboradoresEmDia.length + colaboradoresAtrasados.length + colaboradoresPendentes.length) && 
-                     colaboradoresEmDia.length > 0 && (
-                      <div className="position-absolute top-0 end-0 p-2">
-                        <Badge bg="info">100%</Badge>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <SummaryCard title="Colaboradores em Dia" value={dadosUnificados.colaboradores.em_dia.length} icon="fa-user-check" variant="info" subValue={`de ${dadosUnificados.colaboradores.estatisticas.total}`} />
               </Col>
               <Col md={3}>
-                <Card className={`border-warning ${colaboradoresPendentes.length === 0 ? 'bg-light' : ''}`}>
-                  <Card.Body className="text-center position-relative">
-                    <div className="text-warning display-6 mb-2">💸</div>
-                    <h6 className="text-muted">A Pagar Colaboradores</h6>
-                    <h4 className="text-warning">{colaboradoresAtrasados.length + colaboradoresPendentes.length}</h4>
-                    <small className="text-muted">{formatCurrencyDisplay(totalAtrasadoColaboradores + totalPendenteColaboradores)}</small>
-                    {(colaboradoresAtrasados.length > 0 || colaboradoresPendentes.length > 0) && (
-                      <div className="position-absolute top-0 end-0 p-2">
-                        <Badge bg="warning">PAGAR</Badge>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <SummaryCard title="Pagamentos Pendentes" value={colaboradoresPendentes.length + colaboradoresAtrasados.length} icon="fa-hourglass-half" variant="warning" subValue={formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)} badgeText={(colaboradoresPendentes.length + colaboradoresAtrasados.length) > 0 ? "PAGAR" : undefined} badgeVariant="warning" />
               </Col>
-            </Row>
+          </Row>
 
-            {/* Cards do Condomínio */}
-            {dadosCondominio && (
-              <Row className="mb-4">
-                <Col>
-                  <h5 className="text-primary mb-3">🏢 Situação Financeira do Condomínio</h5>
-                </Col>
-              </Row>
-            )}
-            
-            {dadosCondominio && (
-              <Row className="mb-4">
-                <Col md={3}>
-                  <Card className="border-success">
-                    <Card.Body className="text-center">
-                      <div className="text-success display-6 mb-2">💰</div>
-                      <h6 className="text-muted">Receitas Totais</h6>
-                      <h4 className="text-success">{formatCurrencyDisplay(dadosCondominio.receitas.total)}</h4>
-                      <small className="text-muted">
-                        {dadosCondominio.receitas.count_pendentes > 0 && 
-                          `${dadosCondominio.receitas.count_pendentes} pendente(s)`
-                        }
-                      </small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col md={3}>
-                  <Card className="border-danger">
-                    <Card.Body className="text-center">
-                      <div className="text-danger display-6 mb-2">💸</div>
-                      <h6 className="text-muted">Despesas Totais</h6>
-                      <h4 className="text-danger">{formatCurrencyDisplay(dadosCondominio.despesas.total)}</h4>
-                      <small className="text-muted">
-                        {dadosCondominio.despesas.count_pendentes > 0 && 
-                          `${dadosCondominio.despesas.count_pendentes} pendente(s)`
-                        }
-                      </small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col md={3}>
-                  <Card className={`border-${dadosCondominio.saldo_liquido >= 0 ? 'info' : 'warning'}`}>
-                    <Card.Body className="text-center">
-                      <div className={`text-${dadosCondominio.saldo_liquido >= 0 ? 'info' : 'warning'} display-6 mb-2`}>
-                        {dadosCondominio.saldo_liquido >= 0 ? '📈' : '📉'}
-                      </div>
-                      <h6 className="text-muted">Saldo Líquido</h6>
-                      <h4 className={`text-${dadosCondominio.saldo_liquido >= 0 ? 'info' : 'warning'}`}>
-                        {formatCurrencyDisplay(dadosCondominio.saldo_liquido)}
-                      </h4>
-                      <small className="text-muted">
-                        {dadosCondominio.saldo_liquido >= 0 ? 'Superávit' : 'Déficit'}
-                      </small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col md={3}>
-                  <Card className="border-primary">
-                    <Card.Body className="text-center">
-                      <div className="text-primary display-6 mb-2">🧮</div>
-                      <h6 className="text-muted">Resultado Líquido</h6>
-                      <h4 className={`text-${resumoGeral?.resultado_liquido >= 0 ? 'success' : 'danger'}`}>
-                        {formatCurrencyDisplay(resumoGeral?.resultado_liquido || 0)}
-                      </h4>
-                      <small className="text-muted">
-                        Moradores - Colaboradores
-                      </small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
-            )}
-
-            {/* Gráficos */}
-            <Row className="mb-4">
+          <Row className="mb-4 g-4">
               <Col md={6}>
-                <Card>
-                  <Card.Header>
-                    <h6 className="mb-0">📊 Status das Unidades</h6>
-                  </Card.Header>
-                  <Card.Body>
-                    {moradoresEmDia.length > 0 || moradoresAtrasados.length > 0 ? (
-                      <Doughnut
-                        data={{
-                          labels: ['Unidades em Dia', 'Unidades Atrasadas'],
-                          datasets: [{
-                            data: [moradoresEmDia.length, moradoresAtrasados.length],
-                            backgroundColor: ['#28a745', '#dc3545']
-                          }]
-                        }}
-                        options={{
-                          responsive: true,
-                          plugins: {
-                            legend: {
-                              position: 'bottom'
-                            }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="text-center text-muted py-4">
-                        <p>Nenhum dado encontrado</p>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <Card className="shadow-sm h-100">
+                      <Card.Header><h6 className="mb-0"><i className="fas fa-chart-pie me-2"></i>Status das Unidades</h6></Card.Header>
+                      <Card.Body>
+                        <div style={{ maxHeight: '250px' }}>
+                          <Doughnut data={{
+                              labels: ['Em Dia', 'Atrasadas'],
+                              datasets: [{
+                                  data: [dadosUnificados.moradores.em_dia.length, moradoresAtrasados.length],
+                                  backgroundColor: ['#198754', '#dc3545'],
+                                  borderColor: '#fff',
+                                  borderWidth: 2,
+                              }]
+                          }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+                        </div>
+                      </Card.Body>
+                  </Card>
               </Col>
               <Col md={6}>
-                <Card>
-                  <Card.Header>
-                    <h6 className="mb-0">📊 Status dos Colaboradores</h6>
-                  </Card.Header>
-                  <Card.Body>
-                    {colaboradoresEmDia.length > 0 || colaboradoresPendentes.length > 0 || colaboradoresAtrasados.length > 0 ? (
-                      <Doughnut
-                        data={{
-                          labels: ['Em Dia', 'Pendentes'],
-                          datasets: [{
-                            data: [colaboradoresEmDia.length, colaboradoresPendentes.length],
-                            backgroundColor: ['#17a2b8', '#ffc107']
-                          }]
-                        }}
-                        options={{
-                          responsive: true,
-                          plugins: {
-                            legend: {
-                              position: 'bottom'
-                            }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="text-center text-muted py-4">
-                        <p>Nenhum dado encontrado</p>
-                      </div>
-                    )}
-                  </Card.Body>
-                </Card>
+                  <Card className="shadow-sm h-100">
+                      <Card.Header><h6 className="mb-0"><i className="fas fa-users me-2"></i>Status dos Colaboradores</h6></Card.Header>
+                      <Card.Body>
+                        <div style={{ maxHeight: '250px' }}>
+                          <Doughnut data={{
+                              labels: ['Em Dia', 'Pendentes', 'Atrasados'],
+                              datasets: [{
+                                  data: [dadosUnificados.colaboradores.em_dia.length, colaboradoresPendentes.length, colaboradoresAtrasados.length],
+                                  backgroundColor: ['#0dcaf0', '#ffc107', '#dc3545'],
+                                  borderColor: '#fff',
+                                  borderWidth: 2,
+                              }]
+                          }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+                        </div>
+                      </Card.Body>
+                  </Card>
               </Col>
-            </Row>
+          </Row>
 
-            {/* Listas Detalhadas */}
-            <Row className="mb-4">
+          {/* Resumo Financeiro Total */}
+          <Row className="mb-4">
               <Col>
-                <Card>
-                  <Card.Header>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <h6 className="mb-0">📊 Status Detalhado - Moradores e Colaboradores</h6>
-                      <div>
-                        <Badge bg="success" className="me-2">
-                          {moradoresEmDia.length + colaboradoresEmDia.length} Em Dia
-                        </Badge>
-                        <Badge bg="danger" className="me-2">
-                          {moradoresAtrasados.length + colaboradoresAtrasados.length} Atrasados
-                        </Badge>
-                        <Badge bg="warning">
-                          {colaboradoresPendentes.length} Pendentes
-                        </Badge>
-                      </div>
-                    </div>
-                  </Card.Header>
-                  <Card.Body>
-                    <Row>
-                      <Col md={6}>
-                        <h6 className="text-danger mb-3">
-                          <i className="fas fa-exclamation-triangle me-2"></i>
-                          Unidades com Atraso ({moradoresAtrasados.length})
-                          {moradoresAtrasados.length > itemsPerPage && (
-                            <small className="text-muted ms-2">
-                              (Mostrando {itemsPerPage} por página)
-                            </small>
-                          )}
-                        </h6>
-                        <div className="table-responsive" style={{maxHeight: '350px', overflowY: 'auto'}}>
-                          <Table striped hover size="sm">
-                            <thead className="table-light sticky-top">
-                              <tr>
-                                <th>Status</th>
-                                <th>Morador</th>
-                                <th>Unidade</th>
-                                <th>Valor</th>
-                                <th>Dias</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {moradoresEmDia.length === 0 && moradoresAtrasados.length === 0 ? (
-                                <tr>
-                                  <td colSpan={5} className="text-center text-muted py-3">
-                                    📭 Nenhuma unidade encontrada neste condomínio
-                                  </td>
-                                </tr>
-                              ) : moradoresAtrasados.length === 0 ? (
-                                <tr>
-                                  <td colSpan={5} className="text-center text-success py-3">
-                                    <i className="fas fa-check-circle fa-2x mb-2 text-success"></i>
-                                    <br />
-                                    <strong>🎉 Parabéns! Nenhuma unidade em atraso!</strong>
-                                    <br />
-                                    <small>Todas as {moradoresEmDia.length} unidades estão em dia</small>
-                                  </td>
-                                </tr>
-                              ) : (
-                                getPaginatedData(moradoresAtrasados, moradoresAtrasadosPage, itemsPerPage).map((unidade) => (
-                                  <tr key={unidade._id}>
-                                    <td>
-                                      <Badge bg="danger" className="d-flex align-items-center" style={{fontSize: '10px'}}>
-                                        <i className="fas fa-clock me-1"></i>
-                                        ATRASO
-                                      </Badge>
-                                    </td>
-                                    <td>
-                                      <div>
-                                        <strong>{unidade.nome}</strong>
-                                        {unidade.moradores_na_unidade > 1 && (
-                                          <div className="mt-1">
-                                            <Badge bg="info" size="sm">
-                                              +{unidade.moradores_na_unidade - 1} moradores
-                                            </Badge>
-                                          </div>
-                                        )}
+                  <Card className="shadow-sm border-primary border-2">
+                      <Card.Header className="bg-primary text-white">
+                          <Row className="align-items-center">
+                              <Col>
+                                  <h5 className="mb-0">
+                                      <i className="fas fa-calculator me-2"></i>
+                                      Resumo Financeiro Consolidado
+                                  </h5>
+                              </Col>
+                              <Col xs="auto">
+                                  <Badge bg="light" text="dark" className="fs-6">
+                                      {new Date().toLocaleDateString('pt-BR')}
+                                  </Badge>
+                              </Col>
+                          </Row>
+                      </Card.Header>
+                      <Card.Body className="bg-light">
+                          <Row className="g-3">
+                              <Col md={3}>
+                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-success border-4">
+                                      <div className="text-success display-6 mb-2">
+                                          <i className="fas fa-arrow-up"></i>
                                       </div>
-                                    </td>
-                                    <td>
-                                      <strong>{unidade.bloco ? `${unidade.bloco}-` : ''}{unidade.unidade}</strong>
-                                      <br />
-                                      <small className="text-muted">{unidade.tipo}</small>
-                                    </td>
-                                    <td className="text-danger">
-                                      <strong>{formatCurrencyDisplay(unidade.total_atrasado || 0)}</strong>
-                                      <br/>
-                                      <small>{unidade.count_atrasados} lançamento(s)</small>
-                                    </td>
-                                    <td className="text-center">
-                                      <Badge bg="dark" size="sm">
-                                        {unidade.dias_atraso || 'N/A'}d
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                              
-                              {/* Controles de paginação para moradores atrasados */}
-                              {moradoresAtrasados.length > 0 && (
-                                <tr>
-                                  <td colSpan={5}>
-                                    {renderPaginationControls(
-                                      moradoresAtrasadosPage,
-                                      getTotalPages(moradoresAtrasados.length, itemsPerPage),
-                                      setMoradoresAtrasadosPage,
-                                      moradoresAtrasados.length
-                                    )}
-                                  </td>
-                                </tr>
-                              )}
-                              
-                              {/* Mostrar algumas unidades em dia para comparação */}
-                              {moradoresEmDia.length > 0 && (
-                                <>
-                                  <tr>
-                                    <td colSpan={5} className="bg-light">
-                                      <small className="text-success fw-bold">
-                                        <i className="fas fa-check me-1"></i>
-                                        Unidades em dia (mostrando {Math.min(itemsPerPage, moradoresEmDia.length)} de {moradoresEmDia.length}):
-                                      </small>
-                                    </td>
-                                  </tr>
-                                  {getPaginatedData(moradoresEmDia, moradoresEmDiaPage, itemsPerPage).map((unidade) => (
-                                    <tr key={`em_dia_${unidade._id}`} className="table-light">
-                                      <td>
-                                        <Badge bg="success" className="d-flex align-items-center" style={{fontSize: '10px'}}>
-                                          <i className="fas fa-check me-1"></i>
-                                          EM DIA
-                                        </Badge>
-                                      </td>
-                                      <td>
-                                        <strong>{unidade.nome}</strong>
-                                        {unidade.moradores_na_unidade > 1 && (
-                                          <div className="mt-1">
-                                            <Badge bg="info" size="sm">
-                                              +{unidade.moradores_na_unidade - 1} moradores
-                                            </Badge>
-                                          </div>
-                                        )}
-                                      </td>
-                                      <td>
-                                        <strong>{unidade.bloco ? `${unidade.bloco}-` : ''}{unidade.unidade}</strong>
-                                        <br />
-                                        <small className="text-muted">{unidade.tipo}</small>
-                                      </td>
-                                      <td className="text-success">
-                                        <strong>✅ Em dia</strong>
-                                      </td>
-                                      <td className="text-center">
-                                        <Badge bg="success" size="sm">
-                                          OK
-                                        </Badge>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  {moradoresEmDia.length > itemsPerPage && (
-                                    <tr className="table-light">
-                                      <td colSpan={5}>
-                                        <small className="text-success fw-bold">📊 Moradores em Dia:</small>
-                                        {renderPaginationControls(
-                                          moradoresEmDiaPage,
-                                          getTotalPages(moradoresEmDia.length, itemsPerPage),
-                                          setMoradoresEmDiaPage,
-                                          moradoresEmDia.length
-                                        )}
-                                      </td>
-                                    </tr>
-                                  )}
-                                </>
-                              )}
-                            </tbody>
-                          </Table>
-                        </div>
-                      </Col>
-                      
-                      <Col md={6}>
-                        <h6 className="text-warning mb-3">
-                          <i className="fas fa-user-clock me-2"></i>
-                          Colaboradores Pendentes/Atrasados ({colaboradoresAtrasados.length + colaboradoresPendentes.length})
-                          {(colaboradoresAtrasados.length + colaboradoresPendentes.length) > itemsPerPage && (
-                            <small className="text-muted ms-2">
-                              (Mostrando {itemsPerPage} por página)
-                            </small>
-                          )}
-                        </h6>
-                        <div className="table-responsive" style={{maxHeight: '350px', overflowY: 'auto'}}>
-                          <Table striped hover size="sm">
-                            <thead className="table-light sticky-top">
-                              <tr>
-                                <th>Status</th>
-                                <th>Nome</th>
-                                <th>Cargo</th>
-                                <th>Valor</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {colaboradoresEmDia.length === 0 && colaboradoresPendentes.length === 0 && colaboradoresAtrasados.length === 0 ? (
-                                <tr>
-                                  <td colSpan={4} className="text-center text-muted py-3">
-                                    👥 Nenhum colaborador encontrado neste condomínio
-                                  </td>
-                                </tr>
-                              ) : (colaboradoresPendentes.length === 0 && colaboradoresAtrasados.length === 0) ? (
-                                <tr>
-                                  <td colSpan={4} className="text-center text-success py-3">
-                                    <i className="fas fa-user-check fa-2x mb-2 text-success"></i>
-                                    <br />
-                                    <strong>🎉 Excelente! Todos os colaboradores estão em dia!</strong>
-                                    <br />
-                                    <small>Todos os {colaboradoresEmDia.length} colaboradores foram pagos</small>
-                                  </td>
-                                </tr>
-                              ) : (
-                                <>
-                                  {/* Colaboradores atrasados primeiro */}
-                                  {getPaginatedData(colaboradoresAtrasados, colaboradoresAtrasadosPage, itemsPerPage).map((colaborador) => (
-                                    <tr key={colaborador._id}>
-                                      <td>
-                                        <Badge bg="danger" className="d-flex align-items-center" style={{fontSize: '10px'}}>
-                                          <i className="fas fa-clock me-1"></i>
-                                          ATRASADO
-                                        </Badge>
-                                      </td>
-                                      <td>
-                                        <strong>{colaborador.nome}</strong>
-                                        {colaborador.cpf && (
-                                          <>
-                                            <br />
-                                            <small className="text-muted">
-                                              CPF: {colaborador.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
-                                            </small>
-                                          </>
-                                        )}
-                                      </td>
-                                      <td>
-                                        <span className="badge bg-secondary">
-                                          {colaborador.cargo || 'Não informado'}
-                                        </span>
-                                      </td>
-                                      <td className="text-danger">
-                                        <strong>{formatCurrencyDisplay(colaborador.total_atrasado || 0)}</strong>
-                                        <br/>
-                                        <small>{colaborador.count_atrasados} lançamento(s) atrasado(s)</small>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  {/* Colaboradores pendentes */}
-                                  {getPaginatedData(colaboradoresPendentes, colaboradoresPendentesPage, itemsPerPage).map((colaborador) => (
-                                    <tr key={colaborador._id}>
-                                      <td>
-                                        <Badge bg="warning" className="d-flex align-items-center" style={{fontSize: '10px'}}>
-                                          <i className="fas fa-hourglass-half me-1"></i>
-                                          PENDENTE
-                                        </Badge>
-                                      </td>
-                                      <td>
-                                        <strong>{colaborador.nome}</strong>
-                                        {colaborador.cpf && (
-                                          <>
-                                            <br />
-                                            <small className="text-muted">
-                                              CPF: {colaborador.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
-                                            </small>
-                                          </>
-                                        )}
-                                      </td>
-                                      <td>
-                                        <span className="badge bg-secondary">
-                                          {colaborador.cargo || 'Não informado'}
-                                        </span>
-                                      </td>
-                                      <td className="text-warning">
-                                        <strong>{formatCurrencyDisplay(colaborador.total_a_receber || 0)}</strong>
-                                        <br/>
-                                        <small>{colaborador.count_pendentes} lançamento(s)</small>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  
-                                  {/* Controles de paginação para colaboradores */}
-                                  {(colaboradoresAtrasados.length > 0 || colaboradoresPendentes.length > 0) && (
-                                    <tr>
-                                      <td colSpan={4}>
-                                        <div className="mb-2">
-                                          {colaboradoresAtrasados.length > itemsPerPage && (
-                                            <div className="mb-2">
-                                              <small className="text-danger fw-bold">📊 Colaboradores Atrasados:</small>
-                                              {renderPaginationControls(
-                                                colaboradoresAtrasadosPage,
-                                                getTotalPages(colaboradoresAtrasados.length, itemsPerPage),
-                                                setColaboradoresAtrasadosPage,
-                                                colaboradoresAtrasados.length
-                                              )}
-                                            </div>
-                                          )}
-                                          {colaboradoresPendentes.length > itemsPerPage && (
-                                            <div>
-                                              <small className="text-warning fw-bold">📊 Colaboradores Pendentes:</small>
-                                              {renderPaginationControls(
-                                                colaboradoresPendentesPage,
-                                                getTotalPages(colaboradoresPendentes.length, itemsPerPage),
-                                                setColaboradoresPendentesPage,
-                                                colaboradoresPendentes.length
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </>
-                              )}
-                              
-                              {/* Mostrar alguns colaboradores em dia para comparação */}
-                              {colaboradoresEmDia.length > 0 && (
-                                <>
-                                  <tr>
-                                    <td colSpan={4} className="bg-light">
-                                      <small className="text-success fw-bold">
-                                        <i className="fas fa-check me-1"></i>
-                                        Colaboradores em dia (mostrando {Math.min(itemsPerPage, colaboradoresEmDia.length)} de {colaboradoresEmDia.length}):
-                                      </small>
-                                    </td>
-                                  </tr>
-                                  {getPaginatedData(colaboradoresEmDia, colaboradoresEmDiaPage, itemsPerPage).map((colaborador) => (
-                                    <tr key={`em_dia_colab_${colaborador._id}`} className="table-light">
-                                      <td>
-                                        <Badge bg="success" className="d-flex align-items-center" style={{fontSize: '10px'}}>
-                                          <i className="fas fa-check me-1"></i>
-                                          EM DIA
-                                        </Badge>
-                                      </td>
-                                      <td>
-                                        <strong>{colaborador.nome}</strong>
-                                        {colaborador.cpf && (
-                                          <>
-                                            <br />
-                                            <small className="text-muted">
-                                              CPF: {colaborador.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
-                                            </small>
-                                          </>
-                                        )}
-                                      </td>
-                                      <td>
-                                        <span className="badge bg-info">
-                                          {colaborador.cargo || 'Não informado'}
-                                        </span>
-                                      </td>
-                                      <td className="text-success">
-                                        <strong>✅ Em dia</strong>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  {colaboradoresEmDia.length > itemsPerPage && (
-                                    <tr className="table-light">
-                                      <td colSpan={4}>
-                                        <small className="text-success fw-bold">📊 Colaboradores em Dia:</small>
-                                        {renderPaginationControls(
-                                          colaboradoresEmDiaPage,
-                                          getTotalPages(colaboradoresEmDia.length, itemsPerPage),
-                                          setColaboradoresEmDiaPage,
-                                          colaboradoresEmDia.length
-                                        )}
-                                      </td>
-                                    </tr>
-                                  )}
-                                </>
-                              )}
-                            </tbody>
-                          </Table>
-                        </div>
-                      </Col>
-                    </Row>
-                  </Card.Body>
-                </Card>
+                                      <h6 className="text-muted">A Receber</h6>
+                                      <h4 className="text-success mb-0">{formatCurrency(totalAtrasadoMoradores)}</h4>
+                                      <small className="text-muted">{moradoresAtrasados.length} unidade(s)</small>
+                                  </div>
+                              </Col>
+                              <Col md={3}>
+                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-warning border-4">
+                                      <div className="text-warning display-6 mb-2">
+                                          <i className="fas fa-arrow-down"></i>
+                                      </div>
+                                      <h6 className="text-muted">A Pagar</h6>
+                                      <h4 className="text-warning mb-0">{formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)}</h4>
+                                      <small className="text-muted">{colaboradoresPendentes.length + colaboradoresAtrasados.length} colaborador(es)</small>
+                                  </div>
+                              </Col>
+                              <Col md={3}>
+                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-info border-4">
+                                      <div className="text-info display-6 mb-2">
+                                          <i className="fas fa-balance-scale"></i>
+                                      </div>
+                                      <h6 className="text-muted">Saldo Líquido</h6>
+                                      <h4 className={`mb-0 ${(dadosUnificados?.condominio?.saldo_liquido || 0) >= 0 ? 'text-info' : 'text-danger'}`}>
+                                          {formatCurrency(dadosUnificados?.condominio?.saldo_liquido || 0)}
+                                      </h4>
+                                      <small className="text-muted">Condomínio</small>
+                                  </div>
+                              </Col>
+                              <Col md={3}>
+                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-primary border-4">
+                                      <div className={`display-6 mb-2 ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                          <i className={`fas ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'fa-trending-up' : 'fa-trending-down'}`}></i>
+                                      </div>
+                                      <h6 className="text-muted">Resultado</h6>
+                                      <h4 className={`mb-0 ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                          {formatCurrency(resumoGeral?.resultado_liquido || 0)}
+                                      </h4>
+                                      <small className="text-muted">Operacional</small>
+                                  </div>
+                              </Col>
+                          </Row>
+                      </Card.Body>
+                  </Card>
               </Col>
-            </Row>
+          </Row>
 
-            {/* Resumo Total Unificado */}
-            <Row className="mt-4">
-              <Col>
-                <Card className="border-primary">
-                  <Card.Header className="bg-primary text-white">
-                    <h6 className="mb-0">💰 Resumo Financeiro Total Unificado</h6>
-                  </Card.Header>
-                  <Card.Body>
-                    <Row>
-                      <Col md={4}>
-                        <h6 className="text-danger">📥 A Receber de Unidades:</h6>
-                        <h4 className="text-danger">{formatCurrencyDisplay(totalAtrasadoMoradores)}</h4>
-                        <small className="text-muted">{moradoresAtrasados.length} unidade(s) em atraso</small>
-                      </Col>
-                      <Col md={4}>
-                        <h6 className="text-warning">📤 A Pagar para Colaboradores:</h6>
-                        <h4 className="text-warning">{formatCurrencyDisplay(totalPendenteColaboradores)}</h4>
-                        <small className="text-muted">
-                          {colaboradoresAtrasados.length > 0 && (
-                            <span className="text-danger">{colaboradoresAtrasados.length} atrasados, </span>
-                          )}
-                          {colaboradoresPendentes.length} pendentes
-                        </small>
-                      </Col>
-                      <Col md={4}>
-                        <h6 className="text-info">🏢 Saldo do Condomínio:</h6>
-                        <h4 className={`text-${dadosCondominio?.saldo_liquido >= 0 ? 'info' : 'warning'}`}>
-                          {formatCurrencyDisplay(dadosCondominio?.saldo_liquido || 0)}
-                        </h4>
-                        <small className="text-muted">
-                          Receitas - Despesas
-                        </small>
-                      </Col>
-                    </Row>
-                    <hr/>
-                    <Row>
-                      <Col md={6} className="text-center">
-                        <h6 className="text-success">💼 Resultado Operacional:</h6>
-                        <h3 className={resumoGeral?.resultado_liquido >= 0 ? 'text-success' : 'text-danger'}>
-                          {formatCurrencyDisplay(resumoGeral?.resultado_liquido || 0)}
-                        </h3>
-                        <small className="text-muted">
-                          A Receber - A Pagar
-                        </small>
-                      </Col>
-                      <Col md={6} className="text-center">
-                        <h6 className="text-primary">🔄 Situação Geral:</h6>
-                        <div className="mt-2">
-                          <Badge 
-                            bg={resumoGeral?.situacao_financeira.moradores_ok ? 'success' : 'danger'} 
-                            className="me-2 mb-2"
-                          >
-                            {resumoGeral?.situacao_financeira.moradores_ok ? '✅' : '⚠️'} Moradores
-                          </Badge>
-                          <Badge 
-                            bg={resumoGeral?.situacao_financeira.colaboradores_ok ? 'success' : 'warning'} 
-                            className="me-2 mb-2"
-                          >
-                            {resumoGeral?.situacao_financeira.colaboradores_ok ? '✅' : '⏳'} Colaboradores
-                          </Badge>
-                          <Badge 
-                            bg={resumoGeral?.situacao_financeira.condominio_ok ? 'success' : 'info'} 
-                            className="mb-2"
-                          >
-                            {resumoGeral?.situacao_financeira.condominio_ok ? '✅' : 'ℹ️'} Condomínio
-                          </Badge>
-                        </div>
-                        <small className="text-muted d-block mt-2">
-                          {lastUpdate && `Atualizado: ${lastUpdate}`}
-                        </small>
-                      </Col>
-                    </Row>
-                  </Card.Body>
-                </Card>
+          <Row className="g-4">
+              <Col lg={6}>
+                  <DetailedTable
+                      title="Unidades com Atraso"
+                      icon="fa-exclamation-circle"
+                      variant="danger"
+                      items={getPaginatedData(moradoresAtrasados, moradoresAtrasadosPage)}
+                      columns={moradoresColumns}
+                      type="moradores"
+                      onPageChange={setMoradoresAtrasadosPage}
+                      currentPage={moradoresAtrasadosPage}
+                      totalPages={getTotalPages(moradoresAtrasados.length)}
+                      totalItems={moradoresAtrasados.length}
+                      itemsPerPage={itemsPerPage}
+                  />
               </Col>
-            </Row>
-            
-            {/* Nova seção de lançamentos detalhados */}
-            <Row className="mt-4">
-              <Col>
-                <Card className="border-info">
-                  <Card.Header className="bg-info text-white d-flex justify-content-between align-items-center">
-                    <h6 className="mb-0">📊 Todos os Lançamentos Financeiros</h6>
-                    <Button 
-                      variant={showLancamentos ? 'light' : 'outline-light'}
-                      size="sm"
-                      onClick={() => {
-                        setShowLancamentos(!showLancamentos)
-                        if (!showLancamentos && selectedCondominiumId && currentUser) {
-                          loadLancamentos(currentUser, selectedCondominiumId, 1)
-                        }
-                      }}
-                    >
-                      {showLancamentos ? '🔼 Ocultar' : '🔽 Mostrar'} Lançamentos
-                    </Button>
-                  </Card.Header>
-                  
-                  {showLancamentos && (
-                    <Card.Body>
-                      {/* Filtros */}
-                      <Row className="mb-3">
-                        <Col md={3}>
-                          <Form.Group>
-                            <Form.Label>Status</Form.Label>
-                            <Form.Select
-                              value={lancamentosFilters.status}
-                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, status: e.target.value})}
-                            >
-                              <option value="">Todos os status</option>
-                              <option value="pendente">Pendente</option>
-                              <option value="pago">Pago</option>
-                              <option value="atrasado">Atrasado</option>
-                              <option value="cancelado">Cancelado</option>
-                            </Form.Select>
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group>
-                            <Form.Label>Tipo</Form.Label>
-                            <Form.Select
-                              value={lancamentosFilters.tipo}
-                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, tipo: e.target.value})}
-                            >
-                              <option value="">Receitas e Despesas</option>
-                              <option value="receita">Apenas Receitas</option>
-                              <option value="despesa">Apenas Despesas</option>
-                            </Form.Select>
-                          </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                          <Form.Group>
-                            <Form.Label>Origem</Form.Label>
-                            <Form.Select
-                              value={lancamentosFilters.origem}
-                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, origem: e.target.value})}
-                            >
-                              <option value="">Todas as origens</option>
-                              <option value="morador">Moradores</option>
-                              <option value="colaborador">Colaboradores</option>
-                              <option value="condominio">Condomínio</option>
-                            </Form.Select>
-                          </Form.Group>
-                        </Col>
-                        <Col md={3} className="d-flex align-items-end">
-                          <div className="w-100">
-                            <Button 
-                              variant="primary" 
-                              className="me-2"
-                              onClick={applyLancamentosFilters}
-                              disabled={lancamentosLoading}
-                            >
-                              🔍 Filtrar
-                            </Button>
-                            <Button 
-                              variant="outline-secondary"
-                              onClick={clearLancamentosFilters}
-                              disabled={lancamentosLoading}
-                            >
-                              🧹 Limpar
-                            </Button>
-                          </div>
-                        </Col>
-                      </Row>
-                      
-                      {/* Resumo dos lançamentos */}
-                      {lancamentosResumo && (
-                        <Row className="mb-3">
-                          <Col md={3}>
-                            <div className="text-center p-2 bg-success bg-opacity-10 rounded">
-                              <small className="text-muted">Receitas</small>
-                              <div className="h6 text-success">{formatCurrencyDisplay(lancamentosResumo.total_receitas)}</div>
-                            </div>
-                          </Col>
-                          <Col md={3}>
-                            <div className="text-center p-2 bg-danger bg-opacity-10 rounded">
-                              <small className="text-muted">Despesas</small>
-                              <div className="h6 text-danger">{formatCurrencyDisplay(lancamentosResumo.total_despesas)}</div>
-                            </div>
-                          </Col>
-                          <Col md={3}>
-                            <div className="text-center p-2 bg-warning bg-opacity-10 rounded">
-                              <small className="text-muted">Pendente</small>
-                              <div className="h6 text-warning">{formatCurrencyDisplay(lancamentosResumo.total_pendente)}</div>
-                            </div>
-                          </Col>
-                          <Col md={3}>
-                            <div className="text-center p-2 bg-info bg-opacity-10 rounded">
-                              <small className="text-muted">Pago</small>
-                              <div className="h6 text-info">{formatCurrencyDisplay(lancamentosResumo.total_pago)}</div>
-                            </div>
-                          </Col>
-                        </Row>
-                      )}
-                      
-                      {/* Tabela de lançamentos */}
-                      {lancamentosLoading ? (
-                        <div className="text-center py-4">
-                          <div className="spinner-border spinner-border-sm me-2"></div>
-                          Carregando lançamentos...
-                        </div>
-                      ) : (
-                        <>
-                          <div className="table-responsive">
-                            <Table striped hover>
-                              <thead className="table-light">
-                                <tr>
-                                  <th>Data</th>
-                                  <th>Origem</th>
-                                  <th>Pessoa/Local</th>
-                                  <th>Descrição</th>
-                                  <th>Categoria</th>
-                                  <th>Tipo</th>
-                                  <th>Valor</th>
-                                  <th>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {lancamentos.length === 0 ? (
-                                  <tr>
-                                    <td colSpan={8} className="text-center text-muted py-4">
-                                      📝 Nenhum lançamento encontrado
-                                    </td>
-                                  </tr>
-                                ) : (
-                                  lancamentos.map((lancamento, index) => (
-                                    <tr key={`${lancamento._id}_${index}`}>
-                                      <td>
-                                        <div>
-                                          <strong>{new Date(lancamento.data_vencimento).toLocaleDateString('pt-BR')}</strong>
-                                          {lancamento.data_pagamento && (
-                                            <><br /><small className="text-muted">Pago: {new Date(lancamento.data_pagamento).toLocaleDateString('pt-BR')}</small></>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <Badge bg={lancamento.origem_sistema === 'morador' ? 'primary' : 
-                                                   lancamento.origem_sistema === 'colaborador' ? 'secondary' : 'info'}>
-                                          {lancamento.origem_nome}
-                                        </Badge>
-                                      </td>
-                                      <td>
-                                        <div>
-                                          <strong>{lancamento.pessoa_nome}</strong>
-                                          {(lancamento.bloco || lancamento.unidade) && (
-                                            <><br /><small className="text-muted">
-                                              {lancamento.bloco ? `${lancamento.bloco}-` : ''}{lancamento.unidade}
-                                            </small></>
-                                          )}
-                                          {lancamento.cargo && (
-                                            <><br /><small className="text-muted">{lancamento.cargo}</small></>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td>{lancamento.descricao}</td>
-                                      <td>
-                                        <span className="badge bg-light text-dark">
-                                          {lancamento.categoria_display || lancamento.categoria}
-                                        </span>
-                                      </td>
-                                      <td>
-                                        <Badge bg={lancamento.tipo === 'receita' ? 'success' : 'danger'}>
-                                          {lancamento.tipo === 'receita' ? '➕ Receita' : '➖ Despesa'}
-                                        </Badge>
-                                      </td>
-                                      <td className={`text-${lancamento.tipo === 'receita' ? 'success' : 'danger'}`}>
-                                        <strong>{formatCurrencyDisplay(lancamento.valor)}</strong>
-                                      </td>
-                                      <td>
-                                        <Badge bg={
-                                          lancamento.status === 'pago' ? 'success' :
-                                          lancamento.status === 'pendente' ? 'warning' :
-                                          lancamento.status === 'atrasado' ? 'danger' : 'secondary'
-                                        }>
-                                          {lancamento.status === 'pago' ? '✓ Pago' :
-                                           lancamento.status === 'pendente' ? '🕰️ Pendente' :
-                                           lancamento.status === 'atrasado' ? '⚠️ Atrasado' : lancamento.status}
-                                        </Badge>
-                                      </td>
-                                    </tr>
-                                  ))
-                                )}
-                              </tbody>
-                            </Table>
-                          </div>
-                          
-                          {/* Controles de paginação */}
-                          {lancamentosPagination && lancamentosPagination.total_pages > 1 && (
-                            <div className="d-flex justify-content-between align-items-center mt-3">
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                disabled={lancamentosPage === 1 || lancamentosLoading}
-                                onClick={() => {
-                                  const newPage = lancamentosPage - 1
-                                  setLancamentosPage(newPage)
-                                  loadLancamentos(currentUser, selectedCondominiumId, newPage)
-                                }}
-                              >
-                                ← Anterior
-                              </Button>
-                              <div className="text-center">
-                                <span className="badge bg-primary me-2">
-                                  Página {lancamentosPagination.current_page} de {lancamentosPagination.total_pages}
-                                </span>
-                                <small className="text-muted">
-                                  ({lancamentosPagination.total_items} lançamentos total)
-                                </small>
-                              </div>
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                disabled={lancamentosPage === lancamentosPagination.total_pages || lancamentosLoading}
-                                onClick={() => {
-                                  const newPage = lancamentosPage + 1
-                                  setLancamentosPage(newPage)
-                                  loadLancamentos(currentUser, selectedCondominiumId, newPage)
-                                }}
-                              >
-                                Próxima →
-                              </Button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </Card.Body>
-                  )}
-                </Card>
+              <Col lg={6}>
+                  <DetailedTable
+                      title="Colaboradores com Pendências"
+                      icon="fa-user-clock"
+                      variant="warning"
+                      items={getPaginatedData([...colaboradoresAtrasados, ...colaboradoresPendentes], colaboradoresPendentesPage)}
+                      columns={colaboradoresColumns}
+                      type="colaboradores"
+                      onPageChange={setColaboradoresPendentesPage}
+                      currentPage={colaboradoresPendentesPage}
+                      totalPages={getTotalPages(colaboradoresAtrasados.length + colaboradoresPendentes.length)}
+                      totalItems={colaboradoresAtrasados.length + colaboradoresPendentes.length}
+                      itemsPerPage={itemsPerPage}
+                  />
               </Col>
-            </Row>
-          </>
-        )}
-      </Container>
-    </>
+          </Row>
+
+          {/* Seção de Lançamentos Detalhados */}
+          <Row className="mt-4">
+              <Col>
+                  <Card className="shadow-sm border-info">
+                      <Card.Header className="bg-info text-white d-flex justify-content-between align-items-center">
+                          <h5 className="mb-0">
+                              <i className="fas fa-list me-2"></i>
+                              Todos os Lançamentos Financeiros
+                          </h5>
+                          <Button 
+                              variant={showLancamentos ? 'light' : 'outline-light'}
+                              size="sm"
+                              onClick={() => {
+                                  setShowLancamentos(!showLancamentos)
+                                  if (!showLancamentos && selectedCondominiumId && currentUser) {
+                                      loadLancamentos(currentUser, selectedCondominiumId, 1)
+                                  }
+                              }}
+                          >
+                              <i className={`fas ${showLancamentos ? 'fa-chevron-up' : 'fa-chevron-down'} me-1`}></i>
+                              {showLancamentos ? 'Ocultar' : 'Mostrar'} Lançamentos
+                          </Button>
+                      </Card.Header>
+                      
+                      {showLancamentos && (
+                          <Card.Body>
+                              {/* Filtros */}
+                              <Row className="mb-3">
+                                  <Col md={3}>
+                                      <Form.Group>
+                                          <Form.Label className="fw-bold">Status</Form.Label>
+                                          <Form.Select
+                                              value={lancamentosFilters.status}
+                                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, status: e.target.value})}
+                                          >
+                                              <option value="">Todos os status</option>
+                                              <option value="pendente">Pendente</option>
+                                              <option value="pago">Pago</option>
+                                              <option value="atrasado">Atrasado</option>
+                                              <option value="cancelado">Cancelado</option>
+                                          </Form.Select>
+                                      </Form.Group>
+                                  </Col>
+                                  <Col md={3}>
+                                      <Form.Group>
+                                          <Form.Label className="fw-bold">Tipo</Form.Label>
+                                          <Form.Select
+                                              value={lancamentosFilters.tipo}
+                                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, tipo: e.target.value})}
+                                          >
+                                              <option value="">Receitas e Despesas</option>
+                                              <option value="receita">Apenas Receitas</option>
+                                              <option value="despesa">Apenas Despesas</option>
+                                          </Form.Select>
+                                      </Form.Group>
+                                  </Col>
+                                  <Col md={3}>
+                                      <Form.Group>
+                                          <Form.Label className="fw-bold">Origem</Form.Label>
+                                          <Form.Select
+                                              value={lancamentosFilters.origem}
+                                              onChange={(e) => setLancamentosFilters({...lancamentosFilters, origem: e.target.value})}
+                                          >
+                                              <option value="">Todas as origens</option>
+                                              <option value="morador">Moradores</option>
+                                              <option value="colaborador">Colaboradores</option>
+                                              <option value="condominio">Condomínio</option>
+                                          </Form.Select>
+                                      </Form.Group>
+                                  </Col>
+                                  <Col md={3} className="d-flex align-items-end">
+                                      <div className="w-100 d-flex gap-2">
+                                          <Button 
+                                              variant="primary" 
+                                              onClick={() => loadLancamentos(currentUser, selectedCondominiumId, 1)}
+                                              disabled={lancamentosLoading}
+                                              className="flex-fill"
+                                          >
+                                              <i className="fas fa-search me-1"></i>
+                                              Filtrar
+                                          </Button>
+                                          <Button 
+                                              variant="outline-secondary"
+                                              onClick={() => {
+                                                  setLancamentosFilters({ status: '', tipo: '', origem: '' })
+                                                  loadLancamentos(currentUser, selectedCondominiumId, 1)
+                                              }}
+                                              disabled={lancamentosLoading}
+                                          >
+                                              <i className="fas fa-times"></i>
+                                          </Button>
+                                      </div>
+                                  </Col>
+                              </Row>
+                              
+                              {/* Tabela de lançamentos */}
+                              {lancamentosLoading ? (
+                                  <div className="text-center py-4">
+                                      <Spinner animation="border" variant="primary" />
+                                      <h6 className="mt-2">Carregando lançamentos...</h6>
+                                  </div>
+                              ) : (
+                                  <>
+                                      <div className="table-responsive">
+                                          <Table striped hover>
+                                              <thead className="table-dark">
+                                                  <tr>
+                                                      <th>Data</th>
+                                                      <th>Origem</th>
+                                                      <th>Pessoa/Local</th>
+                                                      <th>Descrição</th>
+                                                      <th>Tipo</th>
+                                                      <th>Valor</th>
+                                                      <th>Status</th>
+                                                  </tr>
+                                              </thead>
+                                              <tbody>
+                                                  {lancamentos.length === 0 ? (
+                                                      <tr>
+                                                          <td colSpan={7} className="text-center text-muted py-5">
+                                                              <i className="fas fa-search fa-3x mb-3 text-muted"></i>
+                                                              <h5>Nenhum lançamento encontrado</h5>
+                                                              <p className="mb-0">Tente ajustar os filtros ou verificar se há dados disponíveis.</p>
+                                                          </td>
+                                                      </tr>
+                                                  ) : (
+                                                      lancamentos.map((lancamento, index) => (
+                                                          <tr key={`${lancamento._id}_${index}`}>
+                                                              <td>
+                                                                  <div>
+                                                                      <strong>{new Date(lancamento.data_vencimento).toLocaleDateString('pt-BR')}</strong>
+                                                                      {lancamento.data_pagamento && (
+                                                                          <><br /><small className="text-muted">Pago: {new Date(lancamento.data_pagamento).toLocaleDateString('pt-BR')}</small></>
+                                                                      )}
+                                                                  </div>
+                                                              </td>
+                                                              <td>
+                                                                  <Badge bg={lancamento.origem_sistema === 'morador' ? 'primary' : 
+                                                                             lancamento.origem_sistema === 'colaborador' ? 'secondary' : 'info'}>
+                                                                      {lancamento.origem_nome}
+                                                                  </Badge>
+                                                              </td>
+                                                              <td>
+                                                                  <div>
+                                                                      {lancamento.origem_sistema === 'morador' ? (
+                                                                          <>
+                                                                              {/* Informações do morador específico do lançamento */}
+                                                                              <div className="d-flex align-items-center mb-1">
+                                                                                  <strong>{lancamento.pessoa_nome}</strong>
+                                                                                  {lancamento.tipo_morador && (
+                                                                                      <Badge 
+                                                                                          bg={lancamento.tipo_morador === 'proprietario' ? 'primary' : 'info'} 
+                                                                                          className="ms-2 small"
+                                                                                      >
+                                                                                          {lancamento.tipo_morador === 'proprietario' ? 'Proprietário' : 'Inquilino'}
+                                                                                      </Badge>
+                                                                                  )}
+                                                                              </div>
+
+                                                                              {/* Todos os moradores da unidade */}
+                                                                              {lancamento.todos_moradores_unidade && lancamento.todos_moradores_unidade.length > 0 && (
+                                                                                  <div className="mb-2">
+                                                                                      <div className="text-muted small fw-bold mb-1">
+                                                                                          <i className="fas fa-users me-1"></i>
+                                                                                          Moradores da Unidade:
+                                                                                      </div>
+                                                                                      <div className="small">
+                                                                                          {lancamento.todos_moradores_unidade.map((morador, idx) => (
+                                                                                              <span key={morador._id || idx}>
+                                                                                                  <strong>{morador.nome}</strong>
+                                                                                                  <span className="text-muted"> ({morador.tipo || 'proprietario'})</span>
+                                                                                                  {idx < lancamento.todos_moradores_unidade.length - 1 && ', '}
+                                                                                              </span>
+                                                                                          ))}
+                                                                                      </div>
+                                                                                  </div>
+                                                                              )}
+
+                                                                              {/* Informações da unidade */}
+                                                                              {(lancamento.bloco || lancamento.unidade) && (
+                                                                                  <div className="text-muted small">
+                                                                                      <i className="fas fa-building me-1"></i>
+                                                                                      Unidade: <strong>{lancamento.bloco ? `${lancamento.bloco}-` : ''}{lancamento.unidade}</strong>
+                                                                                  </div>
+                                                                              )}
+                                                                              
+                                                                              {/* Informações de contato */}
+                                                                              {lancamento.cpf_morador && (
+                                                                                  <div className="text-muted small">
+                                                                                      <i className="fas fa-id-card me-1"></i>
+                                                                                      CPF: {lancamento.cpf_morador}
+                                                                                  </div>
+                                                                              )}
+                                                                              {lancamento.telefone_morador && (
+                                                                                  <div className="text-muted small">
+                                                                                      <i className="fas fa-phone me-1"></i>
+                                                                                      {lancamento.telefone_morador}
+                                                                                  </div>
+                                                                              )}
+                                                                          </>
+                                                                      ) : lancamento.origem_sistema === 'colaborador' ? (
+                                                                          <>
+                                                                              <div className="d-flex align-items-center mb-1">
+                                                                                  <strong>{lancamento.pessoa_nome}</strong>
+                                                                                  <Badge bg="secondary" className="ms-2 small">
+                                                                                      Colaborador
+                                                                                  </Badge>
+                                                                              </div>
+                                                                              {lancamento.cargo && (
+                                                                                  <div className="text-muted small">
+                                                                                      <i className="fas fa-user-tie me-1"></i>
+                                                                                      Cargo: {lancamento.cargo}
+                                                                                  </div>
+                                                                              )}
+                                                                          </>
+                                                                      ) : (
+                                                                          <>
+                                                                              <div className="d-flex align-items-center mb-1">
+                                                                                  <strong>{lancamento.pessoa_nome}</strong>
+                                                                                  <Badge bg="info" className="ms-2 small">
+                                                                                      Condomínio
+                                                                                  </Badge>
+                                                                              </div>
+                                                                              {(lancamento.bloco || lancamento.unidade) && (
+                                                                                  <div className="text-muted small">
+                                                                                      <i className="fas fa-building me-1"></i>
+                                                                                      Local: {lancamento.bloco ? `${lancamento.bloco}-` : ''}{lancamento.unidade}
+                                                                                  </div>
+                                                                              )}
+                                                                          </>
+                                                                      )}
+                                                                  </div>
+                                                              </td>
+                                                              <td>{lancamento.descricao}</td>
+                                                              <td>
+                                                                  <Badge bg={lancamento.tipo === 'receita' ? 'success' : 'danger'}>
+                                                                      <i className={`fas ${lancamento.tipo === 'receita' ? 'fa-plus' : 'fa-minus'} me-1`}></i>
+                                                                      {lancamento.tipo === 'receita' ? 'Receita' : 'Despesa'}
+                                                                  </Badge>
+                                                              </td>
+                                                              <td className={`text-${lancamento.tipo === 'receita' ? 'success' : 'danger'}`}>
+                                                                  <strong>{formatCurrency(lancamento.valor)}</strong>
+                                                              </td>
+                                                              <td>
+                                                                  <Badge bg={
+                                                                      lancamento.status === 'pago' ? 'success' :
+                                                                      lancamento.status === 'pendente' ? 'warning' :
+                                                                      lancamento.status === 'atrasado' ? 'danger' : 'secondary'
+                                                                  }>
+                                                                      <i className={`fas ${
+                                                                          lancamento.status === 'pago' ? 'fa-check' :
+                                                                          lancamento.status === 'pendente' ? 'fa-clock' :
+                                                                          lancamento.status === 'atrasado' ? 'fa-exclamation-triangle' : 'fa-times'
+                                                                      } me-1`}></i>
+                                                                      {lancamento.status === 'pago' ? 'Pago' :
+                                                                       lancamento.status === 'pendente' ? 'Pendente' :
+                                                                       lancamento.status === 'atrasado' ? 'Atrasado' : 'Cancelado'}
+                                                                  </Badge>
+                                                              </td>
+                                                          </tr>
+                                                      ))
+                                                  )}
+                                              </tbody>
+                                          </Table>
+                                      </div>
+                                      
+                                      {/* Paginação */}
+                                      {lancamentosPagination && lancamentosPagination.total_pages > 1 && (
+                                          <div className="d-flex justify-content-between align-items-center mt-3">
+                                              <Button 
+                                                  variant="outline-primary" 
+                                                  size="sm" 
+                                                  disabled={lancamentosPage === 1 || lancamentosLoading}
+                                                  onClick={() => {
+                                                      const newPage = lancamentosPage - 1
+                                                      setLancamentosPage(newPage)
+                                                      loadLancamentos(currentUser, selectedCondominiumId, newPage)
+                                                  }}
+                                              >
+                                                  <i className="fas fa-chevron-left me-1"></i>
+                                                  Anterior
+                                              </Button>
+                                              <div className="text-center">
+                                                  <Badge bg="primary" className="fs-6">
+                                                      Página {lancamentosPagination.current_page} de {lancamentosPagination.total_pages}
+                                                  </Badge>
+                                                  <div className="mt-1">
+                                                      <small className="text-muted">
+                                                          ({lancamentosPagination.total_items} lançamentos total)
+                                                      </small>
+                                                  </div>
+                                              </div>
+                                              <Button 
+                                                  variant="outline-primary" 
+                                                  size="sm" 
+                                                  disabled={lancamentosPage === lancamentosPagination.total_pages || lancamentosLoading}
+                                                  onClick={() => {
+                                                      const newPage = lancamentosPage + 1
+                                                      setLancamentosPage(newPage)
+                                                      loadLancamentos(currentUser, selectedCondominiumId, newPage)
+                                                  }}
+                                              >
+                                                  Próxima
+                                                  <i className="fas fa-chevron-right ms-1"></i>
+                                              </Button>
+                                          </div>
+                                      )}
+                                  </>
+                              )}
+                          </Card.Body>
+                      )}
+                  </Card>
+              </Col>
+          </Row>
+        </>
+      ) : null}
+    </Container>
   )
 }

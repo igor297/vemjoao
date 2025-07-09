@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FinanceiroCondominio from '@/models/FinanceiroCondominio'
+import { cache } from '@/lib/cache'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -103,6 +104,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       { new: true, runValidators: true }
     )
 
+    // Limpar cache relacionado a este condomínio
+    if (lancamentoAtualizado && lancamentoAtualizado.condominio_id && lancamentoAtualizado.master_id) {
+      const cachePattern = `financeiro:*condominio_id:${lancamentoAtualizado.condominio_id}*master_id:${lancamentoAtualizado.master_id}*`
+      console.log('🧹 Limpando cache relacionado ao condomínio:', cachePattern)
+      
+      // Buscar e limpar todas as chaves relacionadas
+      const keys = Array.from((cache as any).cache.keys()).filter((key: string) => {
+        return key.includes(`condominio_id:${lancamentoAtualizado.condominio_id}`) && 
+               key.includes(`master_id:${lancamentoAtualizado.master_id}`)
+      })
+      
+      keys.forEach(key => {
+        console.log('🗑️ Removendo cache:', key)
+        cache.delete(key)
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Lançamento atualizado com sucesso',
@@ -156,6 +174,19 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         success: false,
         error: 'Lançamento não encontrado'
       }, { status: 404 })
+    }
+
+    // Limpar cache relacionado a este condomínio
+    if (lancamento && lancamento.condominio_id && lancamento.master_id) {
+      const keys = Array.from((cache as any).cache.keys()).filter((key: string) => {
+        return key.includes(`condominio_id:${lancamento.condominio_id}`) && 
+               key.includes(`master_id:${lancamento.master_id}`)
+      })
+      
+      keys.forEach(key => {
+        console.log('🗑️ Removendo cache após exclusão:', key)
+        cache.delete(key)
+      })
     }
 
     return NextResponse.json({

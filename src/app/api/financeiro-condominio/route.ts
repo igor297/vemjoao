@@ -89,12 +89,38 @@ export async function GET(request: NextRequest) {
             _id: null,
             total_receitas: {
               $sum: {
-                $cond: [{ $eq: ['$tipo', 'receita'] }, '$valor', 0]
+                $cond: [
+                  { $and: [{ $eq: ['$tipo', 'receita'] }, { $eq: ['$status', 'pago'] }] }, 
+                  '$valor', 
+                  0
+                ]
               }
             },
             total_despesas: {
               $sum: {
-                $cond: [{ $eq: ['$tipo', 'despesa'] }, '$valor', 0]
+                $cond: [
+                  { $and: [{ $eq: ['$tipo', 'despesa'] }, { $eq: ['$status', 'pago'] }] }, 
+                  '$valor', 
+                  0
+                ]
+              }
+            },
+            total_receitas_pendentes: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $eq: ['$tipo', 'receita'] }, { $in: ['$status', ['pendente', 'atrasado']] }] }, 
+                  '$valor', 
+                  0
+                ]
+              }
+            },
+            total_despesas_pendentes: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $eq: ['$tipo', 'despesa'] }, { $in: ['$status', ['pendente', 'atrasado']] }] }, 
+                  '$valor', 
+                  0
+                ]
               }
             },
             total_pendentes: {
@@ -128,6 +154,8 @@ export async function GET(request: NextRequest) {
       const resultado = resumo[0] || {
         total_receitas: 0,
         total_despesas: 0,
+        total_receitas_pendentes: 0,
+        total_despesas_pendentes: 0,
         total_pendentes: 0,
         total_atrasados: 0,
         count_pendentes: 0,
@@ -168,7 +196,7 @@ export async function GET(request: NextRequest) {
             count: { $sum: 1 }
           }
         },
-        { $sort: { total_valor: -1 } }
+        { $sort: { total_valor: -1 as const } }
       ]
 
       const origens = await FinanceiroCondominio.aggregate(pipeline)
@@ -392,6 +420,17 @@ export async function POST(request: NextRequest) {
 
     await novoLancamento.save()
 
+    // Limpar cache relacionado a este condomínio
+    const keys = Array.from((cache as any).cache.keys()).filter((key: string) => {
+      return key.includes(`condominio_id:${condominio_id}`) && 
+             key.includes(`master_id:${master_id}`)
+    })
+    
+    keys.forEach(key => {
+      console.log('🗑️ Removendo cache após criação:', key)
+      cache.delete(key)
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Lançamento criado com sucesso',
@@ -479,6 +518,19 @@ export async function PUT(request: NextRequest) {
       { new: true, runValidators: true }
     )
 
+    // Limpar cache relacionado a este condomínio
+    if (lancamentoAtualizado && lancamentoAtualizado.condominio_id && lancamentoAtualizado.master_id) {
+      const keys = Array.from((cache as any).cache.keys()).filter((key: string) => {
+        return key.includes(`condominio_id:${lancamentoAtualizado.condominio_id}`) && 
+               key.includes(`master_id:${lancamentoAtualizado.master_id}`)
+      })
+      
+      keys.forEach(key => {
+        console.log('🗑️ Removendo cache após atualização:', key)
+        cache.delete(key)
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Lançamento atualizado com sucesso',
@@ -525,6 +577,20 @@ export async function DELETE(request: NextRequest) {
         success: false,
         error: 'Lançamento não encontrado'
       }, { status: 404 })
+    }
+
+    // Limpar cache relacionado a este condomínio
+    if (lancamento && lancamento.condominio_id && lancamento.master_id) {
+      const keys = Array.from((cache as any).cache.keys()).filter((key: unknown) => {
+        const keyStr = key as string
+        return keyStr.includes(`condominio_id:${lancamento.condominio_id}`) && 
+               keyStr.includes(`master_id:${lancamento.master_id}`)
+      })
+      
+      keys.forEach(key => {
+        console.log('🗑️ Removendo cache após exclusão:', key as string)
+        cache.delete(key as string)
+      })
     }
 
     return NextResponse.json({
