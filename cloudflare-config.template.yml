@@ -1,0 +1,36 @@
+# Template de configuração do Cloudflare Tunnel para VemJoao
+# Este arquivo será usado pelo script setup-cloudflare.sh
+
+tunnel: TUNNEL_ID_PLACEHOLDER
+credentials-file: CREDENTIALS_FILE_PLACEHOLDER
+
+# Configurações de ingress
+ingress:
+  # Domínio principal
+  - hostname: DOMAIN_PLACEHOLDER
+    service: http://localhost:3000
+    originRequest:
+      httpHostHeader: DOMAIN_PLACEHOLDER
+      
+  # Subdomínio www
+  - hostname: www.DOMAIN_PLACEHOLDER
+    service: http://localhost:3000
+    originRequest:
+      httpHostHeader: www.DOMAIN_PLACEHOLDER
+      
+  # API específica (opcional)
+  - hostname: api.DOMAIN_PLACEHOLDER
+    service: http://localhost:3000
+    originRequest:
+      httpHostHeader: api.DOMAIN_PLACEHOLDER
+      
+  # Catch-all para outras rotas
+  - service: http_status:404
+
+# Configurações de log (opcional)
+# loglevel: info
+# transport-loglevel: warn
+
+# Configurações de retry (opcional)
+# retries: 3
+# grace-period: 30s

@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
     MONGODB_DB: 'condominio-sistema',
   },
   serverExternalPackages: ['mongoose'],
+  // Otimizações para Cloudflare
+  output: 'standalone',
+  compress: false, // Cloudflare já comprime
+  poweredByHeader: false,
+  generateEtags: false,
   async headers() {
     return [
       {
@@ -25,7 +30,23 @@ const nextConfig: NextConfig = {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
         ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/health',
+        destination: '/api/health',
       },
     ];
   },
