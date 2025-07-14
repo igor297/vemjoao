@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap'
 import { safeJsonParse } from '@/lib/api-utils'
@@ -11,11 +11,35 @@ export default function LoginPage() {
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [honeypot, setHoneypot] = useState('')
+  const [isBotChecked, setIsBotChecked] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState(0)
+  const [isLockedOut, setIsLockedOut] = useState(false)
+  const [countdown, setCountdown] = useState(0)
   
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({ type: '', message: '', icon: '' })
   const [fieldError, setFieldError] = useState('')
   const router = useRouter()
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLockedOut) {
+      setCountdown(30);
+      timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setIsLockedOut(false);
+            setLoginAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isLockedOut]);
 
   const showCustomAlert = (errorType: string, message: string) => {
     let icon = '⚠️'
@@ -33,6 +57,18 @@ export default function LoginPage() {
       case 'SERVER_ERROR':
         icon = '🛠️'
         type = 'server-error'
+        break
+      case 'BOT_DETECTED':
+        icon = '🤖'
+        type = 'general-error' // Pode ser um tipo específico se quiser estilizar diferente
+        break
+      case 'BOT_CHECK_REQUIRED':
+        icon = '✅'
+        type = 'general-error'
+        break
+      case 'LOCKED_OUT':
+        icon = '🔒'
+        type = 'general-error'
         break
       default:
         icon = '😕'
@@ -63,6 +99,25 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
+    if (honeypot) {
+      console.error('Detecção de bot (Honeypot preenchido).')
+      showCustomAlert('BOT_DETECTED', 'Detecção de atividade suspeita. Tente novamente mais tarde.')
+      setIsLoading(false)
+      return
+    }
+
+    if (!isBotChecked) {
+      showCustomAlert('BOT_CHECK_REQUIRED', 'Por favor, confirme que você não é um robô.')
+      setIsLoading(false)
+      return
+    }
+
+    if (isLockedOut) {
+      showCustomAlert('LOCKED_OUT', `Muitas tentativas de login. Tente novamente em ${countdown} segundos.`) 
+      setIsLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -79,6 +134,7 @@ export default function LoginPage() {
 
       if (result.success && result.data?.success) {
         localStorage.setItem('userData', JSON.stringify(result.data.user))
+        setLoginAttempts(0) // Reset attempts on successful login
         
         // Redirecionar baseado no campo redirectTo ou no tipo de usuário
         if (result.data.redirectTo) {
@@ -95,8 +151,15 @@ export default function LoginPage() {
         const errorType = errorData.errorType || 'GENERAL_ERROR'
         const errorMessage = errorData.message || 'Algo não funcionou como esperado. Tente novamente em alguns instantes.'
         
-        // Mostrar alerta customizado baseado no tipo de erro
-        showCustomAlert(errorType, errorMessage)
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+
+        if (newAttempts >= 3) {
+          setIsLockedOut(true);
+          showCustomAlert('LOCKED_OUT', `Muitas tentativas de login. Tente novamente em 30 segundos.`);
+        } else {
+          showCustomAlert(errorType, errorMessage);
+        }
       }
     } catch (err) {
       const errorMessage = 'Não conseguimos conectar ao servidor. Verifique sua internet e tente novamente em alguns segundos.'
@@ -271,6 +334,7 @@ export default function LoginPage() {
                 {alertData.type === 'credentials-error' ? 'Email ou senha errada' :
                  alertData.type === 'network-error' ? 'Problemas de conexão' :
                  alertData.type === 'server-error' ? 'Nosso servidor está ocupado' :
+                 alertData.type === 'LOCKED_OUT' ? 'Acesso Temporariamente Bloqueado' :
                  'Algo não funcionou como esperado'}
               </h3>
             </div>
@@ -307,7 +371,29 @@ export default function LoginPage() {
                 </div>
 
                 <Form onSubmit={handleSubmit}>
-                  
+                  <Form.Group className="mb-3" style={{ display: 'none' }}>
+                    <Form.Label htmlFor="honeypot">Não preencha este campo</Form.Label>
+                    <Form.Control
+                      type="text"
+                      id="honeypot"
+                      name="honeypot"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      id="not-a-robot"
+                      label="Não sou um robô"
+                      checked={isBotChecked}
+                      onChange={(e) => setIsBotChecked(e.target.checked)}
+                      disabled={isLockedOut}
+                    />
+                  </Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Email</Form.Label>

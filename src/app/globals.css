@@ -8,8 +8,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #FFFF00;
   }
 }
 
@@ -18,6 +18,315 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   padding-bottom: 80px;
+}
+
+body.dark-mode {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  background: #0a0a0a !important;
+  color: #ededed !important;
+}
+
+/* Dark mode styles for Bootstrap components */
+body.dark-mode .card {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #ededed !important;
+}
+
+body.dark-mode .card-header {
+  background-color: #222 !important;
+  border-bottom-color: #333 !important;
+  color: #ededed !important;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: #2a2a2a !important;
+  border-color: #444 !important;
+  color: #ededed !important;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background-color: #2a2a2a !important;
+  border-color: #0d6efd !important;
+  color: #ededed !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+body.dark-mode .btn-primary {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+body.dark-mode .btn-secondary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+body.dark-mode .btn-outline-primary {
+  color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+body.dark-mode .alert {
+  background-color: #2a2a2a !important;
+  border-color: #444 !important;
+  color: #ededed !important;
+}
+
+body.dark-mode .alert-success {
+  background-color: #0f2e1e !important;
+  border-color: #198754 !important;
+  color: #75b798 !important;
+}
+
+body.dark-mode .alert-danger {
+  background-color: #2e0f0f !important;
+  border-color: #dc3545 !important;
+  color: #ea868f !important;
+}
+
+body.dark-mode .alert-info {
+  background-color: #0f1e2e !important;
+  border-color: #0dcaf0 !important;
+  color: #86c5ea !important;
+}
+
+body.dark-mode .navbar {
+  background-color: #1a1a1a !important;
+  border-bottom-color: #333 !important;
+}
+
+body.dark-mode .navbar-brand,
+body.dark-mode .navbar-nav .nav-link {
+  color: #ededed !important;
+}
+
+body.dark-mode .navbar-nav .nav-link:hover {
+  color: #0d6efd !important;
+}
+
+body.dark-mode .table {
+  color: #ededed !important;
+  background-color: #1a1a1a !important;
+}
+
+body.dark-mode .table th,
+body.dark-mode .table td {
+  border-color: #333 !important;
+}
+
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
+  background-color: #222 !important;
+}
+
+body.dark-mode .modal-content {
+  background-color: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: #333 !important;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: #333 !important;
+}
+
+body.dark-mode .form-check-input {
+  background-color: #2a2a2a !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode .form-check-input:checked {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+body.dark-mode .text-muted {
+  color: #aaa !important;
+}
+
+body.dark-mode .text-success {
+  color: #75b798 !important;
+}
+
+body.dark-mode .container-fluid {
+  background-color: transparent !important;
+}
+
+/* Melhorar contraste com amarelo no dark mode */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+  color: #ffd700 !important; /* Amarelo dourado para títulos */
+}
+
+body.dark-mode .card-title {
+  color: #ffd700 !important;
+}
+
+body.dark-mode .form-label {
+  color: #ffeb3b !important; /* Amarelo mais claro para labels */
+  font-weight: 500;
+}
+
+body.dark-mode .btn-primary {
+  background-color: #ffc107 !important; /* Amarelo âmbar para botões primários */
+  border-color: #ffc107 !important;
+  color: #000 !important; /* Texto preto no botão amarelo */
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #ffb300 !important;
+  border-color: #ffb300 !important;
+}
+
+body.dark-mode .btn-outline-primary {
+  color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .navbar-brand {
+  color: #ffd700 !important;
+  font-weight: bold;
+}
+
+body.dark-mode .navbar-nav .nav-link:hover,
+body.dark-mode .navbar-nav .nav-link.active {
+  color: #ffc107 !important;
+}
+
+body.dark-mode .badge {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .alert-info {
+  background-color: #1a1a0a !important;
+  border-color: #ffc107 !important;
+  color: #ffeb3b !important;
+}
+
+body.dark-mode strong,
+body.dark-mode b {
+  color: #ffeb3b !important;
+}
+
+body.dark-mode .table th {
+  background-color: #2a2a2a !important;
+  color: #ffd700 !important;
+  border-bottom: 2px solid #ffc107 !important;
+}
+
+body.dark-mode .mobile-menu-item.active {
+  color: #ffc107 !important;
+  background: #23272b;
+}
+
+body.dark-mode .mobile-menu-item.active .mobile-menu-icon {
+  color: #ffc107 !important;
+}
+
+/* Mais elementos com contraste amarelo */
+body.dark-mode .dropdown-menu {
+  background-color: #1a1a1a !important;
+  border-color: #ffc107 !important;
+}
+
+body.dark-mode .dropdown-item {
+  color: #ededed !important;
+}
+
+body.dark-mode .dropdown-item:hover {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .breadcrumb-item.active {
+  color: #ffc107 !important;
+}
+
+body.dark-mode .pagination .page-link {
+  background-color: #2a2a2a !important;
+  border-color: #444 !important;
+  color: #ffc107 !important;
+}
+
+body.dark-mode .pagination .page-item.active .page-link {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .spinner-border {
+  color: #ffc107 !important;
+}
+
+body.dark-mode .text-primary {
+  color: #ffc107 !important;
+}
+
+body.dark-mode .link-primary {
+  color: #ffc107 !important;
+}
+
+body.dark-mode .link-primary:hover {
+  color: #ffb300 !important;
+}
+
+body.dark-mode .border-primary {
+  border-color: #ffc107 !important;
+}
+
+body.dark-mode .bg-primary {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .form-check-input:checked {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+
+body.dark-mode .form-switch .form-check-input:checked {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+
+body.dark-mode .progress-bar {
+  background-color: #ffc107 !important;
+}
+
+body.dark-mode .btn-close {
+  filter: brightness(0) saturate(100%) invert(86%) sepia(44%) saturate(434%) hue-rotate(1deg) brightness(104%) contrast(99%);
+}
+
+body.dark-mode .offcanvas {
+  background-color: #1a1a1a !important;
+  color: #ededed !important;
+}
+
+body.dark-mode .offcanvas-header {
+  border-bottom-color: #333 !important;
 }
 
 /* Mobile Menu Styles */
@@ -97,6 +406,25 @@ body {
   margin-bottom: 2px;
 }
 
+/* Dark mode for mobile menu */
+body.dark-mode .mobile-menu-container {
+  background: #181c20 !important;
+  border-top: 1px solid #23272b;
+}
+
+body.dark-mode .mobile-menu-item {
+  color: #aaa;
+}
+
+body.dark-mode .mobile-menu-item.active {
+  color: #0d6efd;
+  background: #23272b;
+}
+
+body.dark-mode .mobile-menu-item:active {
+  background: #23272b;
+}
+
 @media (prefers-color-scheme: dark) {
   .mobile-menu-container {
     background: #181c20 !important;
@@ -112,6 +440,63 @@ body {
   .mobile-menu-item:active {
     background: #23272b;
   }
+}
+
+/* Estilos para o modo Dark na página de Condomínios */
+body.dark-mode .card-header,
+body.dark-mode .modal-header {
+  background-color: #FFD700 !important; /* Amarelo */
+  color: #171717 !important; /* Cor do texto para contraste */
+}
+
+body.dark-mode table tbody tr td {
+  background-color: #FFD700 !important; /* Amarelo */
+  color: #171717 !important; /* Cor do texto para contraste */
+}
+
+/* Estilos específicos para o modo dark na página de Condomínios */
+body.dark-mode[data-page="condominio"] {
+  background: #000 !important;
+  color: #ffd700 !important;
+}
+
+body.dark-mode[data-page="condominio"] h1,
+body.dark-mode[data-page="condominio"] h2,
+body.dark-mode[data-page="condominio"] h3,
+body.dark-mode[data-page="condominio"] h4,
+body.dark-mode[data-page="condominio"] h5,
+body.dark-mode[data-page="condominio"] h6,
+body.dark-mode[data-page="condominio"] .card-title,
+body.dark-mode[data-page="condominio"] .form-label,
+body.dark-mode[data-page="condominio"] .text-primary,
+body.dark-mode[data-page="condominio"] .link-primary {
+  color: #ffd700 !important;
+}
+
+body.dark-mode[data-page="condominio"] .card,
+body.dark-mode[data-page="condominio"] .modal-content,
+body.dark-mode[data-page="condominio"] .container,
+body.dark-mode[data-page="condominio"] .container-fluid {
+  background: #000 !important;
+  color: #ffd700 !important;
+  border-color: #ffd700 !important;
+}
+
+body.dark-mode[data-page="condominio"] .btn,
+body.dark-mode[data-page="condominio"] .form-control,
+body.dark-mode[data-page="condominio"] .form-select {
+  background: #181818 !important;
+  color: #ffd700 !important;
+  border-color: #ffd700 !important;
+}
+
+body.dark-mode[data-page="condominio"] .badge,
+body.dark-mode[data-page="condominio"] .alert,
+body.dark-mode[data-page="condominio"] .table th,
+body.dark-mode[data-page="condominio"] .table td {
+  background: #181818 !important;
+  color: #ffd700 !important;
+  border-color: #ffd700 !important;
 }
 
 /* Responsividade - ocultar menu mobile em desktop e header em mobile */

@@ -4,6 +4,7 @@ import Adm from '@/models/Adm'
 import Master from '@/models/Master'
 import Condominium from '@/models/condominios'
 import Colaborador from '@/models/Colaborador'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import mongoose from 'mongoose'
 
 export async function GET(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       }
 
       const colaboradorCompleto = {
-        ...colaborador,
+        ...PersonalDataEncryption.prepareForDisplay(colaborador),
         condominio_nome: condominium?.nome || 'N/A'
       }
 
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
         }
 
         return {
-          ...colaborador,
+          ...PersonalDataEncryption.prepareForDisplay(colaborador),
           condominio_nome: condominium?.nome || 'N/A'
         }
       })
@@ -156,9 +157,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(colaboradorData);
+    
     const newColaborador = {
-      ...colaboradorData,
-      cpf: colaboradorData.cpf.replace(/[^\d]/g, ''),
+      ...encryptedData,
+      cpf: encryptedData.cpf, // Já criptografado pelo prepareForSave
       email: colaboradorData.email.toLowerCase(),
       data_nasc: new Date(colaboradorData.data_nasc),
       data_inicio: new Date(colaboradorData.data_inicio),
@@ -247,9 +251,15 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Criptografar dados sensíveis se fornecidos
+    let processedData = colaboradorData;
+    if (colaboradorData.cpf || colaboradorData.senha) {
+      processedData = await PersonalDataEncryption.prepareForSave(colaboradorData);
+    }
+
     const updateData = {
-      ...colaboradorData,
-      cpf: colaboradorData.cpf ? colaboradorData.cpf.replace(/[^\d]/g, '') : colaboradorData.cpf,
+      ...processedData,
+      cpf: processedData.cpf, // Já processado pelo prepareForSave se necessário
       email: colaboradorData.email ? colaboradorData.email.toLowerCase() : colaboradorData.email,
       data_nasc: colaboradorData.data_nasc ? new Date(colaboradorData.data_nasc) : colaboradorData.data_nasc,
       data_inicio: colaboradorData.data_inicio ? new Date(colaboradorData.data_inicio) : colaboradorData.data_inicio,

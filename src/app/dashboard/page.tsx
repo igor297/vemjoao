@@ -298,74 +298,25 @@ export default function DashboardPage() {
                 </Row>
               )}
 
-              {/* Cards de funcionalidades */}
-              <Row>
-                <Col md={6} lg={4} className="mb-4">
-                  <Card className="shadow-sm h-100">
-                    <Card.Body className="text-center">
-                      <div className="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                           style={{ width: '64px', height: '64px' }}>
-                        <svg className="text-white" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                      </div>
-                      <h5 className="card-title">Condomínios</h5>
-                      <p className="card-text text-muted">
-                        {userInfo?.tipo === 'master' 
-                          ? 'Gerenciar condomínios' 
-                          : 'Informações do condomínio'}
-                      </p>
-                    </Card.Body>
-                  </Card>
-                </Col>
+              {/* Card de Configurações para Master */}
+              {userInfo?.tipo === 'master' && (
+                <Row className="mb-4">
+                  <Col>
+                    <Card className="shadow">
+                      <Card.Header className="bg-secondary text-white">
+                        <h5 className="mb-0">⚙️ Configurações</h5>
+                      </Card.Header>
+                      <Card.Body>
+                        <p className="text-muted">Acesse as configurações gerais do sistema.</p>
+                        <Button variant="primary" href="/settings">
+                          Ir para Configurações
+                        </Button>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              )}
 
-                <Col md={6} lg={4} className="mb-4">
-                  <Card className="shadow-sm h-100">
-                    <Card.Body className="text-center">
-                      <div className="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                           style={{ width: '64px', height: '64px' }}>
-                        <svg className="text-white" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 4V6L21 9ZM15 10C16.1 10 17 10.9 17 12S16.1 14 15 14 13 13.1 13 12 13.9 10 15 10ZM9 10C10.1 10 11 10.9 11 12S10.1 14 9 14 7 13.1 7 12 7.9 10 9 10ZM12 15C14.2 15 16 16.8 16 19V21H8V19C8 16.8 9.8 15 12 15Z"/>
-                        </svg>
-                      </div>
-                      <h5 className="card-title">Administradores</h5>
-                      <p className="card-text text-muted">
-                        Gerenciar síndicos e conselheiros
-                      </p>
-                    </Card.Body>
-                  </Card>
-                </Col>
-
-                <Col md={6} lg={4} className="mb-4">
-                  <Card className="shadow-sm h-100">
-                    <Card.Body className="text-center">
-                      <div className="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                           style={{ width: '64px', height: '64px' }}>
-                        <svg className="text-white" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M16,4C18.11,4 19.8,5.69 19.8,7.8C19.8,9.91 18.11,11.6 16,11.6C13.89,11.6 12.2,9.91 12.2,7.8C12.2,5.69 13.89,4 16,4M16,13.4C20.67,13.4 24.4,15.27 24.4,17.6V20H7.6V17.6C7.6,15.27 11.33,13.4 16,13.4M8.8,13.4H6C3.79,13.4 2,15.19 2,17.4V20H7.6V17.6C7.6,16.5 8.09,15.45 8.8,14.58V13.4Z"/>
-                        </svg>
-                      </div>
-                      <h5 className="card-title">Colaboradores</h5>
-                      <p className="card-text text-muted">
-                        Gerenciar funcionários e prestadores
-                      </p>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
-
-              <Card className="shadow">
-                <Card.Body className="p-5 text-center">
-                  <h3 className="h4 fw-semibold text-dark mb-4">
-                    🏢 Sistema de Gestão Condominial
-                  </h3>
-                  <p className="text-muted lead">
-                    {userInfo?.tipo === 'master' 
-                      ? 'Como Master, você tem acesso completo ao sistema. Selecione um condomínio ativo acima para começar a trabalhar.'
-                      : 'Você tem acesso às funcionalidades do seu condomínio. Use o menu superior para navegar.'}
-                  </p>
-                </Card.Body>
-              </Card>
             </Col>
           </Row>
         </Container>

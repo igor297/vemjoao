@@ -5,6 +5,8 @@ import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert, Badge } f
 import MoradorSelector from '@/components/MoradorSelector'
 import DateInput from '@/components/DateInput'
 import { formatDateISO } from '@/utils/dateUtils'
+import { applyMask } from '@/utils/masks'
+import { encryptFormData, decryptFormData } from '@/lib/encryption'
 
 interface Adm {
   _id?: string
@@ -62,6 +64,7 @@ export default function AdmPage() {
   const [showMoradorSelector, setShowMoradorSelector] = useState(false)
   const [isAdmInterno, setIsAdmInterno] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   
 
   // Função auxiliar para acessar localStorage com segurança
@@ -229,34 +232,25 @@ export default function AdmPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     
-    if (name === 'cpf') {
-      // Máscara CPF
-      let cpf = value.replace(/\D/g, '')
-      if (cpf.length <= 11) {
-        cpf = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-        setFormData(prev => ({ ...prev, cpf }))
-      }
-      return
-    }
+    // Aplicar máscaras com as funções utilitárias
+    let maskedValue = value
     
-    if (name === 'cep') {
-      // Máscara CEP
-      let cep = value.replace(/\D/g, '')
-      if (cep.length <= 8) {
-        cep = cep.replace(/(\d{5})(\d{3})/, '$1-$2')
-        setFormData(prev => ({ ...prev, cep }))
-        
-        // Buscar endereço automaticamente quando CEP tiver 8 dígitos
-        if (cep.replace(/\D/g, '').length === 8) {
-          buscarCep(cep)
-        }
+    if (name === 'cpf') {
+      maskedValue = applyMask('cpf', value)
+    } else if (name === 'celular1' || name === 'celular2') {
+      maskedValue = applyMask('celular', value)
+    } else if (name === 'cep') {
+      maskedValue = applyMask('cep', value)
+      
+      // Buscar endereço automaticamente quando CEP tiver 8 dígitos
+      if (maskedValue.replace(/\D/g, '').length === 8) {
+        buscarCep(maskedValue)
       }
-      return
     }
     
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: maskedValue
     }))
   }
 
@@ -268,9 +262,16 @@ export default function AdmPage() {
       const url = editingId ? `/api/adms/${editingId}` : '/api/adms'
       const method = editingId ? 'PUT' : 'POST'
       
+      // Criptografar dados sensíveis antes de enviar
       const dataToSend = {
         ...formData,
         master_id: currentUser?.id
+      }
+      
+      // Aplicar criptografia apenas se houver dados sensíveis
+      if (dataToSend.senha || dataToSend.cpf || dataToSend.celular1 || dataToSend.celular2) {
+        const encryptedData = encryptFormData(dataToSend)
+        Object.assign(dataToSend, encryptedData)
       }
       
       const response = await fetch(url, {
@@ -284,7 +285,7 @@ export default function AdmPage() {
       if (data.success) {
         showAlert('success', editingId ? 'Administrador atualizado!' : 'Administrador criado!')
         handleCloseModal()
-        loadAdms(currentUser?.id)
+        loadAdms(currentUser?.id || '')
       } else {
         showAlert('danger', data.error || 'Erro ao salvar administrador')
       }
@@ -297,30 +298,33 @@ export default function AdmPage() {
   }
 
   const handleEdit = (adm: Adm) => {
+    // Descriptografar dados sensíveis para exibição
+    const decryptedAdm = decryptFormData(adm)
+    
     setFormData({
-      nome: adm.nome,
-      cpf: adm.cpf,
-      data_nasc: formatDateISO(adm.data_nasc) || '',
-      tipo: adm.tipo,
-      email: adm.email,
-      senha: '',
-      data_inicio: formatDateISO(adm.data_inicio) || '',
-      data_fim: formatDateISO(adm.data_fim) || '',
-      condominio_id: adm.condominio_id,
-      bloco: adm.bloco || '',
-      unidade: adm.unidade || '',
-      celular1: adm.celular1 || '',
-      celular2: adm.celular2 || '',
+      nome: decryptedAdm.nome,
+      cpf: decryptedAdm.cpf,
+      data_nasc: formatDateISO(decryptedAdm.data_nasc) || '',
+      tipo: decryptedAdm.tipo,
+      email: decryptedAdm.email,
+      senha: '', // Não preencher senha na edição
+      data_inicio: formatDateISO(decryptedAdm.data_inicio) || '',
+      data_fim: formatDateISO(decryptedAdm.data_fim) || '',
+      condominio_id: decryptedAdm.condominio_id,
+      bloco: decryptedAdm.bloco || '',
+      unidade: decryptedAdm.unidade || '',
+      celular1: decryptedAdm.celular1 || '',
+      celular2: decryptedAdm.celular2 || '',
       // Campos de endereço
-      cep: adm.cep || '',
-      logradouro: adm.logradouro || '',
-      estado: adm.estado || '',
-      cidade: adm.cidade || '',
-      numero: adm.numero || '',
-      complemento: adm.complemento || '',
-      observacoes: adm.observacoes || '',
-      adm_interno: adm.adm_interno || false,
-      morador_origem_id: adm.morador_origem_id || ''
+      cep: decryptedAdm.cep || '',
+      logradouro: decryptedAdm.logradouro || '',
+      estado: decryptedAdm.estado || '',
+      cidade: decryptedAdm.cidade || '',
+      numero: decryptedAdm.numero || '',
+      complemento: decryptedAdm.complemento || '',
+      observacoes: decryptedAdm.observacoes || '',
+      adm_interno: decryptedAdm.adm_interno || false,
+      morador_origem_id: decryptedAdm.morador_origem_id || ''
     })
     setIsAdmInterno(adm.adm_interno || false)
     setEditingId(adm._id || null)
@@ -331,7 +335,7 @@ export default function AdmPage() {
     if (!confirm('Tem certeza que deseja excluir este administrador?')) return
 
     try {
-      const response = await fetch(`/api/adms/${id}?master_id=${encodeURIComponent(currentUser?.email)}`, {
+      const response = await fetch(`/api/adms/${id}?master_id=${encodeURIComponent(currentUser?.email || '')}`, {
         method: 'DELETE'
       })
 
@@ -339,7 +343,7 @@ export default function AdmPage() {
       
       if (data.success) {
         showAlert('success', 'Administrador excluído!')
-        loadAdms(currentUser?.id)
+        loadAdms(currentUser?.id || '')
       } else {
         showAlert('danger', data.error || 'Erro ao excluir administrador')
       }
@@ -734,14 +738,29 @@ export default function AdmPage() {
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Senha *</Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="senha"
-                      value={formData.senha}
-                      onChange={handleInputChange}
-                      required={!editingId}
-                      placeholder={editingId ? "Deixe em branco para manter" : ""}
-                    />
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? "text" : "password"}
+                        name="senha"
+                        value={formData.senha}
+                        onChange={handleInputChange}
+                        required={!editingId}
+                        placeholder={editingId ? "Deixe em branco para manter" : ""}
+                        className="pe-5"
+                      />
+                      <Button
+                        variant="link"
+                        className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{ zIndex: 10 }}
+                      >
+                        {showPassword ? (
+                          <i className="bi bi-eye-slash"></i>
+                        ) : (
+                          <i className="bi bi-eye"></i>
+                        )}
+                      </Button>
+                    </div>
                   </Form.Group>
                 </Col>
               </Row>
@@ -825,6 +844,7 @@ export default function AdmPage() {
                       value={formData.celular1}
                       onChange={handleInputChange}
                       placeholder="(85) 99999-9999"
+                      maxLength={15}
                       disabled={isAdmInterno}
                       className={isAdmInterno ? 'bg-light' : ''}
                     />
@@ -844,6 +864,7 @@ export default function AdmPage() {
                       value={formData.celular2}
                       onChange={handleInputChange}
                       placeholder="(85) 99999-9999"
+                      maxLength={15}
                       disabled={isAdmInterno}
                       className={isAdmInterno ? 'bg-light' : ''}
                     />

@@ -8,6 +8,7 @@ import Colaborador from '@/models/Colaborador'
 import Imobiliaria from '@/models/Imobiliaria'
 import FinanceiroMorador from '@/models/FinanceiroMorador'
 import StatusPagamentoMorador from '@/models/StatusPagamentoMorador'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import mongoose from 'mongoose'
 
 export async function GET(request: NextRequest) {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         morador: {
-          ...morador,
+          ...PersonalDataEncryption.prepareForDisplay(morador),
           condominio_nome: condominium?.nome || 'N/A'
         }
       })
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
         }
         
         return {
-          ...morador,
+          ...PersonalDataEncryption.prepareForDisplay(morador),
           condominio_nome: condominium?.nome || 'N/A',
           responsavel_nome: responsavel?.nome || 'N/A',
           proprietario_nome: proprietario?.nome || 'N/A',
@@ -303,9 +304,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(moradorData);
+    
     const newMoradorData = {
-      ...moradorData,
-      cpf: moradorData.cpf.replace(/[^\d]/g, ''),
+      ...encryptedData,
+      cpf: encryptedData.cpf, // Já criptografado pelo prepareForSave
       email: moradorData.email.toLowerCase(),
       data_nasc: new Date(moradorData.data_nasc),
       data_inicio: new Date(moradorData.data_inicio),
@@ -371,9 +375,15 @@ export async function PUT(request: NextRequest) {
       return field
     }
 
+    // Criptografar dados sensíveis se fornecidos
+    let processedData = moradorData;
+    if (moradorData.cpf || moradorData.senha) {
+      processedData = await PersonalDataEncryption.prepareForSave(moradorData);
+    }
+
     const updateData = {
-      ...moradorData,
-      ...(moradorData.cpf && { cpf: moradorData.cpf.replace(/[^\d]/g, '') }),
+      ...processedData,
+      ...(processedData.cpf && { cpf: processedData.cpf }), // Já processado pelo prepareForSave se necessário
       ...(moradorData.email && { email: moradorData.email.toLowerCase() }),
       ...(moradorData.data_nasc && { data_nasc: new Date(moradorData.data_nasc) }),
       ...(moradorData.data_inicio && { data_inicio: new Date(moradorData.data_inicio) }),

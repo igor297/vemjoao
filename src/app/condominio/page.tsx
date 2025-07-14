@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Form, Modal, Table, Alert } from 'react-bootstrap'
 import FieldExplanation from '@/components/FieldExplanation'
+import { applyMask } from '@/utils/masks'
 
 interface Condominio {
   _id?: string
@@ -64,16 +65,24 @@ interface ContaBancaria {
   titular_documento: string
   titular_tipo: 'cpf' | 'cnpj'
   chave_pix?: string
-  tipo_chave_pix?: string
+  tipo_chave_pix?: 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria'
   ativa: boolean
   conta_principal: boolean
   aceita_boleto: boolean
   aceita_pix: boolean
   aceita_ted_doc: boolean
+  limite_pix_diario?: number
   observacoes?: string
 }
 
 export default function CondominioPage() {
+  useEffect(() => {
+    document.body.setAttribute('data-page', 'condominio');
+    return () => {
+      document.body.removeAttribute('data-page');
+    };
+  }, []);
+
   const [condominios, setCondominios] = useState<Condominio[]>([])
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -122,7 +131,7 @@ export default function CondominioPage() {
     observacoes: ''
   })
   
-  const [formData, setFormData] = useState<Condominium>({
+  const [formData, setFormData] = useState<Condominio>({
     nome: '',
     cep: '',
     estado: '',
@@ -192,6 +201,11 @@ export default function CondominioPage() {
       processedValue = parseFloat(value) || 0
     } else if (type === 'checkbox') {
       processedValue = (e.target as HTMLInputElement).checked
+    } else {
+      // Aplicar máscaras para campos específicos
+      if (name === 'cnpj') {
+        processedValue = applyMask('cnpj', value)
+      }
     }
     
     setFormData(prev => ({
@@ -287,7 +301,7 @@ export default function CondominioPage() {
     }
   }
 
-  const handleEdit = (condominium: Condominium) => {
+  const handleEdit = (condominium: Condominio) => {
     setFormData({
       nome: condominium.nome || '',
       cep: condominium.cep || '',
@@ -488,6 +502,18 @@ export default function CondominioPage() {
       processedValue = (e.target as HTMLInputElement).checked
     } else if (type === 'number') {
       processedValue = parseFloat(value) || 0
+    } else {
+      // Aplicar máscaras para campos específicos de conta bancária
+      if (name === 'titular_documento') {
+        const tipoDocumento = contaFormData.titular_tipo
+        processedValue = applyMask(tipoDocumento === 'cpf' ? 'cpf' : 'cnpj', value)
+      } else if (name === 'chave_pix' && contaFormData.tipo_chave_pix === 'telefone') {
+        processedValue = applyMask('celular', value)
+      } else if (name === 'chave_pix' && contaFormData.tipo_chave_pix === 'cpf') {
+        processedValue = applyMask('cpf', value)
+      } else if (name === 'chave_pix' && contaFormData.tipo_chave_pix === 'cnpj') {
+        processedValue = applyMask('cnpj', value)
+      }
     }
     
     setContaFormData(prev => ({
@@ -888,14 +914,11 @@ export default function CondominioPage() {
                             name="cep"
                             value={formData.cep}
                             onChange={(e) => {
-                              let value = e.target.value.replace(/\D/g, '')
-                              if (value.length > 5) {
-                                value = value.slice(0, 5) + '-' + value.slice(5, 8)
-                              }
-                              setFormData(prev => ({ ...prev, cep: value }))
+                              const maskedValue = applyMask('cep', e.target.value)
+                              setFormData(prev => ({ ...prev, cep: maskedValue }))
                               
-                              if (value.replace(/\D/g, '').length === 8) {
-                                buscarCEP(value)
+                              if (maskedValue.replace(/\D/g, '').length === 8) {
+                                buscarCEP(maskedValue)
                               }
                             }}
                             placeholder="00000-000"
@@ -1702,24 +1725,7 @@ export default function CondominioPage() {
                           type="text"
                           name="titular_documento"
                           value={contaFormData.titular_documento}
-                          onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, '')
-                            
-                            if (contaFormData.titular_tipo === 'cpf') {
-                              value = value.slice(0, 11)
-                              if (value.length > 3) value = value.slice(0, 3) + '.' + value.slice(3)
-                              if (value.length > 7) value = value.slice(0, 7) + '.' + value.slice(7)
-                              if (value.length > 11) value = value.slice(0, 11) + '-' + value.slice(11)
-                            } else {
-                              value = value.slice(0, 14)
-                              if (value.length > 2) value = value.slice(0, 2) + '.' + value.slice(2)
-                              if (value.length > 6) value = value.slice(0, 6) + '.' + value.slice(6)
-                              if (value.length > 10) value = value.slice(0, 10) + '/' + value.slice(10)
-                              if (value.length > 15) value = value.slice(0, 15) + '-' + value.slice(15)
-                            }
-                            
-                            setContaFormData(prev => ({ ...prev, titular_documento: value }))
-                          }}
+                          onChange={handleContaInputChange}
                           required
                           placeholder={contaFormData.titular_tipo === 'cpf' ? '000.000.000-00' : '00.000.000/0001-00'}
                           maxLength={contaFormData.titular_tipo === 'cpf' ? 14 : 18}

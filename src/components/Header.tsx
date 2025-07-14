@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap'
 
@@ -15,11 +15,37 @@ export default function Header({ showLogout = true }: HeaderProps) {
   const [condominioNome, setCondominioNome] = useState<string>('')
   const [activeCondominioName, setActiveCondominioName] = useState<string>('')
   const [activeTab, setActiveTab] = useState<string>('')
+  const [useTicketingSystem, setUseTicketingSystem] = useState<boolean>(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const router = useRouter()
 
+  const getLocalStorage = (key: string) => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(key)
+    }
+    return null
+  }
+
+  const loadCondominiumSetting = useCallback(async (condominioId: string, masterId: string) => {
+    try {
+      const response = await fetch(`/api/condominium-settings?condominio_id=${encodeURIComponent(condominioId)}&master_id=${encodeURIComponent(masterId)}`)
+      const data = await response.json()
+      if (data.success && data.setting) {
+        console.log('Header: Carregando configuração de ticket:', data.setting.use_ticketing_system)
+        setUseTicketingSystem(data.setting.use_ticketing_system)
+      } else {
+        console.log('Header: Nenhuma configuração encontrada, usando padrão false')
+        setUseTicketingSystem(false) // Default to false if no setting found
+      }
+    } catch (error) {
+      console.error('Error loading condominium setting:', error)
+      setUseTicketingSystem(false)
+    }
+  }, [])
+
   useEffect(() => {
-    const loadUserData = () => {
-      const userData = localStorage.getItem('userData')
+    const updateHeaderData = () => {
+      const userData = getLocalStorage('userData')
       if (userData) {
         try {
           const user = JSON.parse(userData)
@@ -27,44 +53,86 @@ export default function Header({ showLogout = true }: HeaderProps) {
           setUserName(user.nome || '')
           setUserSubtipo(user.subtipo || '')
           setCondominioNome(user.condominio_nome || '')
-          
-          // Para masters, carregar condomínio ativo
+          setCurrentUserId(user.id || null)
+
           if (user.tipo === 'master') {
-            const activeName = localStorage.getItem('activeCondominioName')
-            setActiveCondominioName(activeName || '')
+            const activeCondominioId = getLocalStorage('activeCondominio')
+            const activeName = getLocalStorage('activeCondominioName')
+            setActiveCondominioName(activeName || 'Nenhum condomínio ativo')
+            if (activeCondominioId && user.id) {
+              loadCondominiumSetting(activeCondominioId, user.id)
+            }
+          } else {
+            // For non-master users, ensure activeCondominioName is reset or set to their specific condominium
+            setActiveCondominioName(user.condominio_nome || '')
+            
+            // Load ticker configuration for non-master users using their condominium ID and master ID
+            if (user.condominio_id && user.master_id) {
+              loadCondominiumSetting(user.condominio_id, user.master_id)
+            }
           }
         } catch (error) {
           console.error('Error parsing user data:', error)
         }
+      } else {
+        // Clear all user-related states if no user data is found
+        setUserType('')
+        setUserName('')
+        setUserSubtipo('')
+        setCondominioNome('')
+        setActiveCondominioName('')
+        setUseTicketingSystem(false)
+        setCurrentUserId(null)
       }
     }
 
-    loadUserData()
+    // Initial load
+    updateHeaderData()
 
-    // Detectar página atual para destacar o menu ativo
+    // Detect current page for active menu highlighting
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname
       setActiveTab(currentPath)
     }
 
-    // Escutar mudanças no localStorage (quando condomínio ativo é alterado)
-    const handleStorageChange = () => {
-      // Também escutar eventos custom disparados pelo dashboard
-      loadUserData()
-    }
+    // Event listeners for storage and custom condominium changes
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', updateHeaderData)
+      window.addEventListener('condominioChanged', updateHeaderData)
 
-    // Escutar tanto mudanças de storage quanto eventos custom
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('condominioChanged', handleStorageChange)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('condominioChanged', handleStorageChange)
+      return () => {
+        window.removeEventListener('storage', updateHeaderData)
+        window.removeEventListener('condominioChanged', updateHeaderData)
+      }
     }
-  }, [])
+  }, [loadCondominiumSetting])
 
   const handleLogout = () => {
+    // Limpar todos os dados do usuário do localStorage
     localStorage.removeItem('userData')
+    localStorage.removeItem('activeCondominio')
+    localStorage.removeItem('activeCondominioName')
+    
+    // Limpar também quaisquer outros dados que possam estar salvos
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (key.startsWith('user') || key.startsWith('active') || key.startsWith('condominio'))) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
+    
+    // Limpar estados do componente
+    setUserType('')
+    setUserName('')
+    setUserSubtipo('')
+    setCondominioNome('')
+    setActiveCondominioName('')
+    setUseTicketingSystem(false)
+    setCurrentUserId(null)
+    
+    // Redirecionar para login
     router.push('/login')
   }
 
@@ -93,45 +161,59 @@ export default function Header({ showLogout = true }: HeaderProps) {
       }
     ]
 
+    let menuItems = []
+
     switch (userType) {
       case 'master':
-        return [
+        menuItems = [
           ...baseItems,
           { icon: '🏢', label: 'Condomínios', path: '/condominio' },
           { icon: '👥', label: 'Moradores', path: '/moradores' },
           { icon: '💰', label: 'Financeiro', path: '/financeiro' },
           { icon: '📅', label: 'Eventos', path: '/eventos' },
-          { icon: '🎫', label: 'Ticket', path: '/tickets' }
+          
         ]
+        if (useTicketingSystem) {
+          menuItems.push({ icon: '🎫', label: 'Ticket', path: '/tickets' })
+        }
+        break
       case 'adm':
-        return [
+        menuItems = [
           ...baseItems,
           { icon: '👥', label: 'Moradores', path: '/moradores' },
           { icon: '🤝', label: 'Colaborador', path: '/colaborador' },
           { icon: '💰', label: 'Financeiro', path: '/financeiro' },
-          { icon: '📅', label: 'Eventos', path: '/eventos' },
-          { icon: '🎫', label: 'Ticket', path: '/tickets' }
+          { icon: '📅', label: 'Eventos', path: '/eventos' }
         ]
+        if (useTicketingSystem) {
+          menuItems.push({ icon: '🎫', label: 'Ticket', path: '/tickets' })
+        }
+        break
       case 'colaborador':
-        return [
+        menuItems = [
           ...baseItems,
           { icon: '💰', label: 'Financeiro', path: '/financeiro-colaboradores' },
-          { icon: '📅', label: 'Eventos', path: '/eventos' },
-          { icon: '🎫', label: 'Ticket', path: '/tickets' }
+          { icon: '📅', label: 'Eventos', path: '/eventos' }
         ]
+        if (useTicketingSystem) {
+          menuItems.push({ icon: '🎫', label: 'Ticket', path: '/tickets' })
+        }
+        break
       case 'morador':
-        return [
+        menuItems = [
           ...baseItems,
           { icon: '📅', label: 'Eventos', path: '/eventos' },
-          { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' },
-          { icon: '🎫', label: 'Ticket', path: '/tickets' }
+          { icon: '💳', label: 'Pagamentos', path: '/portal-pagamento' }
         ]
+        if (useTicketingSystem) {
+          menuItems.push({ icon: '🎫', label: 'Ticket', path: '/tickets' })
+        }
+        break
       default:
-        return baseItems
+        menuItems = baseItems
     }
+    return menuItems
   }
-
-  
 
   const mobileMenuItems = getMobileMenuItems()
 
@@ -230,6 +312,7 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   Moradores
                 </Button>
               </Nav.Item>
+              
               <Nav.Item>
                 <Button 
                   variant="outline-light" 
@@ -240,16 +323,18 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   📅 Eventos
                 </Button>
               </Nav.Item>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
-                  onClick={() => router.push('/tickets')}
-                  className="ms-2"
-                >
-                  🎫 Ticket
-                </Button>
-              </Nav.Item>
+              {useTicketingSystem && (
+                <Nav.Item>
+                  <Button 
+                    variant="outline-light" 
+                    size="sm"
+                    onClick={() => router.push('/tickets')}
+                    className="ms-2"
+                  >
+                    🎫 Ticket
+                  </Button>
+                </Nav.Item>
+              )}
               <Nav.Item>
                 {/* Menu suspenso para Financeiro */}
                 <Dropdown className="ms-2">
@@ -299,16 +384,18 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   📅 Eventos
                 </Button>
               </Nav.Item>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
-                  onClick={() => router.push('/tickets')}
-                  className="ms-2"
-                >
-                  🎫 Ticket
-                </Button>
-              </Nav.Item>
+              {useTicketingSystem && (
+                <Nav.Item>
+                  <Button 
+                    variant="outline-light" 
+                    size="sm"
+                    onClick={() => router.push('/tickets')}
+                    className="ms-2"
+                  >
+                    🎫 Ticket
+                  </Button>
+                </Nav.Item>
+              )}
               <Nav.Item>
                 {/* Menu suspenso para Financeiro */}
                 <Dropdown className="ms-2">
@@ -338,16 +425,18 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   📅 Eventos
                 </Button>
               </Nav.Item>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
-                  onClick={() => router.push('/tickets')}
-                  className="ms-2"
-                >
-                  🎫 Ticket
-                </Button>
-              </Nav.Item>
+              {useTicketingSystem && (
+                <Nav.Item>
+                  <Button 
+                    variant="outline-light" 
+                    size="sm"
+                    onClick={() => router.push('/tickets')}
+                    className="ms-2"
+                  >
+                    🎫 Ticket
+                  </Button>
+                </Nav.Item>
+              )}
               <Nav.Item>
                 {/* Menu suspenso para Financeiro */}
                 <Dropdown className="ms-2">
@@ -388,16 +477,18 @@ export default function Header({ showLogout = true }: HeaderProps) {
                   💳 Meus Pagamentos
                 </Button>
               </Nav.Item>
-              <Nav.Item>
-                <Button 
-                  variant="outline-light" 
-                  size="sm"
-                  onClick={() => router.push('/tickets')}
-                  className="ms-2"
-                >
-                  🎫 Ticket
-                </Button>
-              </Nav.Item>
+              {useTicketingSystem && (
+                <Nav.Item>
+                  <Button 
+                    variant="outline-light" 
+                    size="sm"
+                    onClick={() => router.push('/tickets')}
+                    className="ms-2"
+                  >
+                    🎫 Ticket
+                  </Button>
+                </Nav.Item>
+              )}
               {userSubtipo === 'proprietario' && (
                 <Nav.Item>
                   <Button 

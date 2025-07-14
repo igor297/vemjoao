@@ -299,4 +299,116 @@ export const EncryptionMiddleware = {
   }
 };
 
+// Funções de compatibilidade com OneSystemas
+// Usando a mesma biblioteca e chave do OneSystemas
+import CryptoJS from 'crypto-js';
+
+// Mesma chave usada no OneSystemas
+const ONESYSTEMAS_SECRET_KEY = 'OneSystemas2025SecretKey';
+
+/**
+ * Descriptografa dados usando a mesma criptografia do OneSystemas
+ */
+export const decryptOneSystemasData = (encryptedData: string): string => {
+  if (!encryptedData || encryptedData.trim() === '') return '';
+  
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, ONESYSTEMAS_SECRET_KEY);
+    
+    // Verificar se a descriptografia foi bem-sucedida
+    if (!bytes || bytes.sigBytes <= 0) {
+      console.warn('Dados descriptografados inválidos, retornando original:', encryptedData);
+      return encryptedData;
+    }
+    
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    
+    // Verificar se a string UTF-8 é válida
+    if (!decrypted || decrypted.length === 0) {
+      console.warn('String UTF-8 inválida após descriptografia, retornando original:', encryptedData);
+      return encryptedData;
+    }
+    
+    return decrypted;
+  } catch (error) {
+    console.error('Erro ao descriptografar dados do OneSystemas:', error);
+    return encryptedData; // Retorna o dado original em caso de erro
+  }
+};
+
+/**
+ * Criptografa dados usando a mesma criptografia do OneSystemas
+ */
+export const encryptOneSystemasData = (data: string): string => {
+  if (!data || data.trim() === '') return '';
+  
+  try {
+    const encrypted = CryptoJS.AES.encrypt(data, ONESYSTEMAS_SECRET_KEY).toString();
+    return encrypted;
+  } catch (error) {
+    console.error('Erro ao criptografar dados para OneSystemas:', error);
+    return data; // Retorna o dado original em caso de erro
+  }
+};
+
+/**
+ * Criptografa objeto com campos sensíveis para formulários
+ */
+export const encryptFormData = (formData: any): any => {
+  const encrypted = { ...formData };
+  
+  // Criptografar campos sensíveis
+  if (encrypted.senha) {
+    encrypted.senha = encryptOneSystemasData(encrypted.senha);
+  }
+  
+  if (encrypted.cpf) {
+    encrypted.cpf = encryptOneSystemasData(encrypted.cpf);
+  }
+  
+  if (encrypted.cnpj && encrypted.cnpj.trim() !== '') {
+    encrypted.cnpj = encryptOneSystemasData(encrypted.cnpj);
+  }
+  
+  if (encrypted.celular1 && encrypted.celular1.trim() !== '') {
+    encrypted.celular1 = encryptOneSystemasData(encrypted.celular1);
+  }
+  
+  if (encrypted.celular2 && encrypted.celular2.trim() !== '') {
+    encrypted.celular2 = encryptOneSystemasData(encrypted.celular2);
+  }
+  
+  return encrypted;
+};
+
+/**
+ * Descriptografa objeto com campos sensíveis para exibição
+ */
+export const decryptFormData = (formData: any): any => {
+  const decrypted = { ...formData };
+  
+  // Descriptografar campos sensíveis para exibição
+  if (decrypted.senha) {
+    decrypted.senha = decryptOneSystemasData(decrypted.senha);
+  }
+  
+  if (decrypted.cpf) {
+    decrypted.cpf = decryptOneSystemasData(decrypted.cpf);
+  }
+  
+  if (decrypted.cnpj && decrypted.cnpj.trim() !== '') {
+    decrypted.cnpj = decryptOneSystemasData(decrypted.cnpj);
+  }
+  
+  if (decrypted.celular1 && decrypted.celular1.trim() !== '') {
+    decrypted.celular1 = decryptOneSystemasData(decrypted.celular1);
+  }
+  
+  if (decrypted.celular2 && decrypted.celular2.trim() !== '') {
+    decrypted.celular2 = decryptOneSystemasData(decrypted.celular2);
+  }
+  
+  return decrypted;
+};
+
 export default FinancialDataEncryption;

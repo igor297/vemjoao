@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Master from '@/models/Master'
 import Adm from '@/models/Adm'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,9 +27,12 @@ export async function GET(request: NextRequest) {
     
     const result = await Adm.find(filter).lean()
     
+    // Descriptografar dados sensíveis antes de retornar
+    const admsForDisplay = result.map(adm => PersonalDataEncryption.prepareForDisplay(adm))
+    
     return NextResponse.json({
       success: true,
-      adms: result
+      adms: admsForDisplay
     })
     
   } catch (error) {
@@ -98,8 +102,11 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(admData);
+    
     const newAdm = {
-      ...admData,
+      ...encryptedData,
       tipo: admData.tipo.toLowerCase(),
       email: admData.email.toLowerCase(),
       data_nasc: new Date(admData.data_nasc),
@@ -233,9 +240,9 @@ export async function PUT(request: NextRequest) {
       morador_origem_id: admData.morador_origem_id && admData.morador_origem_id.trim() !== '' ? admData.morador_origem_id : undefined
     }
 
-    // Só atualizar senha se foi fornecida
+    // Só atualizar senha se foi fornecida - com hash
     if (admData.senha && admData.senha.trim() !== '') {
-      updateData.senha = admData.senha
+      updateData.senha = await PersonalDataEncryption.hashPassword(admData.senha)
     }
 
     const result = await Adm.findByIdAndUpdate(

@@ -5,6 +5,7 @@ import Adm from '@/models/Adm'
 import Colaborador from '@/models/Colaborador'
 import Morador from '@/models/Morador'
 import Condominium from '@/models/condominios'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 
 export async function POST(request: NextRequest) {
   console.log('🔄 [LOGIN] Início da tentativa de login')
@@ -33,12 +34,11 @@ export async function POST(request: NextRequest) {
     // Primeiro, tentar buscar na collection masters
     console.log('🔄 [LOGIN] Buscando usuário master...')
     const masterUser = await Master.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     console.log('🔄 [LOGIN] Master encontrado?', !!masterUser)
     
-    if (masterUser) {
+    if (masterUser && await PersonalDataEncryption.verifyPassword(password, masterUser.senha)) {
       console.log('✅ [LOGIN] Login como master bem-sucedido:', masterUser.nome)
       return NextResponse.json({
         success: true,
@@ -55,11 +55,10 @@ export async function POST(request: NextRequest) {
     
     // Se não encontrou em masters, buscar na collection adms
     const admUser = await Adm.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
-    if (admUser) {
+    if (admUser && await PersonalDataEncryption.verifyPassword(password, admUser.senha)) {
       // Verificar se o ADM está ativo (data_fim não existe ou é futura)
       if (admUser.data_fim) {
         const now = new Date()
@@ -103,11 +102,10 @@ export async function POST(request: NextRequest) {
     
     // Se não encontrou em masters e adms, buscar na collection colaboradores
     const colaboradorUser = await Colaborador.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
-    if (colaboradorUser) {
+    if (colaboradorUser && await PersonalDataEncryption.verifyPassword(password, colaboradorUser.senha)) {
       // Verificar se o colaborador está ativo (data_fim não existe ou é futura)
       if (colaboradorUser.data_fim) {
         const now = new Date()
@@ -151,11 +149,10 @@ export async function POST(request: NextRequest) {
     
     // Se não encontrou em masters, adms e colaboradores, buscar na collection moradores
     const moradorUser = await Morador.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
-    if (moradorUser) {
+    if (moradorUser && await PersonalDataEncryption.verifyPassword(password, moradorUser.senha)) {
       // Verificar se o morador está ativo (data_fim não existe ou é futura)
       if (moradorUser.data_fim) {
         const now = new Date()

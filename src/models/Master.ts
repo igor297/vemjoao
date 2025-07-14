@@ -78,4 +78,4 @@ const MasterSchema: Schema = new Schema({
   timestamps: true
 })
 
-export default mongoose.models.Master || mongoose.model<IMaster>('Master', MasterSchema)
+export default mongoose.models.Master || mongoose.model<IMaster>('Master', MasterSchema, 'masters')

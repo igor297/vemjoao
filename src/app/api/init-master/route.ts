@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Master from '@/models/Master'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     const masterData = {
       nome: 'Master Teste',
       email: 'master@teste.com',
-      senha: '>T8Nn7n_S8-T',
+      senha: await PersonalDataEncryption.hashPassword('>T8Nn7n_S8-T'),
       celular1: '(11) 99999-0001',
       celular2: '(11) 99999-0002'
     }

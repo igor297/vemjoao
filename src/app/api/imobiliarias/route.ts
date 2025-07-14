@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb'
 import Morador from '@/models/Morador'
 import Condominium from '@/models/condominios'
 import Imobiliaria from '@/models/Imobiliaria'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import mongoose from 'mongoose'
 
 export async function GET(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
         }
         
         return {
-          ...imobiliaria,
+          ...PersonalDataEncryption.prepareForDisplay(imobiliaria),
           condominio_nome: condominium?.nome || 'N/A'
         }
       })
@@ -122,9 +123,12 @@ export async function POST(request: NextRequest) {
       enderecoObj = imobiliariaData.endereco
     }
 
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(imobiliariaData);
+    
     const newImobiliaria = {
-      ...imobiliariaData,
-      cnpj: imobiliariaData.cnpj ? imobiliariaData.cnpj.replace(/[^\d]/g, '') : undefined,
+      ...encryptedData,
+      cnpj: encryptedData.cnpj, // Já criptografado pelo prepareForSave
       email: imobiliariaData.email.toLowerCase(),
       responsavel_email: imobiliariaData.responsavel_email.toLowerCase(),
       endereco: enderecoObj,
@@ -205,9 +209,15 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Criptografar dados sensíveis se fornecidos
+    let processedData = imobiliariaData;
+    if (imobiliariaData.cnpj) {
+      processedData = await PersonalDataEncryption.prepareForSave(imobiliariaData);
+    }
+
     const updateData = {
-      ...imobiliariaData,
-      ...(imobiliariaData.cnpj && { cnpj: imobiliariaData.cnpj.replace(/[^\d]/g, '') }),
+      ...processedData,
+      ...(processedData.cnpj && { cnpj: processedData.cnpj }), // Já processado pelo prepareForSave se necessário
       ...(imobiliariaData.email && { email: imobiliariaData.email.toLowerCase() }),
       ...(imobiliariaData.responsavel_email && { responsavel_email: imobiliariaData.responsavel_email.toLowerCase() }),
       ...(enderecoObj && { endereco: enderecoObj })
