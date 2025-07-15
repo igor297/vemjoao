@@ -144,12 +144,18 @@ export const verificarPermissaoEvento = (
 
   switch (tipoEvento) {
     case 'retirada_entrega':
-      if (acao === 'ver') return true
-      if (['subsindico', 'morador', 'inquilino', 'conjuge', 'dependente'].includes(tipoUsuario)) {
-        return acao !== 'excluir' || isProprioEvento
+      // Colaboradores, ADMs e Masters podem ver todos
+      if (['colaborador', 'adm', 'master'].includes(tipoUsuario)) {
+        if (acao === 'ver') return true
+        if (tipoUsuario === 'colaborador') {
+          return acao === 'editar' // Pode apenas editar obs
+        }
+        return true // ADM e Master podem tudo
       }
-      if (tipoUsuario === 'colaborador') {
-        return acao === 'editar' // Pode apenas editar obs
+      // Moradores/inquilinos/conjuges/dependentes só veem os próprios
+      if (['subsindico', 'morador', 'inquilino', 'conjuge', 'dependente'].includes(tipoUsuario)) {
+        if (acao === 'ver') return isProprioEvento
+        return acao !== 'excluir' || isProprioEvento
       }
       if (tipoUsuario === 'conselheiro') {
         return acao === 'ver'
@@ -157,10 +163,20 @@ export const verificarPermissaoEvento = (
       return false
 
     case 'visita':
+      // Colaboradores, ADMs e Masters podem ver todos
+      if (['colaborador', 'adm', 'master'].includes(tipoUsuario)) {
+        if (acao === 'ver') return true
+        if (tipoUsuario === 'colaborador') {
+          return acao === 'editar' // Pode apenas editar obs
+        }
+        return true // ADM e Master podem tudo
+      }
+      // Moradores/inquilinos/conjuges/dependentes só veem os próprios
       if (['sindico', 'subsindico', 'morador', 'inquilino', 'conjuge', 'dependente'].includes(tipoUsuario)) {
+        if (acao === 'ver') return isProprioEvento
         return acao !== 'excluir' || isProprioEvento
       }
-      if (['conselheiro', 'colaborador'].includes(tipoUsuario)) {
+      if (tipoUsuario === 'conselheiro') {
         return acao === 'ver'
       }
       return false

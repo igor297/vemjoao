@@ -175,7 +175,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeVariant="white" className="bg-dark text-light">
         <Modal.Title>
           💍 Gerenciar Cônjuge - {morador?.nome}
         </Modal.Title>
@@ -183,8 +183,8 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
       
       {!showForm ? (
         <>
-          <Modal.Body>
-            <Alert variant="info" className="mb-3">
+          <Modal.Body className="bg-dark text-light">
+            <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
               <strong>📋 Informações:</strong><br/>
               • Cada morador/inquilino pode ter apenas um cônjuge<br/>
               • O cônjuge herda automaticamente os dados de localização<br/>
@@ -212,13 +212,13 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                 </div>
               </div>
             ) : conjuges.length === 0 ? (
-              <Alert variant="secondary" className="text-center">
+              <Alert variant="secondary" className="text-center bg-dark text-light border-secondary">
                 <h6>📋 Nenhum cônjuge cadastrado</h6>
                 <p className="mb-0">Clique em "Novo Cônjuge" para adicionar</p>
               </Alert>
             ) : (
               <div className="table-responsive">
-                <Table hover size="sm">
+                <Table hover size="sm" variant="dark">
                   <thead className="table-light">
                     <tr>
                       <th>Nome</th>
@@ -264,7 +264,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="bg-dark text-light">
             {onBack && (
               <Button variant="outline-secondary" onClick={onBack}>
                 ← Voltar ao Menu
@@ -278,8 +278,8 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
       ) : (
         <>
           <Form onSubmit={handleSubmit}>
-            <Modal.Body>
-              <Alert variant="info" className="mb-3">
+            <Modal.Body className="bg-dark text-light">
+              <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
                 <strong>📋 Dados Herdados Automaticamente:</strong><br/>
                 <strong>🏢 Condomínio:</strong> {morador.condominio_nome}<br/>
                 <strong>🏗️ Bloco:</strong> {morador.bloco || 'Não informado'}<br/>
@@ -295,6 +295,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                   onChange={handleInputChange}
                   required
                   placeholder="Digite o nome completo do cônjuge"
+                  className="bg-dark text-light"
                 />
               </Form.Group>
 
@@ -306,6 +307,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="email@exemplo.com (opcional)"
+                  className="bg-dark text-light"
                 />
                 <Form.Text className="text-muted">
                   Opcional - Se fornecido, será usado para acesso ao sistema
@@ -321,6 +323,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                   onChange={handleInputChange}
                   placeholder={editingConjuge ? "Deixe vazio para manter a senha atual" : "Mínimo 6 caracteres (opcional)"}
                   minLength={6}
+                  className="bg-dark text-light"
                 />
                 <Form.Text className="text-muted">
                   {editingConjuge ? 'Deixe vazio para manter a senha atual' : 'Opcional - Necessário apenas se email for fornecido'}
@@ -337,10 +340,11 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                   onChange={handleInputChange}
                   placeholder="Informações adicionais sobre o cônjuge..."
                   maxLength={500}
+                  className="bg-dark text-light"
                 />
               </Form.Group>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="bg-dark text-light">
               <Button variant="secondary" onClick={() => {
                 resetForm()
                 setShowForm(false)

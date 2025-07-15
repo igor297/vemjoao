@@ -788,9 +788,9 @@ export default function FinanceiroColaboradorPage() {
 
   return (
     <>
-      <Container fluid className="mt-4">
+      <Container fluid className="mt-4 bg-dark text-light">
         {alert && (
-          <Alert variant={alert.type} dismissible onClose={() => setAlert(null)}>
+          <Alert variant={alert.type} dismissible onClose={() => setAlert(null)} className="bg-dark text-light">
             {alert.message}
           </Alert>
         )}
@@ -828,8 +828,8 @@ export default function FinanceiroColaboradorPage() {
   <>
     <Row className="mb-4">
       <Col>
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
+        <Card className="bg-dark text-light">
+          <Card.Header className="d-flex justify-content-between align-items-center bg-dark text-light border-bottom border-secondary">
             <h5 className="mb-0">🏢 Seleção de Condomínio</h5>
           </Card.Header>
           <Card.Body>
@@ -965,7 +965,7 @@ export default function FinanceiroColaboradorPage() {
 )}
 
         {currentUser?.tipo === 'master' && !selectedCondominiumId ? (
-          <Alert variant="info" className="text-center">
+          <Alert variant="info" className="text-center bg-dark text-light border-secondary">
             <h5>👆 Selecione um condomínio acima</h5>
             <p className="mb-0">Escolha o condomínio para visualizar os dados financeiros dos colaboradores</p>
           </Alert>
@@ -974,7 +974,7 @@ export default function FinanceiroColaboradorPage() {
         {selectedCondominiumId && (
           <Row className="mb-4">
             <Col>
-              <Alert variant="info" className="border-primary">
+              <Alert variant="info" className="border-primary bg-dark text-light">
                 <div className="d-flex align-items-start">
                   <div className="me-3">
                     <span style={{ fontSize: '24px' }}>🔗</span>

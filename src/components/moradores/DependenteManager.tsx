@@ -85,7 +85,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
       setFormData(prev => ({
         ...prev,
         email: '',
-        senha: ''
+        password: ''
       }))
     }
   }
@@ -218,7 +218,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeVariant="white" className="bg-dark text-light">
         <Modal.Title>
           👨‍👩‍👧‍👦 Gerenciar Dependentes - {morador?.nome}
         </Modal.Title>
@@ -226,8 +226,8 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
       
       {!showForm ? (
         <>
-          <Modal.Body>
-            <Alert variant="info" className="mb-3">
+          <Modal.Body className="bg-dark text-light">
+            <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
               <strong>📋 Informações:</strong><br/>
               • Cada morador/inquilino pode ter múltiplos dependentes<br/>
               • Dependentes ≥18 anos podem ter email e senha para acesso<br/>
@@ -253,13 +253,13 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                 </div>
               </div>
             ) : dependentes.length === 0 ? (
-              <Alert variant="secondary" className="text-center">
+              <Alert variant="secondary" className="text-center bg-dark text-light border-secondary">
                 <h6>📋 Nenhum dependente cadastrado</h6>
                 <p className="mb-0">Clique em "Novo Dependente" para adicionar</p>
               </Alert>
             ) : (
               <div className="table-responsive">
-                <Table hover size="sm">
+                <Table hover size="sm" variant="dark">
                   <thead className="table-light">
                     <tr>
                       <th>Nome</th>
@@ -307,7 +307,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="bg-dark text-light">
             {onBack && (
               <Button variant="outline-secondary" onClick={onBack}>
                 ← Voltar ao Menu
@@ -321,8 +321,8 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
       ) : (
         <>
           <Form onSubmit={handleSubmit}>
-            <Modal.Body>
-              <Alert variant="info" className="mb-3">
+            <Modal.Body className="bg-dark text-light">
+              <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
                 <strong>📋 Dados Herdados Automaticamente:</strong><br/>
                 <strong>🏢 Condomínio:</strong> {morador.condominio_nome}<br/>
                 <strong>🏗️ Bloco:</strong> {morador.bloco || 'Não informado'}<br/>
@@ -340,6 +340,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                       onChange={handleInputChange}
                       required
                       placeholder="Digite o nome completo do dependente"
+                      className="bg-dark text-light"
                     />
                   </Form.Group>
                 </Col>
@@ -352,6 +353,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                       value={formData.data_nasc}
                       onChange={handleInputChange}
                       required
+                      className="bg-dark text-light"
                     />
                     {formData.data_nasc && (
                       <Form.Text className={calculatedAge >= 18 ? 'text-success' : 'text-info'}>
@@ -376,6 +378,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="email@exemplo.com (opcional)"
+                        className="bg-dark text-light"
                       />
                       <Form.Text className="text-muted">
                         Opcional - Se fornecido, será usado para acesso ao sistema
@@ -392,6 +395,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                         onChange={handleInputChange}
                         placeholder={editingDependente ? "Deixe vazio para manter a senha atual" : "Mínimo 6 caracteres (opcional)"}
                         minLength={6}
+                        className="bg-dark text-light"
                       />
                       <Form.Text className="text-muted">
                         {editingDependente ? 'Deixe vazio para manter a senha atual' : 'Opcional - Necessário apenas se email for fornecido'}
@@ -402,7 +406,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
               )}
 
               {calculatedAge < 18 && calculatedAge > 0 && (
-                <Alert variant="warning" className="mb-3">
+                <Alert variant="warning" className="mb-3 bg-dark text-light border-secondary">
                   <strong>⚠️ Dependente menor de idade</strong><br/>
                   Dependentes menores de 18 anos não podem ter email e senha para acesso ao sistema.
                 </Alert>
@@ -418,10 +422,11 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                   onChange={handleInputChange}
                   placeholder="Informações adicionais sobre o dependente..."
                   maxLength={500}
+                  className="bg-dark text-light"
                 />
               </Form.Group>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="bg-dark text-light">
               <Button variant="secondary" onClick={() => {
                 resetForm()
                 setShowForm(false)

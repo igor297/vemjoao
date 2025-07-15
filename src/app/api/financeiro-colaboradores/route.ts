@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb'
 import FinanceiroColaborador, { verificarPermissaoFinanceiroColaborador } from '@/models/FinanceiroColaborador'
 import Colaborador from '@/models/Colaborador'
 import { SincronizacaoFinanceira } from '@/services/sincronizacaoFinanceira'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import mongoose from 'mongoose'
 
 export async function GET(request: NextRequest) {
@@ -198,7 +199,12 @@ export async function GET(request: NextRequest) {
         { $sort: { total_valor: -1 } as any }
       ]
 
-      const colaboradores = await FinanceiroColaborador.aggregate(pipeline)
+      const colaboradoresRaw = await FinanceiroColaborador.aggregate(pipeline)
+      
+      // Descriptografar dados sensíveis para exibição
+      const colaboradores = colaboradoresRaw.map(colaborador => 
+        PersonalDataEncryption.prepareForDisplay(colaborador)
+      )
 
       return NextResponse.json({
         success: true,
@@ -256,7 +262,12 @@ export async function GET(request: NextRequest) {
         { $sort: { colaborador_nome: 1 } }
       ]
 
-      const folhaPagamento = await FinanceiroColaborador.aggregate(pipeline)
+      const folhaPagamentoRaw = await FinanceiroColaborador.aggregate(pipeline)
+      
+      // Descriptografar dados sensíveis para exibição
+      const folhaPagamento = folhaPagamentoRaw.map(colaborador => 
+        PersonalDataEncryption.prepareForDisplay(colaborador)
+      )
 
       return NextResponse.json({
         success: true,
@@ -294,7 +305,12 @@ export async function GET(request: NextRequest) {
         { $sort: { '_id.mes_referencia': -1, total_valor: -1 } as any }
       ]
 
-      const horasExtras = await FinanceiroColaborador.aggregate(pipeline)
+      const horasExtrasRaw = await FinanceiroColaborador.aggregate(pipeline)
+      
+      // Descriptografar dados sensíveis para exibição
+      const horasExtras = horasExtrasRaw.map(registro => 
+        PersonalDataEncryption.prepareForDisplay(registro)
+      )
 
       return NextResponse.json({
         success: true,
@@ -305,12 +321,17 @@ export async function GET(request: NextRequest) {
     // LISTAGEM PADRÃO
     const skip = (page - 1) * limit
     
-    const lancamentos = await FinanceiroColaborador
+    const lancamentosRaw = await FinanceiroColaborador
       .find(filter)
       .sort({ data_vencimento: -1, data_criacao: -1 })
       .skip(skip)
       .limit(limit)
       .lean()
+
+    // Descriptografar dados sensíveis para exibição
+    const lancamentos = lancamentosRaw.map(lancamento => 
+      PersonalDataEncryption.prepareForDisplay(lancamento)
+    )
 
     const total = await FinanceiroColaborador.countDocuments(filter)
 
@@ -379,19 +400,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar se colaborador existe e está ativo
-    const colaborador = await Colaborador.findOne({
+    const colaboradorRaw = await Colaborador.findOne({
       _id: colaborador_id,
       condominio_id: condominio_id,
       master_id: master_id,
       ativo: true
     })
 
-    if (!colaborador) {
+    if (!colaboradorRaw) {
       return NextResponse.json({
         success: false,
         error: 'Colaborador não encontrado ou inativo'
       }, { status: 404 })
     }
+
+    // Preparar dados do colaborador para display
+    const colaborador = PersonalDataEncryption.prepareForDisplay(colaboradorRaw.toObject())
 
     // Validações específicas por tipo
     if (tipo === 'hora_extra' && (!horas_trabalhadas || horas_trabalhadas <= 0)) {
@@ -589,7 +613,8 @@ export async function PUT(request: NextRequest) {
     // Sincronizar alterações com financeiro do condomínio
     try {
       // Buscar dados do colaborador para sincronização mais completa
-      const colaborador = await Colaborador.findById(lancamentoAtualizado.colaborador_id)
+      const colaboradorRaw = await Colaborador.findById(lancamentoAtualizado.colaborador_id)
+      const colaborador = colaboradorRaw ? PersonalDataEncryption.prepareForDisplay(colaboradorRaw.toObject()) : null
       
       const dadosSincronizacao = {
         _id: lancamentoAtualizado._id.toString(),

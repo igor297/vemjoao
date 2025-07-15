@@ -894,7 +894,11 @@ export default function FinanceiroCondominioPage() {
                             <Button 
                               variant="outline-success" 
                               size="sm" 
-                              onClick={() => handleQuickStatusUpdate(item, 'pago')}
+                              onClick={() => {
+                                if (confirm(`Confirma o pagamento de "${item.descricao}" no valor de R$ ${item.valor.toFixed(2).replace('.', ',')}?`)) {
+                                  handleQuickStatusUpdate(item, 'pago')
+                                }
+                              }}
                               disabled={loading}
                               title="Marcar como pago"
                             >

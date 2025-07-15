@@ -137,11 +137,17 @@ export async function POST(request: NextRequest) {
       dependenteData.senha = undefined
     } else {
       // Se 18+, email e senha são obrigatórios se fornecidos
-      if (dependenteData.email && !dependenteData.senha) {
+      const senha = dependenteData.senha || dependenteData.password
+      if (dependenteData.email && !senha) {
         return NextResponse.json(
           { error: 'Senha é obrigatória para dependentes maiores de 18 anos com email' },
           { status: 400 }
         )
+      }
+      // Normalizar para 'senha' para o processamento
+      if (dependenteData.password && !dependenteData.senha) {
+        dependenteData.senha = dependenteData.password
+        delete dependenteData.password
       }
     }
 
@@ -273,6 +279,13 @@ export async function PUT(request: NextRequest) {
     if (idade < 18) {
       dependenteData.email = undefined
       dependenteData.senha = undefined
+      dependenteData.password = undefined
+    } else {
+      // Normalizar para 'senha' para o processamento
+      if (dependenteData.password && !dependenteData.senha) {
+        dependenteData.senha = dependenteData.password
+        delete dependenteData.password
+      }
     }
 
     // Verificar se email já existe em outro dependente
