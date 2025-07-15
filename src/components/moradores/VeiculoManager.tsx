@@ -63,7 +63,7 @@ export default function VeiculoManager({ show, onHide, morador, onSuccess, onErr
   const fetchVeiculos = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/veiculos?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       

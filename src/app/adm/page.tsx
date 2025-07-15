@@ -15,7 +15,7 @@ interface Adm {
   data_nasc: string
   tipo: 'sindico' | 'subsindico' | 'conselheiro'
   email: string
-  senha: string
+  password: string
   data_inicio: string
   data_fim?: string
   condominio_id: string
@@ -113,7 +113,7 @@ export default function AdmPage() {
     data_nasc: '',
     tipo: 'sindico',
     email: '',
-    senha: '',
+    password: '',
     data_inicio: '',
     data_fim: '',
     condominio_id: '',
@@ -269,7 +269,7 @@ export default function AdmPage() {
       }
       
       // Aplicar criptografia apenas se houver dados sensíveis
-      if (dataToSend.senha || dataToSend.cpf || dataToSend.celular1 || dataToSend.celular2) {
+      if (dataToSend.password || dataToSend.cpf || dataToSend.celular1 || dataToSend.celular2) {
         const encryptedData = encryptFormData(dataToSend)
         Object.assign(dataToSend, encryptedData)
       }
@@ -307,7 +307,7 @@ export default function AdmPage() {
       data_nasc: formatDateISO(decryptedAdm.data_nasc) || '',
       tipo: decryptedAdm.tipo,
       email: decryptedAdm.email,
-      senha: '', // Não preencher senha na edição
+      password: '', // Não preencher senha na edição
       data_inicio: formatDateISO(decryptedAdm.data_inicio) || '',
       data_fim: formatDateISO(decryptedAdm.data_fim) || '',
       condominio_id: decryptedAdm.condominio_id,
@@ -362,7 +362,7 @@ export default function AdmPage() {
       data_nasc: '',
       tipo: 'sindico',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       condominio_id: activeCondominiumId,
@@ -395,7 +395,7 @@ export default function AdmPage() {
       data_nasc: '',
       tipo: 'sindico',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       condominio_id: '',
@@ -539,17 +539,17 @@ export default function AdmPage() {
                     <p className="mb-0">Escolha o condomínio para visualizar e gerenciar seus administradores</p>
                   </Alert>
                 ) : (
-                  <Table responsive striped hover>
+                  <Table responsive striped hover className="text-body">
                     <thead>
                       <tr>
-                        <th>Nome</th>
-                        <th>CPF</th>
-                        <th>Tipo</th>
-                        <th>Email</th>
-                        <th>Condomínio</th>
-                        <th>Data Início</th>
-                        <th>Data Fim</th>
-                        <th>Ações</th>
+                        <th className="text-body">Nome</th>
+                        <th className="text-body">CPF</th>
+                        <th className="text-body">Tipo</th>
+                        <th className="text-body">Email</th>
+                        <th className="text-body">Condomínio</th>
+                        <th className="text-body">Data Início</th>
+                        <th className="text-body">Data Fim</th>
+                        <th className="text-body">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -562,13 +562,13 @@ export default function AdmPage() {
                     ) : (
                       adms.map((adm) => (
                         <tr key={adm._id}>
-                          <td>{adm.nome}</td>
-                          <td>{adm.cpf}</td>
+                          <td className="text-body">{adm.nome}</td>
+                          <td className="text-body">{adm.cpf}</td>
                           <td>{getTipoBadge(adm.tipo)}</td>
-                          <td>{adm.email}</td>
-                          <td>{getCondominiumName(adm.condominio_id)}</td>
-                          <td>{new Date(adm.data_inicio).toLocaleDateString('pt-BR')}</td>
-                          <td>{adm.data_fim ? new Date(adm.data_fim).toLocaleDateString('pt-BR') : 'Ativo'}</td>
+                          <td className="text-body">{adm.email}</td>
+                          <td className="text-body">{getCondominiumName(adm.condominio_id)}</td>
+                          <td className="text-body">{new Date(adm.data_inicio).toLocaleDateString('pt-BR')}</td>
+                          <td className="text-body">{adm.data_fim ? new Date(adm.data_fim).toLocaleDateString('pt-BR') : 'Ativo'}</td>
                           <td>
                             <Button 
                               variant="outline-primary" 
@@ -741,8 +741,8 @@ export default function AdmPage() {
                     <div className="position-relative">
                       <Form.Control
                         type={showPassword ? "text" : "password"}
-                        name="senha"
-                        value={formData.senha}
+                        name="password"
+                        value={formData.password}
                         onChange={handleInputChange}
                         required={!editingId}
                         placeholder={editingId ? "Deixe em branco para manter" : ""}

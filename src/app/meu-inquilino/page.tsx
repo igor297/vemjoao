@@ -40,7 +40,7 @@ export default function MeuInquilinoPage() {
     celular1: '',
     celular2: '',
     email: '',
-    senha: '',
+    password: '',
     data_inicio: '',
     data_fim: '',
     imobiliaria_id: '',
@@ -280,7 +280,7 @@ export default function MeuInquilinoPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       imobiliaria_id: '',
@@ -573,8 +573,8 @@ export default function MeuInquilinoPage() {
                     <Form.Label>Senha *</Form.Label>
                     <Form.Control
                       type="password"
-                      name="senha"
-                      value={formData.senha}
+                      name="password"
+                      value={formData.password}
                       onChange={handleInputChange}
                       required
                       placeholder="Mínimo 6 caracteres"

@@ -110,8 +110,18 @@ export async function POST(request: NextRequest) {
 
     // Validação básica
     const requiredFields = [
-      'nome', 'cpf', 'data_nasc', 'celular1', 'email', 'senha', 'data_inicio', 'condominio_id', 'master_id'
+      'nome', 'cpf', 'data_nasc', 'celular1', 'email', 'data_inicio', 'condominio_id', 'master_id'
     ]
+    
+    // Validar senha separadamente (aceita tanto 'senha' quanto 'password')
+    const senhaInput = colaboradorData.senha || colaboradorData.password;
+    if (!senhaInput) {
+      return NextResponse.json(
+        { error: 'Campo senha é obrigatório' },
+        { status: 400 }
+      )
+    }
+    
     // Validação de campos obrigatórios
     for (const field of requiredFields) {
       if (!colaboradorData[field]) {

@@ -48,7 +48,18 @@ export async function POST(request: NextRequest) {
     const admData = await request.json()
     
     // Validação básica
-    const requiredFields = ['nome', 'cpf', 'data_nasc', 'tipo', 'email', 'senha', 'data_inicio', 'condominio_id', 'master_id']
+    // Aceitar tanto 'senha' quanto 'password'
+    const senhaInput = admData.senha || admData.password;
+    const requiredFields = ['nome', 'cpf', 'data_nasc', 'tipo', 'email', 'data_inicio', 'condominio_id', 'master_id']
+    
+    // Verificar senha separadamente
+    if (!senhaInput) {
+      return NextResponse.json(
+        { error: 'Campo senha é obrigatório' },
+        { status: 400 }
+      )
+    }
+    
     for (const field of requiredFields) {
       if (!admData[field]) {
         return NextResponse.json(
@@ -241,8 +252,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Só atualizar senha se foi fornecida - com hash
-    if (admData.senha && admData.senha.trim() !== '') {
-      updateData.senha = await PersonalDataEncryption.hashPassword(admData.senha)
+    const senhaUpdate = admData.senha || admData.password;
+    if (senhaUpdate && senhaUpdate.trim() !== '') {
+      updateData.senha = await PersonalDataEncryption.hashPassword(senhaUpdate)
     }
 
     const result = await Adm.findByIdAndUpdate(

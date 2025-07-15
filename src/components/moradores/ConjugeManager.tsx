@@ -18,7 +18,7 @@ interface Conjuge {
   _id: string
   nome: string
   email?: string
-  senha?: string
+  password?: string
   condominio_id: string
   condominio_nome?: string
   bloco?: string
@@ -48,7 +48,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
-    senha: '',
+    password: '',
     observacoes: ''
   })
 
@@ -61,7 +61,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
   const fetchConjuges = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/conjuges?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       
@@ -128,7 +128,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
     setFormData({
       nome: conjuge.nome,
       email: conjuge.email || '',
-      senha: '', // Não preencher senha na edição
+      password: '', // Não preencher senha na edição
       observacoes: conjuge.observacoes || ''
     })
     setShowForm(true)
@@ -162,7 +162,7 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
     setFormData({
       nome: '',
       email: '',
-      senha: '',
+      password: '',
       observacoes: ''
     })
     setEditingConjuge(null)
@@ -316,8 +316,8 @@ export default function ConjugeManager({ show, onHide, morador, onSuccess, onErr
                 <Form.Label>Senha {editingConjuge ? '(deixe vazio para manter)' : ''}</Form.Label>
                 <Form.Control
                   type="password"
-                  name="senha"
-                  value={formData.senha}
+                  name="password"
+                  value={formData.password}
                   onChange={handleInputChange}
                   placeholder={editingConjuge ? "Deixe vazio para manter a senha atual" : "Mínimo 6 caracteres (opcional)"}
                   minLength={6}

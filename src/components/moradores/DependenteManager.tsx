@@ -19,7 +19,7 @@ interface Dependente {
   nome: string
   data_nasc: Date
   email?: string
-  senha?: string
+  password?: string
   condominio_id: string
   condominio_nome?: string
   bloco?: string
@@ -52,7 +52,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
     nome: '',
     data_nasc: '',
     email: '',
-    senha: '',
+    password: '',
     observacoes: ''
   })
 
@@ -93,7 +93,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
   const fetchDependentes = async () => {
     try {
       setLoading(true)
-      const moradorParam = morador.subtipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
+      const moradorParam = morador.tipo === 'inquilino' ? 'inquilino_id' : 'morador_id'
       const response = await fetch(`/api/dependentes?master_id=${morador.master_id}&${moradorParam}=${morador._id}`)
       const data = await response.json()
       
@@ -161,7 +161,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
       nome: dependente.nome,
       data_nasc: new Date(dependente.data_nasc).toISOString().split('T')[0],
       email: dependente.email || '',
-      senha: '', // Não preencher senha na edição
+      password: '', // Não preencher senha na edição
       observacoes: dependente.observacoes || ''
     })
     setShowForm(true)
@@ -196,7 +196,7 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
       nome: '',
       data_nasc: '',
       email: '',
-      senha: '',
+      password: '',
       observacoes: ''
     })
     setEditingDependente(null)
@@ -387,8 +387,8 @@ export default function DependenteManager({ show, onHide, morador, onSuccess, on
                       <Form.Label>Senha {editingDependente ? '(deixe vazio para manter)' : ''}</Form.Label>
                       <Form.Control
                         type="password"
-                        name="senha"
-                        value={formData.senha}
+                        name="password"
+                        value={formData.password}
                         onChange={handleInputChange}
                         placeholder={editingDependente ? "Deixe vazio para manter a senha atual" : "Mínimo 6 caracteres (opcional)"}
                         minLength={6}

@@ -12,11 +12,12 @@ export async function POST(request: NextRequest) {
   
   try {
     console.log('🔄 [LOGIN] Extraindo dados do request...')
-    const { email, password } = await request.json()
+    const { email, senha, password } = await request.json()
+    const senhaInput = senha || password; // Aceita tanto 'senha' quanto 'password'
     console.log('🔄 [LOGIN] Email recebido:', email)
-    console.log('🔄 [LOGIN] Senha recebida? (length):', password ? password.length : 'N/A')
+    console.log('🔄 [LOGIN] Senha recebida? (length):', senhaInput ? senhaInput.length : 'N/A')
     
-    if (!email || !password) {
+    if (!email || !senhaInput) {
       console.log('❌ [LOGIN] Email ou senha não fornecidos')
       return NextResponse.json(
         { error: 'Email e senha são obrigatórios' },
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     })
     console.log('🔄 [LOGIN] Master encontrado?', !!masterUser)
     
-    if (masterUser && await PersonalDataEncryption.verifyPassword(password, masterUser.senha)) {
+    if (masterUser && masterUser.senha && await PersonalDataEncryption.verifyPassword(senhaInput, masterUser.senha)) {
       console.log('✅ [LOGIN] Login como master bem-sucedido:', masterUser.nome)
       return NextResponse.json({
         success: true,
@@ -57,8 +58,7 @@ export async function POST(request: NextRequest) {
     const admUser = await Adm.findOne({ 
       email: emailLower
     })
-    
-    if (admUser && await PersonalDataEncryption.verifyPassword(password, admUser.senha)) {
+    if (admUser && admUser.senha && await PersonalDataEncryption.verifyPassword(senhaInput, admUser.senha)) {
       // Verificar se o ADM está ativo (data_fim não existe ou é futura)
       if (admUser.data_fim) {
         const now = new Date()
@@ -104,8 +104,7 @@ export async function POST(request: NextRequest) {
     const colaboradorUser = await Colaborador.findOne({ 
       email: emailLower
     })
-    
-    if (colaboradorUser && await PersonalDataEncryption.verifyPassword(password, colaboradorUser.senha)) {
+    if (colaboradorUser && colaboradorUser.senha && await PersonalDataEncryption.verifyPassword(senhaInput, colaboradorUser.senha)) {
       // Verificar se o colaborador está ativo (data_fim não existe ou é futura)
       if (colaboradorUser.data_fim) {
         const now = new Date()
@@ -151,8 +150,15 @@ export async function POST(request: NextRequest) {
     const moradorUser = await Morador.findOne({ 
       email: emailLower
     })
-    
-    if (moradorUser && await PersonalDataEncryption.verifyPassword(password, moradorUser.senha)) {
+    if (moradorUser && moradorUser.senha && await PersonalDataEncryption.verifyPassword(senhaInput, moradorUser.senha)) {
+      // Bloquear login apenas se status for "inativo"
+      if (moradorUser.status && moradorUser.status.toLowerCase() === 'inativo') {
+        return NextResponse.json(
+          { error: 'Usuário inativo. Entre em contato com o administrador.', errorType: 'INACTIVE_USER' },
+          { status: 401 }
+        )
+      }
+      
       // Verificar se o morador está ativo (data_fim não existe ou é futura)
       if (moradorUser.data_fim) {
         const now = new Date()
@@ -164,14 +170,6 @@ export async function POST(request: NextRequest) {
             { status: 401 }
           )
         }
-      }
-      
-      // Verificar se está ativo
-      if (!moradorUser.ativo) {
-        return NextResponse.json(
-          { error: 'Conta inativa. Entre em contato com o administrador.' },
-          { status: 401 }
-        )
       }
       
       // Buscar dados do condomínio

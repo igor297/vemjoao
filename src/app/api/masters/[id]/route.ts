@@ -19,9 +19,12 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Preparar dados para exibição (descriptografa campos sensíveis)
+    const displayData = PersonalDataEncryption.prepareForDisplay(master.toObject())
+    
     return NextResponse.json({
       success: true,
-      masters: master
+      masters: displayData
     })
 
   } catch (error) {
@@ -41,7 +44,8 @@ export async function PUT(
     await connectDB()
     
     const body = await request.json()
-    const { nome, email, celular1, celular2, senha } = body
+    const { nome, email, celular1, celular2, senha, password } = body
+    const senhaInput = senha || password; // Aceita tanto 'senha' quanto 'password'
 
     // Verificar se o master existe
     const existingMaster = await Master.findById(params.id)
@@ -74,8 +78,8 @@ export async function PUT(
     if (celular2) updateData.celular2 = celular2
     
     // Se uma nova senha foi fornecida, hash ela
-    if (senha) {
-      updateData.senha = await PersonalDataEncryption.hashPassword(senha)
+    if (senhaInput) {
+      updateData.senha = await PersonalDataEncryption.hashPassword(senhaInput)
     }
 
     // Atualizar o master

@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IImobiliaria extends Document {
   // Using MongoDB's default _id as primary identifier
   nome: string
-  cnpj: string
+  cnpj: string | { encrypted: string; iv: string }
   email: string
   telefone1: string
   telefone2?: string
@@ -27,21 +27,8 @@ const ImobiliariaSchema: Schema = new Schema({
     maxlength: [100, 'Nome deve ter no máximo 100 caracteres']
   },
   cnpj: {
-    type: String,
-    required: true,
-    trim: true,
-    validate: {
-      validator: function(cnpj: string) {
-        // Remove pontos, barras e hífens
-        cnpj = cnpj.replace(/[^\d]/g, '')
-        
-        // Aceita qualquer formato de CNPJ com 14 dígitos
-        if (cnpj.length !== 14) return false
-        
-        return true
-      },
-      message: 'CNPJ deve ter 14 dígitos'
-    }
+    type: mongoose.Schema.Types.Mixed,
+    required: true
   },
   email: {
     type: String,

@@ -29,7 +29,7 @@ body.dark-mode {
 
 /* Dark mode styles for Bootstrap components */
 body.dark-mode .card {
-  background-color: #1a1a1a !important;
+  background-color: #000000 !important;
   border-color: #333 !important;
   color: #ededed !important;
 }
@@ -126,7 +126,7 @@ body.dark-mode .table td {
 
 body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
 body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
-  background-color: #222 !important;
+  background-color: #000000 !important;
 }
 
 body.dark-mode .modal-content {
@@ -232,9 +232,9 @@ body.dark-mode b {
 }
 
 body.dark-mode .table th {
-  background-color: #2a2a2a !important;
-  color: #ffd700 !important;
-  border-bottom: 2px solid #ffc107 !important;
+  background-color: #000000 !important;
+  color: #ededed !important;
+  border-bottom: none !important;
 }
 
 body.dark-mode .mobile-menu-item.active {
@@ -450,8 +450,7 @@ body.dark-mode .modal-header {
 }
 
 body.dark-mode table tbody tr td {
-  background-color: #FFD700 !important; /* Amarelo */
-  color: #171717 !important; /* Cor do texto para contraste */
+  color: #ededed !important; /* Cor do texto para contraste */
 }
 
 /* Estilos específicos para o modo dark na página de Condomínios */

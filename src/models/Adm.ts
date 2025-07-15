@@ -3,7 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IAdm extends Document {
   // Using MongoDB's default _id as primary identifier
   nome: string
-  cpf: string
+  cpf: string | { encrypted: string; iv: string }
+  cnpj?: string | { encrypted: string; iv: string }
   data_nasc: Date
   tipo: 'sindico' | 'subsindico' | 'conselheiro'
   email: string
@@ -36,8 +37,12 @@ const AdmSchema: Schema = new Schema({
     trim: true
   },
   cpf: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed,
     required: true
+  },
+  cnpj: {
+    type: mongoose.Schema.Types.Mixed,
+    required: false
   },
   data_nasc: {
     type: Date,

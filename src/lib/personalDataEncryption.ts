@@ -35,7 +35,7 @@ export class PersonalDataEncryption {
       const key = this.deriveKey('cpf_cnpj_data');
       const iv = crypto.randomBytes(this.IV_LENGTH);
       
-      const cipher = crypto.createCipher(this.ALGORITHM, key.toString('hex'));
+      const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
       
       let encrypted = cipher.update(cleanData, 'utf8', 'hex');
       encrypted += cipher.final('hex');
@@ -55,8 +55,9 @@ export class PersonalDataEncryption {
   static decryptCpfCnpj(encryptedData: EncryptedPersonalData): string {
     try {
       const key = this.deriveKey('cpf_cnpj_data');
+      const iv = Buffer.from(encryptedData.iv, 'hex');
       
-      const decipher = crypto.createDecipher(this.ALGORITHM, key.toString('hex'));
+      const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
       
       let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
@@ -97,7 +98,7 @@ export class PersonalDataEncryption {
       const key = this.deriveKey(`personal_${fieldType}`);
       const iv = crypto.randomBytes(this.IV_LENGTH);
       
-      const cipher = crypto.createCipher(this.ALGORITHM, key.toString('hex'));
+      const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
       
       let encrypted = cipher.update(data, 'utf8', 'hex');
       encrypted += cipher.final('hex');
@@ -117,8 +118,9 @@ export class PersonalDataEncryption {
   static decryptPersonalField(encryptedData: EncryptedPersonalData, fieldType: string = 'general'): string {
     try {
       const key = this.deriveKey(`personal_${fieldType}`);
+      const iv = Buffer.from(encryptedData.iv, 'hex');
       
-      const decipher = crypto.createDecipher(this.ALGORITHM, key.toString('hex'));
+      const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
       
       let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
@@ -173,9 +175,14 @@ export class PersonalDataEncryption {
       result.cnpj = this.encryptCpfCnpj(result.cnpj);
     }
     
-    // Hash da senha se presente
-    if (result.senha && typeof result.senha === 'string') {
-      result.senha = await this.hashPassword(result.senha);
+    // Hash da senha se presente (aceita tanto 'senha' quanto 'password')
+    const senhaInput = result.senha || result.password;
+    if (senhaInput && typeof senhaInput === 'string') {
+      result.senha = await this.hashPassword(senhaInput);
+      // Remover campo 'password' se existir, mantendo apenas 'senha' no banco
+      if (result.password) {
+        delete result.password;
+      }
     }
     
     return result;

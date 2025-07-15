@@ -12,9 +12,22 @@
  */
 
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 
 // Configuração do MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/condominiosistema'
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/condominio-sistema'
+
+// Constantes do bcrypt
+const SALT_ROUNDS = 12
+
+// Função para hashear senha
+async function hashPassword(password) {
+  try {
+    return await bcrypt.hash(password, SALT_ROUNDS)
+  } catch (error) {
+    throw new Error(`Erro ao criar hash da senha: ${error.message}`)
+  }
+}
 
 // Conectar ao MongoDB
 async function conectarMongoDB() {
@@ -158,22 +171,26 @@ async function limparBanco() {
 async function criarMasters() {
   console.log('👤 Criando usuários master...')
   
-  const masters = [
+  const mastersData = [
     {
-      nome: 'Master Teste 1',
-      email: 'master@teste.com',
-      senha: '>T8Nn7n_S8-T',
+      nome: 'Master Sistema',
+      email: 'admin@sistema.com',
+      senha: 'SistemaVemJoao2025!',
       celular1: '(11) 99999-0001',
       celular2: '(11) 99999-0002'
-    },
-    {
-      nome: 'Master Teste 2', 
-      email: 'master2@teste.com',
-      senha: '>T8Nn7n_S8-T',
-      celular1: '(11) 99999-0003',
-      celular2: '(11) 99999-0004'
     }
   ]
+  
+  // Hashear as senhas antes de inserir
+  const masters = []
+  for (const masterData of mastersData) {
+    const hashedPassword = await hashPassword(masterData.senha)
+    masters.push({
+      ...masterData,
+      senha: hashedPassword
+    })
+    console.log(`  🔐 Senha hasheada para: ${masterData.email}`)
+  }
   
   const mastersCreated = await Master.insertMany(masters)
   console.log(`✅ ${mastersCreated.length} masters criados`)
@@ -187,7 +204,7 @@ async function criarCondominios(masters) {
   
   const condominios = []
   
-  // Condomínios para Master 1
+  // Condomínios para Master Sistema
   condominios.push({
     nome: 'Residencial Villa Bela',
     cep: '01234-567',
@@ -246,7 +263,7 @@ async function criarCondominios(masters) {
     rua: 'Avenida das Américas',
     numero: '789',
     complemento: 'Bloco Principal',
-    master_id: masters[1]._id,
+    master_id: masters[0]._id,
     valor_taxa_condominio: 520.00,
     dia_vencimento: 5,
     aceita_pagamento_automatico: false,
@@ -270,7 +287,7 @@ async function criarCondominios(masters) {
     rua: 'Rua Barata Ribeiro',
     numero: '321',
     complemento: 'Próximo ao metrô',
-    master_id: masters[1]._id,
+    master_id: masters[0]._id,
     valor_taxa_condominio: 390.00,
     dia_vencimento: 20,
     aceita_pagamento_automatico: true,
@@ -442,7 +459,7 @@ async function criarMoradores(masters, condominios) {
       unidade: '801',
       data_inicio: new Date('2017-03-01'),
       condominio_id: aguasClaras._id,
-      master_id: masters[1]._id,
+      master_id: masters[0]._id,
       observacoes: 'Subsíndico'
     },
     {
@@ -460,7 +477,17 @@ async function criarMoradores(masters, condominios) {
     }
   )
   
-  const moradoresCreated = await Morador.insertMany(moradores)
+  // Hashear as senhas dos moradores antes de inserir
+  const moradoresComSenhaHash = []
+  for (const morador of moradores) {
+    const hashedPassword = await hashPassword(morador.senha)
+    moradoresComSenhaHash.push({
+      ...morador,
+      senha: hashedPassword
+    })
+  }
+  
+  const moradoresCreated = await Morador.insertMany(moradoresComSenhaHash)
   console.log(`✅ ${moradoresCreated.length} moradores criados`)
   
   return moradoresCreated
@@ -552,7 +579,17 @@ async function criarColaboradores(masters, condominios) {
     }
   )
   
-  const colaboradoresCreated = await Colaborador.insertMany(colaboradores)
+  // Hashear as senhas dos colaboradores antes de inserir
+  const colaboradoresComSenhaHash = []
+  for (const colaborador of colaboradores) {
+    const hashedPassword = await hashPassword(colaborador.senha)
+    colaboradoresComSenhaHash.push({
+      ...colaborador,
+      senha: hashedPassword
+    })
+  }
+  
+  const colaboradoresCreated = await Colaborador.insertMany(colaboradoresComSenhaHash)
   console.log(`✅ ${colaboradoresCreated.length} colaboradores criados`)
   
   return colaboradoresCreated
@@ -655,8 +692,9 @@ async function inicializarBanco() {
     console.log(`💰 Lançamentos Financeiros: ${financeiros.length}`)
     
     console.log('\n🔑 CREDENCIAIS DE ACESSO:')
-    console.log('Master 1: master@teste.com | Senha: >T8Nn7n_S8-T')
-    console.log('Master 2: master2@teste.com | Senha: >T8Nn7n_S8-T')
+    console.log('Master: admin@sistema.com | Senha: SistemaVemJoao2025!')
+    console.log('Moradores: email@email.com | Senha: 123456')
+    console.log('Colaboradores: email@empresa.com | Senha: [cargo]123 (ex: porteiro123)')
     
     console.log('\n✅ Inicialização concluída com sucesso!')
     

@@ -78,6 +78,10 @@ export default function MoradoresPage() {
   const [showDependenteModal, setShowDependenteModal] = useState(false)
   const [showVeiculoModal, setShowVeiculoModal] = useState(false)
   const [showAnimalModal, setShowAnimalModal] = useState(false)
+  
+  // Estados para controle de visibilidade da senha
+  const [showPassword, setShowPassword] = useState(false)
+  const [showInquilinoPassword, setShowInquilinoPassword] = useState(false)
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -86,7 +90,7 @@ export default function MoradoresPage() {
     celular1: '',
     celular2: '',
     email: '',
-    senha: '',
+    password: '',
     tipo: 'proprietario' as 'proprietario',
     unidade: '',
     bloco: '',
@@ -106,7 +110,7 @@ export default function MoradoresPage() {
     celular1: '',
     celular2: '',
     email: '',
-    senha: '',
+    password: '',
     data_inicio: '',
     data_fim: '',
     imobiliaria_id: '',
@@ -433,8 +437,8 @@ export default function MoradoresPage() {
         return
       }
 
-      // Validar campos obrigatórios antes de enviar (senha só é obrigatória na criação)
-      const requiredFields = {
+      // Validar campos obrigatórios antes de enviar (password só é obrigatória na criação)
+      const requiredFields: {[key: string]: string} = {
         nome: 'Nome Completo',
         cpf: 'CPF',
         data_nasc: 'Data de Nascimento',
@@ -445,11 +449,12 @@ export default function MoradoresPage() {
       
       // Senha só é obrigatória se não estiver editando
       if (!editingMorador) {
-        requiredFields.senha = 'Senha'
+        requiredFields.password = 'Senha'
       }
       
       for (const [field, label] of Object.entries(requiredFields)) {
-        if (!inquilinoFormData[field as keyof typeof inquilinoFormData]) {
+        const value = inquilinoFormData[field as keyof typeof inquilinoFormData]
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
           setError(`Campo "${label}" é obrigatório`)
           setLoading(false)
           return
@@ -539,7 +544,7 @@ export default function MoradoresPage() {
           celular1: morador.celular1,
           celular2: morador.celular2 || '',
           email: morador.email,
-          senha: '', // Não preencher senha na edição
+          password: '', // Não preencher senha na edição
           data_inicio: morador.data_inicio.split('T')[0],
           data_fim: morador.data_fim ? morador.data_fim.split('T')[0] : '',
           imobiliaria_id: morador.imobiliaria_id || '',
@@ -560,7 +565,7 @@ export default function MoradoresPage() {
         celular1: morador.celular1,
         celular2: morador.celular2 || '',
         email: morador.email,
-        senha: '', // Não preencher senha na edição
+        password: '', // Não preencher senha na edição
         tipo: morador.tipo,
         unidade: morador.unidade,
         bloco: morador.bloco || '',
@@ -610,7 +615,7 @@ export default function MoradoresPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       tipo: 'proprietario',
       unidade: '',
       bloco: '',
@@ -633,7 +638,7 @@ export default function MoradoresPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       imobiliaria_id: '',
@@ -851,7 +856,7 @@ export default function MoradoresPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       tipo: 'proprietario',
       unidade: '',
       bloco: '',
@@ -1029,29 +1034,29 @@ export default function MoradoresPage() {
               </div>
             ) : (
               <div className="table-responsive">
-                <Table hover className="mb-0">
-                  <thead className="table-light">
+                <Table responsive striped hover className="text-body">
+                  <thead>
                     <tr>
-                      <th>Nome</th>
-                      <th>Tipo</th>
-                      <th>Unidade</th>
-                      <th>Email</th>
-                      <th>Celular</th>
-                      <th>Vinculação</th>
-                      <th>Status</th>
-                      <th>Ações</th>
+                      <th className="text-body">Nome</th>
+                      <th className="text-body">Tipo</th>
+                      <th className="text-body">Unidade</th>
+                      <th className="text-body">Email</th>
+                      <th className="text-body">Celular</th>
+                      <th className="text-body">Vinculação</th>
+                      <th className="text-body">Status</th>
+                      <th className="text-body">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {moradores.map((morador) => (
                       <tr key={morador._id}>
-                        <td className="fw-semibold">{morador.nome}</td>
+                        <td className="fw-semibold text-body">{morador.nome}</td>
                         <td>{getTipoBadge(morador.tipo)}</td>
-                        <td>
+                        <td className="text-body">
                           {morador.bloco ? `${morador.bloco} - ` : ''}{morador.unidade}
                         </td>
-                        <td>{morador.email}</td>
-                        <td>{morador.celular1}</td>
+                        <td className="text-body">{morador.email}</td>
+                        <td className="text-body">{morador.celular1}</td>
                         <td>
                           {morador.tipo === 'proprietario' && (
                             <div>
@@ -1161,13 +1166,13 @@ export default function MoradoresPage() {
 
         {/* Modal para cadastro/edição */}
         <Modal show={showModal} onHide={handleCloseModal} size="lg">
-          <Modal.Header closeButton>
+          <Modal.Header closeButton closeVariant="white" className="bg-dark text-light">
             <Modal.Title>
               {editingMorador ? 'Editar Proprietário' : 'Novo Proprietário'}
             </Modal.Title>
           </Modal.Header>
           <Form onSubmit={handleSubmit}>
-            <Modal.Body>
+            <Modal.Body className="bg-dark text-light">
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -1337,15 +1342,30 @@ export default function MoradoresPage() {
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Senha {editingMorador ? '(deixe vazio para manter)' : '*'}</Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="senha"
-                      value={formData.senha}
-                      onChange={handleInputChange}
-                      required={!editingMorador}
-                      placeholder="Mínimo 6 caracteres"
-                      minLength={6}
-                    />
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required={!editingMorador}
+                        placeholder={editingMorador ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
+                        minLength={6}
+                        className="pe-5"
+                      />
+                      <Button
+                        variant="link"
+                        className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{ zIndex: 10 }}
+                      >
+                        {showPassword ? (
+                          <i className="bi bi-eye-slash"></i>
+                        ) : (
+                          <i className="bi bi-eye"></i>
+                        )}
+                      </Button>
+                    </div>
                   </Form.Group>
                 </Col>
               </Row>
@@ -1396,7 +1416,7 @@ export default function MoradoresPage() {
                 </Col>
               </Row>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="bg-dark text-light">
               <Button variant="secondary" onClick={handleCloseModal}>
                 Cancelar
               </Button>
@@ -1414,13 +1434,13 @@ export default function MoradoresPage() {
           setEditingMorador(null)
           resetInquilinoForm()
         }} size="lg">
-          <Modal.Header closeButton>
+          <Modal.Header closeButton closeVariant="white" className="bg-dark text-light">
             <Modal.Title>
               {editingMorador ? 'Editar Inquilino' : 'Cadastrar Inquilino'}{selectedProprietario ? ` ${editingMorador ? 'de' : 'para'} ${selectedProprietario.nome}` : ''}
             </Modal.Title>
           </Modal.Header>
           <Form onSubmit={handleInquilinoSubmit}>
-            <Modal.Body>
+            <Modal.Body className="bg-dark text-light">
               
               {selectedProprietario ? (
                 <Alert variant="info" className="mb-3">
@@ -1444,27 +1464,29 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Nome Completo *</Form.Label>
                     <Form.Control
-                      type="text"
-                      name="nome"
-                      value={inquilinoFormData.nome}
-                      onChange={handleInquilinoInputChange}
-                      required
-                      placeholder="Digite o nome completo"
-                    />
+                        type="text"
+                        name="nome"
+                        value={inquilinoFormData.nome}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        placeholder="Digite o nome completo"
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>CPF *</Form.Label>
                     <Form.Control
-                      type="text"
-                      name="cpf"
-                      value={inquilinoFormData.cpf}
-                      onChange={handleInquilinoInputChange}
-                      required
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                    />
+                        type="text"
+                        name="cpf"
+                        value={inquilinoFormData.cpf}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
               </Row>
@@ -1474,12 +1496,13 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Data de Nascimento *</Form.Label>
                     <Form.Control
-                      type="date"
-                      name="data_nasc"
-                      value={inquilinoFormData.data_nasc}
-                      onChange={handleInquilinoInputChange}
-                      required
-                    />
+                        type="date"
+                        name="data_nasc"
+                        value={inquilinoFormData.data_nasc}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
@@ -1491,7 +1514,7 @@ export default function MoradoresPage() {
                         value={inquilinoFormData.imobiliaria_id}
                         onChange={handleInquilinoInputChange}
                         disabled={!canEditImobiliaria}
-                        className="flex-grow-1"
+                        className="flex-grow-1 bg-dark text-light"
                       >
                         {imobiliarias.length === 0 ? (
                           <option value="">Sem imobiliária</option>
@@ -1580,27 +1603,29 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Celular Principal *</Form.Label>
                     <Form.Control
-                      type="text"
-                      name="celular1"
-                      value={inquilinoFormData.celular1}
-                      onChange={handleInquilinoInputChange}
-                      required
-                      placeholder="(85) 99999-9999"
-                      maxLength={15}
-                    />
+                        type="text"
+                        name="celular1"
+                        value={inquilinoFormData.celular1}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        placeholder="(85) 99999-9999"
+                        maxLength={15}
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Celular Secundário</Form.Label>
                     <Form.Control
-                      type="text"
-                      name="celular2"
-                      value={inquilinoFormData.celular2}
-                      onChange={handleInquilinoInputChange}
-                      placeholder="(85) 99999-9999"
-                      maxLength={15}
-                    />
+                        type="text"
+                        name="celular2"
+                        value={inquilinoFormData.celular2}
+                        onChange={handleInquilinoInputChange}
+                        placeholder="(85) 99999-9999"
+                        maxLength={15}
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
               </Row>
@@ -1610,27 +1635,43 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Email *</Form.Label>
                     <Form.Control
-                      type="email"
-                      name="email"
-                      value={inquilinoFormData.email}
-                      onChange={handleInquilinoInputChange}
-                      required
-                      placeholder="inquilino@exemplo.com"
-                    />
+                        type="email"
+                        name="email"
+                        value={inquilinoFormData.email}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        placeholder="inquilino@exemplo.com"
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Senha {editingMorador ? '(deixe vazio para manter)' : '*'}</Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="senha"
-                      value={inquilinoFormData.senha}
-                      onChange={handleInquilinoInputChange}
-                      required={!editingMorador}
-                      placeholder={editingMorador ? "Deixe vazio para manter a senha atual" : "Mínimo 6 caracteres"}
-                      minLength={6}
-                    />
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showInquilinoPassword ? "text" : "password"}
+                        name="password"
+                        value={inquilinoFormData.password}
+                        onChange={handleInquilinoInputChange}
+                        required={!editingMorador}
+                        placeholder={editingMorador ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
+                        minLength={6}
+                        className="pe-5 bg-dark text-light"
+                      />
+                      <Button
+                        variant="link"
+                        className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent"
+                        onClick={() => setShowInquilinoPassword(!showInquilinoPassword)}
+                        style={{ zIndex: 10 }}
+                      >
+                        {showInquilinoPassword ? (
+                          <i className="bi bi-eye-slash"></i>
+                        ) : (
+                          <i className="bi bi-eye"></i>
+                        )}
+                      </Button>
+                    </div>
                   </Form.Group>
                 </Col>
               </Row>
@@ -1640,23 +1681,25 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Data de Início *</Form.Label>
                     <Form.Control
-                      type="date"
-                      name="data_inicio"
-                      value={inquilinoFormData.data_inicio}
-                      onChange={handleInquilinoInputChange}
-                      required
-                    />
+                        type="date"
+                        name="data_inicio"
+                        value={inquilinoFormData.data_inicio}
+                        onChange={handleInquilinoInputChange}
+                        required
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Data de Término</Form.Label>
                     <Form.Control
-                      type="date"
-                      name="data_fim"
-                      value={inquilinoFormData.data_fim}
-                      onChange={handleInquilinoInputChange}
-                    />
+                        type="date"
+                        name="data_fim"
+                        value={inquilinoFormData.data_fim}
+                        onChange={handleInquilinoInputChange}
+                        className="bg-dark text-light"
+                      />
                     <Form.Text className="text-muted">
                       Deixe vazio para contrato por tempo indeterminado
                     </Form.Text>
@@ -1669,19 +1712,20 @@ export default function MoradoresPage() {
                   <Form.Group className="mb-3">
                     <Form.Label>Observações</Form.Label>
                     <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="observacoes"
-                      value={inquilinoFormData.observacoes}
-                      onChange={handleInquilinoInputChange}
-                      placeholder="Informações adicionais sobre o inquilino..."
-                      maxLength={500}
-                    />
+                        as="textarea"
+                        rows={3}
+                        name="observacoes"
+                        value={inquilinoFormData.observacoes}
+                        onChange={handleInquilinoInputChange}
+                        placeholder="Informações adicionais sobre o inquilino..."
+                        maxLength={500}
+                        className="bg-dark text-light"
+                      />
                   </Form.Group>
                 </Col>
               </Row>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="bg-dark text-light">
               <Button variant="secondary" onClick={() => {
                 setShowInquilinoModal(false)
                 setSelectedProprietario(null)

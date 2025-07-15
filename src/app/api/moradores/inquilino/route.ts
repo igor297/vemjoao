@@ -5,6 +5,7 @@ import Colaborador from '@/models/Colaborador'
 import Adm from '@/models/Adm'
 import Master from '@/models/Master'
 import Morador from '@/models/Morador'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {
@@ -14,7 +15,20 @@ export async function POST(request: NextRequest) {
     console.log('Dados recebidos para inquilino:', inquilinoData)
     
     // Validação básica
-    const requiredFields = ['nome', 'cpf', 'data_nasc', 'celular1', 'email', 'senha', 'data_inicio', 'proprietario_id']
+    const requiredFields = [
+      'nome', 'cpf', 'data_nasc', 'celular1', 'email', 'data_inicio', 'proprietario_id'
+    ]
+    
+    // Validar senha separadamente (aceita tanto 'senha' quanto 'password')
+    const senhaInput = inquilinoData.senha || inquilinoData.password;
+    if (!senhaInput) {
+      return NextResponse.json(
+        { error: 'Campo senha é obrigatório' },
+        { status: 400 }
+      )
+    }
+    
+    // Validação de campos obrigatórios
     for (const field of requiredFields) {
       if (!inquilinoData[field]) {
         return NextResponse.json(
@@ -148,10 +162,13 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(inquilinoData);
+    
     // Criar inquilino herdando dados do proprietário automaticamente
     const newInquilino = {
-      ...inquilinoData,
-      cpf: inquilinoData.cpf.replace(/[^\d]/g, ''),
+      ...encryptedData,
+      cpf: encryptedData.cpf, // Já criptografado pelo prepareForSave
       email: inquilinoData.email.toLowerCase(),
       tipo: 'inquilino', // Forçar tipo como inquilino
       // Herdar dados do proprietário
@@ -163,6 +180,8 @@ export async function POST(request: NextRequest) {
       data_nasc: new Date(inquilinoData.data_nasc),
       data_inicio: dataInicio,
       ...(dataFim && { data_fim: dataFim }),
+      // Tratar campos ObjectId vazios
+      imobiliaria_id: inquilinoData.imobiliaria_id && inquilinoData.imobiliaria_id !== '' ? inquilinoData.imobiliaria_id : undefined,
       data_criacao: new Date(),
       ativo: true
     }
@@ -219,7 +238,7 @@ export async function GET(request: NextRequest) {
         }
         
         return {
-          ...inquilino,
+          ...PersonalDataEncryption.prepareForDisplay(inquilino),
           imobiliaria_nome: imobiliaria?.nome || null
         }
       })

@@ -6,6 +6,7 @@ import Morador from '@/models/Morador'
 import Master from '@/models/Master'
 import Adm from '@/models/Adm'
 import Colaborador from '@/models/Colaborador'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import { getAuthUser } from '@/utils/auth'
 import mongoose from 'mongoose'
 const { ObjectId } = mongoose.Types
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         }
         
         return {
-          ...conjuge.toObject(),
+          ...PersonalDataEncryption.prepareForDisplay(conjuge.toObject()),
           condominio_nome: condominium?.nome || 'N/A'
         }
       })
@@ -156,11 +157,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis antes de salvar
+    const encryptedData = await PersonalDataEncryption.prepareForSave(conjugeData);
+    
     // Converter masterId string para ObjectId
     const masterObjectId = new mongoose.Types.ObjectId(masterId)
     
     const newConjuge = {
-      ...conjugeData,
+      ...encryptedData,
       master_id: masterObjectId,
       condominio_id: new mongoose.Types.ObjectId(conjugeData.condominio_id),
       morador_id: conjugeData.morador_id ? new mongoose.Types.ObjectId(conjugeData.morador_id) : undefined,
@@ -238,8 +242,14 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis se fornecidos
+    let processedData = conjugeData;
+    if (conjugeData.senha) {
+      processedData = await PersonalDataEncryption.prepareForSave(conjugeData);
+    }
+    
     const updateData = {
-      ...conjugeData,
+      ...processedData,
       ...(conjugeData.email && { email: conjugeData.email.toLowerCase() })
     }
 

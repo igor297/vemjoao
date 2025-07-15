@@ -145,7 +145,20 @@ export async function POST(request: NextRequest) {
     const moradorData = await request.json()
     
     // Validação básica
-    const requiredFields = ['nome', 'cpf', 'data_nasc', 'celular1', 'email', 'senha', 'tipo', 'unidade', 'data_inicio', 'condominio_id', 'master_id']
+    const requiredFields = [
+      'nome', 'cpf', 'data_nasc', 'celular1', 'email', 'tipo', 'unidade', 'data_inicio', 'condominio_id', 'master_id'
+    ]
+    
+    // Validar senha separadamente (aceita tanto 'senha' quanto 'password')
+    const senhaInput = moradorData.senha || moradorData.password;
+    if (!senhaInput) {
+      return NextResponse.json(
+        { error: 'Campo senha é obrigatório' },
+        { status: 400 }
+      )
+    }
+    
+    // Validação de campos obrigatórios
     for (const field of requiredFields) {
       if (!moradorData[field]) {
         return NextResponse.json(

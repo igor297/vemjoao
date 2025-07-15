@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IMorador extends Document {
   // Using MongoDB's default _id as primary identifier
   nome: string
-  cpf: string
+  cpf: string | { encrypted: string; iv: string }
   data_nasc: Date
   celular1: string
   celular2?: string
@@ -33,21 +33,9 @@ const MoradorSchema: Schema = new Schema({
     maxlength: [100, 'Nome deve ter no máximo 100 caracteres']
   },
   cpf: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed,
     required: true,
-    unique: true,
-    validate: {
-      validator: function(cpf: string) {
-        // Remove pontos e hífens
-        cpf = cpf.replace(/[^\d]/g, '')
-        
-        // Aceita qualquer formato de CPF com 11 dígitos
-        if (cpf.length !== 11) return false
-        
-        return true
-      },
-      message: 'CPF deve ter 11 dígitos'
-    }
+    unique: true
   },
   data_nasc: {
     type: Date,

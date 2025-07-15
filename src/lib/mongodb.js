@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var mongoose_1 = require("mongoose");
 // Configuração apenas para localhost
-var MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/condominio-sistema';
+var MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/condominio-sistemas';
 if (!MONGODB_URI) {
     console.error('❌ [MongoDB] MONGODB_URI não encontrada!');
     throw new Error('Please define the MONGODB_URI environment variable inside .env.local');

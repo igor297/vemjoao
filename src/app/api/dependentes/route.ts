@@ -7,6 +7,7 @@ import Master from '@/models/Master'
 import Adm from '@/models/Adm'
 import Colaborador from '@/models/Colaborador'
 import Conjuge from '@/models/Conjuge'
+import { PersonalDataEncryption } from '@/lib/personalDataEncryption'
 import { getAuthUser } from '@/utils/auth'
 import mongoose from 'mongoose'
 const { ObjectId } = mongoose.Types
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
         }
         
         return {
-          ...dependente.toObject(),
+          ...PersonalDataEncryption.prepareForDisplay(dependente.toObject()),
           condominio_nome: condominium?.nome || 'N/A',
           idade
         }
@@ -180,11 +181,17 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis antes de salvar (apenas se tiver senha)
+    let encryptedData = dependenteData;
+    if (dependenteData.senha) {
+      encryptedData = await PersonalDataEncryption.prepareForSave(dependenteData);
+    }
+    
     // Converter masterId string para ObjectId
     const masterObjectId = new mongoose.Types.ObjectId(masterId)
     
     const newDependente = {
-      ...dependenteData,
+      ...encryptedData,
       master_id: masterObjectId,
       condominio_id: new mongoose.Types.ObjectId(dependenteData.condominio_id),
       morador_id: dependenteData.morador_id ? new mongoose.Types.ObjectId(dependenteData.morador_id) : undefined,
@@ -283,8 +290,14 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // Criptografar dados sensíveis se fornecidos
+    let processedData = dependenteData;
+    if (dependenteData.senha) {
+      processedData = await PersonalDataEncryption.prepareForSave(dependenteData);
+    }
+    
     const updateData = {
-      ...dependenteData,
+      ...processedData,
       ...(dependenteData.email && { email: dependenteData.email.toLowerCase() }),
       ...(dependenteData.data_nasc && { data_nasc: new Date(dependenteData.data_nasc) })
     }

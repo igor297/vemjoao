@@ -3,6 +3,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Form, Alert, Button, Modal } from 'react-bootstrap'
 
+// Funções para aplicar máscaras
+const applyCpfMask = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1')
+}
+
+const applyCnpjMask = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1')
+}
+
 interface Condominium {
   _id: string
   nome: string
@@ -12,6 +32,8 @@ interface MasterUser {
   _id: string
   nome: string
   email: string
+  cpf?: string
+  cnpj?: string
   celular1: string
   celular2: string
   data_criacao: string
@@ -331,6 +353,12 @@ export default function SettingsPage() {
                             <Col md={6}>
                               <p><strong>Nome:</strong> {masterUser.nome}</p>
                               <p><strong>Email:</strong> {masterUser.email}</p>
+                              {masterUser.cpf && (
+                                <p><strong>CPF:</strong> {masterUser.cpf}</p>
+                              )}
+                              {masterUser.cnpj && (
+                                <p><strong>CNPJ:</strong> {masterUser.cnpj}</p>
+                              )}
                             </Col>
                             <Col md={6}>
                               <p><strong>Celular 1:</strong> {masterUser.celular1}</p>
@@ -376,6 +404,38 @@ export default function SettingsPage() {
                       type="email"
                       value={editingMaster.email}
                       onChange={(e) => setEditingMaster({...editingMaster, email: e.target.value})}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>CPF</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={editingMaster.cpf || ''}
+                      onChange={(e) => {
+                        const maskedCpf = applyCpfMask(e.target.value)
+                        setEditingMaster({...editingMaster, cpf: maskedCpf})
+                      }}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>CNPJ</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={editingMaster.cnpj || ''}
+                      onChange={(e) => {
+                        const maskedCnpj = applyCnpjMask(e.target.value)
+                        setEditingMaster({...editingMaster, cnpj: maskedCnpj})
+                      }}
+                      placeholder="00.000.000/0000-00"
+                      maxLength={18}
                     />
                   </Form.Group>
                 </Col>

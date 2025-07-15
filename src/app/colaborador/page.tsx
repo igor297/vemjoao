@@ -13,7 +13,7 @@ interface Colaborador {
   celular1: string
   celular2?: string
   email: string
-  senha: string
+  password: string
   data_inicio: string
   data_fim?: string
   condominio_id: string
@@ -77,6 +77,7 @@ export default function ColaboradorPage() {
   const [selectedCondominiumId, setSelectedCondominiumId] = useState<string>('')
   const [calculatedAge, setCalculatedAge] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState('personal')
+  const [showPassword, setShowPassword] = useState(false)
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -85,7 +86,7 @@ export default function ColaboradorPage() {
     celular1: '',
     celular2: '',
     email: '',
-    senha: '',
+    password: '',
     data_inicio: '',
     data_fim: '',
     condominio_id: '',
@@ -507,7 +508,7 @@ export default function ColaboradorPage() {
       celular1: colaborador.celular1,
       celular2: colaborador.celular2 || '',
       email: colaborador.email,
-      senha: colaborador.senha,
+      password: '', // Não preencher senha na edição
       data_inicio: formatDateISO(colaborador.data_inicio) || '',
       data_fim: formatDateISO(colaborador.data_fim) || '',
       condominio_id: colaborador.condominio_id,
@@ -590,7 +591,7 @@ export default function ColaboradorPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       condominio_id: '',
@@ -646,7 +647,7 @@ export default function ColaboradorPage() {
       celular1: '',
       celular2: '',
       email: '',
-      senha: '',
+      password: '',
       data_inicio: '',
       data_fim: '',
       condominio_id: activeCondominiumId,
@@ -880,84 +881,84 @@ export default function ColaboradorPage() {
               </div>
             ) : (
               <div className="table-responsive">
-                <Table hover className="mb-0">
-                  <thead className="table-light">
+                <Table responsive striped hover className="text-body">
+                    <thead>
                     <tr>
-                      <th>Foto</th>
-                      <th>Nome</th>
-                      <th>CPF</th>
-                      <th>Email</th>
-                      <th>Celular</th>
-                      <th>Cargo</th>
-                      <th>Condomínio</th>
-                      <th>Data Início</th>
-                      <th>Status</th>
-                      {canEdit && <th>Ações</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {colaboradores.map((colaborador) => (
-                      <tr key={colaborador._id}>
-                        <td>
-                          {colaborador.foto_perfil ? (
-                            <Image 
-                              src={colaborador.foto_perfil} 
-                              alt="Foto"
-                              roundedCircle
-                              style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <div 
-                              className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
-                              style={{ width: '40px', height: '40px' }}
-                            >
-                              👤
-                            </div>
-                          )}
-                        </td>
-                        <td className="fw-semibold">{colaborador.nome}</td>
-                        <td>{colaborador.cpf}</td>
-                        <td>{colaborador.email}</td>
-                        <td>{colaborador.celular1}</td>
-                        <td>
-                          {colaborador.cargo ? (
-                            <Badge bg="secondary">{colaborador.cargo}</Badge>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td>
-                          <Badge bg="info">
-                            {colaborador.condominio_nome}
-                          </Badge>
-                        </td>
-                        <td>{formatDate(colaborador.data_inicio)}</td>
-                        <td>{getStatusBadge(colaborador)}</td>
-                        {canEdit && (
-                          <td>
-                            <div className="btn-group btn-group-sm" role="group">
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() => handleEdit(colaborador)}
-                                title="Editar"
-                              >
-                                ✏️
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleDelete(colaborador._id)}
-                                title="Excluir"
-                              >
-                                🗑️
-                              </Button>
-                            </div>
-                          </td>
-                        )}
+                        <th className="text-body">Foto</th>
+                        <th className="text-body">Nome</th>
+                        <th className="text-body">CPF</th>
+                        <th className="text-body">Email</th>
+                        <th className="text-body">Celular</th>
+                        <th className="text-body">Cargo</th>
+                        <th className="text-body">Condomínio</th>
+                        <th className="text-body">Data Início</th>
+                        <th className="text-body">Status</th>
+                        {canEdit && <th className="text-body">Ações</th>}
                       </tr>
-                    ))}
-                  </tbody>
+                    </thead>
+                    <tbody>
+                      {colaboradores.map((colaborador) => (
+                        <tr key={colaborador._id}>
+                          <td>
+                            {colaborador.foto_perfil ? (
+                              <Image 
+                                src={colaborador.foto_perfil} 
+                                alt="Foto"
+                                roundedCircle
+                                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div 
+                                className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
+                                style={{ width: '40px', height: '40px' }}
+                              >
+                                👤
+                              </div>
+                            )}
+                          </td>
+                          <td className="fw-semibold text-body">{colaborador.nome}</td>
+                          <td className="text-body">{colaborador.cpf}</td>
+                          <td className="text-body">{colaborador.email}</td>
+                          <td className="text-body">{colaborador.celular1}</td>
+                          <td>
+                            {colaborador.cargo ? (
+                              <Badge bg="secondary">{colaborador.cargo}</Badge>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td>
+                            <Badge bg="info">
+                              {colaborador.condominio_nome}
+                            </Badge>
+                          </td>
+                          <td className="text-body">{formatDate(colaborador.data_inicio)}</td>
+                          <td>{getStatusBadge(colaborador)}</td>
+                          {canEdit && (
+                            <td>
+                              <div className="btn-group btn-group-sm" role="group">
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleEdit(colaborador)}
+                                  title="Editar"
+                                >
+                                  ✏️
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(colaborador._id)}
+                                  title="Excluir"
+                                >
+                                  🗑️
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
                 </Table>
               </div>
             )}
@@ -1427,15 +1428,30 @@ export default function ColaboradorPage() {
                     <Col md={6}>
                       <Form.Group className="mb-3">
                         <Form.Label>Senha de Acesso *</Form.Label>
-                        <Form.Control
-                          type="password"
-                          name="senha"
-                          value={formData.senha}
-                          onChange={handleInputChange}
-                          required
-                          placeholder="Mínimo 6 caracteres"
-                          minLength={6}
-                        />
+                        <div className="position-relative">
+                          <Form.Control
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            required={!editingColaborador}
+                            placeholder={editingColaborador ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
+                            minLength={6}
+                            className="pe-5"
+                          />
+                          <Button
+                            variant="link"
+                            className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{ zIndex: 10 }}
+                          >
+                            {showPassword ? (
+                              <i className="bi bi-eye-slash"></i>
+                            ) : (
+                              <i className="bi bi-eye"></i>
+                            )}
+                          </Button>
+                        </div>
                       </Form.Group>
                     </Col>
                     <Col md={6}>

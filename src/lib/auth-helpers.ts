@@ -4,6 +4,7 @@ import Master from '@/models/Master'
 import Adm from '@/models/Adm'
 import Colaborador from '@/models/Colaborador'
 import Morador from '@/models/Morador'
+import bcrypt from 'bcrypt' // Importar bcrypt
 
 export interface AuthUser {
   id: string
@@ -49,102 +50,111 @@ export async function authenticateUser(request: NextRequest): Promise<AuthUser |
     
     // Try Master first
     const masterUser = await Master.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
     if (masterUser) {
-      return {
-        id: masterUser._id.toString(),
-        nome: masterUser.nome,
-        email: masterUser.email,
-        tipo: 'master'
+      // Comparar a senha usando bcrypt
+      const isPasswordValid = await bcrypt.compare(password, masterUser.password);
+      if (isPasswordValid) {
+        return {
+          id: masterUser._id.toString(),
+          nome: masterUser.nome,
+          email: masterUser.email,
+          tipo: 'master'
+        }
       }
     }
     
     // Try Adm
     const admUser = await Adm.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
     if (admUser) {
-      // Check if ADM is active
-      if (admUser.data_fim) {
-        const now = new Date()
-        const dataFim = new Date(admUser.data_fim)
-        if (dataFim < now) {
-          return null
+      const isPasswordValid = await bcrypt.compare(password, admUser.password);
+      if (isPasswordValid) {
+        // Check if ADM is active
+        if (admUser.data_fim) {
+          const now = new Date()
+          const dataFim = new Date(admUser.data_fim)
+          if (dataFim < now) {
+            return null
+          }
         }
-      }
-      
-      return {
-        id: admUser._id.toString(),
-        nome: admUser.nome,
-        email: admUser.email,
-        tipo: 'adm',
-        subtipo: admUser.tipo,
-        condominio_id: admUser.condominio_id?.toString(),
-        master_id: admUser.master_id?.toString()
+        
+        return {
+          id: admUser._id.toString(),
+          nome: admUser.nome,
+          email: admUser.email,
+          tipo: 'adm',
+          subtipo: admUser.tipo,
+          condominio_id: admUser.condominio_id?.toString(),
+          master_id: admUser.master_id?.toString()
+        }
       }
     }
     
     // Try Colaborador
     const colaboradorUser = await Colaborador.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
     if (colaboradorUser) {
-      // Check if Colaborador is active
-      if (colaboradorUser.data_fim) {
-        const now = new Date()
-        const dataFim = new Date(colaboradorUser.data_fim)
-        if (dataFim < now) {
-          return null
+      const isPasswordValid = await bcrypt.compare(password, colaboradorUser.password);
+      if (isPasswordValid) {
+        // Check if Colaborador is active
+        if (colaboradorUser.data_fim) {
+          const now = new Date()
+          const dataFim = new Date(colaboradorUser.data_fim)
+          if (dataFim < now) {
+            return null
+          }
         }
-      }
-      
-      return {
-        id: colaboradorUser._id.toString(),
-        nome: colaboradorUser.nome,
-        email: colaboradorUser.email,
-        tipo: 'colaborador',
-        condominio_id: colaboradorUser.condominio_id?.toString(),
-        master_id: colaboradorUser.master_id?.toString()
+        
+        return {
+          id: colaboradorUser._id.toString(),
+          nome: colaboradorUser.nome,
+          email: colaboradorUser.email,
+          tipo: 'colaborador',
+          condominio_id: colaboradorUser.condominio_id?.toString(),
+          master_id: colaboradorUser.master_id?.toString()
+        }
       }
     }
     
     // Try Morador
     const moradorUser = await Morador.findOne({ 
-      email: emailLower,
-      senha: password 
+      email: emailLower
     })
     
     if (moradorUser) {
-      // Check if Morador is active
-      if (moradorUser.data_fim) {
-        const now = new Date()
-        const dataFim = new Date(moradorUser.data_fim)
-        if (dataFim < now) {
+      const isPasswordValid = await bcrypt.compare(password, moradorUser.password);
+      if (isPasswordValid) {
+        // Check if Morador is active
+        if (moradorUser.data_fim) {
+          const now = new Date()
+          const dataFim = new Date(moradorUser.data_fim)
+          if (dataFim < now) {
+            return null
+          }
+        }
+        
+        if (!moradorUser.ativo) {
           return null
         }
-      }
-      
-      if (!moradorUser.ativo) {
-        return null
-      }
-      
-      return {
-        id: moradorUser._id.toString(),
-        nome: moradorUser.nome,
-        email: moradorUser.email,
-        tipo: 'morador',
-        subtipo: moradorUser.tipo,
-        condominio_id: moradorUser.condominio_id?.toString(),
-        master_id: moradorUser.master_id?.toString(),
-        unidade: moradorUser.unidade,
-        bloco: moradorUser.bloco
+        
+        return {
+          id: moradorUser._id.toString(),
+          nome: moradorUser.nome,
+          email: moradorUser.email,
+          tipo: 'morador',
+          subtipo: moradorUser.tipo,
+          condominio_id: moradorUser.condominio_id?.toString(),
+          master_id: moradorUser.master_id?.toString(),
+          unidade: moradorUser.unidade,
+          bloco: moradorUser.bloco
+        }
       }
     }
     
@@ -154,57 +164,4 @@ export async function authenticateUser(request: NextRequest): Promise<AuthUser |
     console.error('Authentication error:', error)
     return null
   }
-}
-
-/**
- * Check if user can view a specific entity using the model's canBeViewedBy method
- */
-export function canUserViewEntity(entity: any, user: AuthUser): boolean {
-  if (!entity || !entity.canBeViewedBy) {
-    return false
-  }
-  return entity.canBeViewedBy(user.id, user.tipo)
-}
-
-/**
- * Check if user can edit a specific entity using the model's canBeEditedBy method
- */
-export function canUserEditEntity(entity: any, user: AuthUser): boolean {
-  if (!entity || !entity.canBeEditedBy) {
-    return false
-  }
-  return entity.canBeEditedBy(user.id, user.tipo)
-}
-
-/**
- * Filter a list of entities based on user's view permissions
- */
-export function filterEntitiesForUser(entities: any[], user: AuthUser): any[] {
-  if (!entities || entities.length === 0) {
-    return []
-  }
-  
-  return entities.filter(entity => canUserViewEntity(entity, user))
-}
-
-/**
- * Check if user can create entities for a specific morador/inquilino
- */
-export function canUserCreateForOwner(user: AuthUser, moradorId?: string, inquilinoId?: string): boolean {
-  // Adm, Master, and Colaborador can create for anyone
-  if (['adm', 'master', 'colaborador'].includes(user.tipo)) {
-    return true
-  }
-  
-  // Morador can only create for themselves
-  if (user.tipo === 'morador') {
-    if (moradorId && moradorId === user.id) {
-      return true
-    }
-    if (inquilinoId && inquilinoId === user.id) {
-      return true
-    }
-  }
-  
-  return false
 }

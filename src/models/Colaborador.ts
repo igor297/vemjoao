@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IColaborador extends Document {
   // Using MongoDB's default _id as primary identifier
   nome: string
-  cpf: string
+  cpf: string | { encrypted: string; iv: string }
   data_nasc: Date
   celular1: string
   celular2?: string
@@ -60,7 +60,7 @@ const ColaboradorSchema: Schema = new Schema({
     trim: true
   },
   cpf: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed,
     required: true
   },
   data_nasc: {
