@@ -882,8 +882,8 @@ export default function FinanceiroColaboradorPage() {
 
     <Row className="mb-4">
       <Col>
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
+        <Card className="bg-dark text-light">
+          <Card.Header className="d-flex justify-content-between align-items-center bg-dark text-light border-bottom border-secondary">
             <h5 className="mb-0">👤 Seleção de Colaborador</h5>
           </Card.Header>
           <Card.Body>
@@ -1006,7 +1006,7 @@ export default function FinanceiroColaboradorPage() {
           <>
             <Row className="mb-4">
               <Col md={3}>
-                <Card className="border-success">
+                <Card className="border-success bg-dark text-light">
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-success mb-0">Receitas</h6>
@@ -1017,7 +1017,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className="border-danger">
+                <Card className="border-danger bg-dark text-light">
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-danger mb-0">Despesas</h6>
@@ -1028,7 +1028,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'border-primary' : 'border-warning'}>
+                <Card className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'border-primary bg-dark text-light' : 'border-warning bg-dark text-light'}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="mb-0">Saldo</h6>
@@ -1041,7 +1041,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className="border-warning">
+                <Card className="border-warning bg-dark text-light">
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-warning mb-0">Pendentes</h6>
@@ -1061,8 +1061,8 @@ export default function FinanceiroColaboradorPage() {
 
             <Row className="mb-4">
               <Col md={8}>
-                <Card className="h-100">
-                  <Card.Header className="bg-light">
+                <Card className="h-100 bg-dark text-light">
+                  <Card.Header className="bg-dark text-light border-bottom border-secondary">
                     <h5 className="mb-0">📈 Fluxo de Caixa Mensal</h5>
                   </Card.Header>
                   <Card.Body>
@@ -1334,7 +1334,7 @@ export default function FinanceiroColaboradorPage() {
                 </div>
               </Card.Header>
               <Card.Body>
-                <Table responsive hover>
+                <Table responsive hover variant="dark">
                   <thead>
                     <tr>
                       <th>Colaborador</th>
@@ -1838,7 +1838,7 @@ export default function FinanceiroColaboradorPage() {
               </p>
             </div>
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="bg-dark text-light">
             <Button 
               variant="secondary" 
               onClick={() => setShowDeleteModal(false)}
