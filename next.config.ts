@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
     MONGODB_DB: 'condominio-sistema',
   },
   serverExternalPackages: ['mongoose'],
+  // Configuração para tunnel/domínio personalizado
+  allowedDevOrigins: [
+    'admin.onesystemas.com.br',
+    'www.admin.onesystemas.com.br'
+  ],
   // Otimizações para Cloudflare
   output: 'standalone',
   compress: false, // Cloudflare já comprime
