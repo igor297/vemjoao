@@ -11,15 +11,18 @@ export async function safeJsonParse<T = any>(response: Response): Promise<ApiRes
       try {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          return {
-            success: false,
-            data: errorData,
-            error: errorData.message || errorData.error || 'Algo deu errado'
-          };
+          const text = await response.text();
+          if (text.trim()) {
+            const errorData = JSON.parse(text);
+            return {
+              success: false,
+              data: errorData,
+              error: errorData.message || errorData.error || 'Algo deu errado'
+            };
+          }
         }
       } catch (jsonError) {
-        // Se não conseguir fazer parse do JSON, usar mensagem genérica
+        console.error('Error parsing error response JSON:', jsonError);
       }
       
       return {
@@ -46,12 +49,30 @@ export async function safeJsonParse<T = any>(response: Response): Promise<ApiRes
       };
     }
 
-    const data = await response.json();
-    return {
-      success: true,
-      data
-    };
+    // Verificar se há conteúdo antes de tentar fazer parse
+    const text = await response.text();
+    if (!text.trim()) {
+      return {
+        success: false,
+        error: 'Resposta vazia do servidor'
+      };
+    }
+
+    try {
+      const data = JSON.parse(text);
+      return {
+        success: true,
+        data
+      };
+    } catch (parseError) {
+      console.error('Error parsing JSON response:', parseError, 'Response text:', text);
+      return {
+        success: false,
+        error: 'Erro ao processar resposta do servidor'
+      };
+    }
   } catch (error) {
+    console.error('Network or other error:', error);
     return {
       success: false,
       error: 'Algo não funcionou como esperado. Tente novamente.'

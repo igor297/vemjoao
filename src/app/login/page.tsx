@@ -99,6 +99,10 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
+    console.log('🔄 [FRONTEND] Iniciando processo de login')
+    console.log('🔄 [FRONTEND] Email:', formData.email)
+    console.log('🔄 [FRONTEND] Password length:', formData.password.length)
+
     if (honeypot) {
       console.error('Detecção de bot (Honeypot preenchido).')
       showCustomAlert('BOT_DETECTED', 'Detecção de atividade suspeita. Tente novamente mais tarde.')
@@ -119,6 +123,7 @@ export default function LoginPage() {
     }
 
     try {
+      console.log('🔄 [FRONTEND] Fazendo requisição POST para /api/auth/login')
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -130,7 +135,11 @@ export default function LoginPage() {
         })
       })
 
+      console.log('🔄 [FRONTEND] Resposta recebida, status:', response.status)
+      console.log('🔄 [FRONTEND] Content-Type:', response.headers.get('content-type'))
+
       const result = await safeJsonParse(response)
+      console.log('🔄 [FRONTEND] Resultado parsed:', result)
 
       if (result.success && result.data?.success) {
         localStorage.setItem('userData', JSON.stringify(result.data.user))
