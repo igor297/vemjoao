@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Form, Alert, Button, Modal } from 'react-bootstrap'
+import { useTheme } from '@/context/ThemeContext'
 
 // Funções para aplicar máscaras
 const applyCpfMask = (value: string) => {
@@ -40,6 +41,13 @@ interface MasterUser {
 }
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
   const [condominiums, setCondominiums] = useState<Condominium[]>([])
   const [masterUser, setMasterUser] = useState<MasterUser | null>(null)
   const [showMasterModal, setShowMasterModal] = useState(false)
@@ -48,7 +56,6 @@ export default function SettingsPage() {
   const [currentUser, setCurrentUser] = useState<{id: string, tipo: string, email: string} | null>(null)
   const [selectedCondominiumId, setSelectedCondominiumId] = useState<string>('')
   const [useTicketingSystem, setUseTicketingSystem] = useState<boolean>(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light') // 'light' ou 'dark'
   const [isClient, setIsClient] = useState(false)
   
   const getLocalStorage = (key: string) => {
@@ -105,23 +112,13 @@ export default function SettingsPage() {
       }
     }
 
-    // Carregar tema do localStorage
-    const savedTheme = getLocalStorage('theme')
-    if (savedTheme === 'dark') {
-      setTheme('dark')
-    } else {
-      setTheme('light')
-    }
+    // O tema agora é gerenciado pelo ThemeContext
   }, [loadCondominiumSetting])
 
-  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'comfort') => {
     console.log('🎨 Settings: Mudando tema para:', newTheme)
     setTheme(newTheme)
-    setLocalStorage('theme', newTheme)
-    console.log('🎨 Settings: Tema salvo no localStorage:', getLocalStorage('theme'))
-    // Disparar evento para notificar o layout sobre a mudança de tema
-    window.dispatchEvent(new CustomEvent('themeChange', { detail: newTheme }))
-    console.log('🎨 Settings: Evento themeChange disparado com:', newTheme)
+    console.log('🎨 Settings: Tema alterado via ThemeContext')
   }
 
   const loadCondominiums = async (masterId: string) => {
@@ -379,7 +376,7 @@ export default function SettingsPage() {
       </Container>
 
       {/* Modal de Edição do Master */}
-      <Modal show={showMasterModal} onHide={() => setShowMasterModal(false)} size="lg">
+      <Modal show={showMasterModal} onHide={() => setShowMasterModal(false)} size="lg" data-bs-theme={getBootstrapTheme()}>
         <Modal.Header closeButton>
           <Modal.Title>Editar Dados do Master</Modal.Title>
         </Modal.Header>

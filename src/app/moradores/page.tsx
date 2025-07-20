@@ -7,6 +7,8 @@ import DependenteManager from '@/components/moradores/DependenteManager'
 import VeiculoManager from '@/components/moradores/VeiculoManager'
 import AnimalManager from '@/components/moradores/AnimalManager'
 import { applyCpfMask, applyCelularMask, applyCnpjMask } from '@/utils/masks'
+import { useTheme } from '@/context/ThemeContext'
+import '@/styles/moradores-theme.css'
 
 interface Morador {
   _id: string
@@ -50,6 +52,13 @@ interface Imobiliaria {
 }
 
 export default function MoradoresPage() {
+  const { theme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
   const [moradores, setMoradores] = useState<Morador[]>([])
   const [condominiums, setCondominiums] = useState<Condominium[]>([])
   const [imobiliarias, setImobiliarias] = useState<Imobiliaria[]>([])
@@ -1054,7 +1063,7 @@ export default function MoradoresPage() {
               </div>
             ) : (
               <div className="table-responsive">
-                <Table responsive striped hover>
+                <Table responsive striped hover data-bs-theme={getBootstrapTheme()}>
                   <thead>
                     <tr>
                       <th>Nome</th>
@@ -1185,7 +1194,7 @@ export default function MoradoresPage() {
         </Card>
 
         {/* Modal para cadastro/edição */}
-        <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal show={showModal} onHide={handleCloseModal} size="lg" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingMorador ? 'Editar Proprietário' : 'Novo Proprietário'}
@@ -1458,7 +1467,7 @@ export default function MoradoresPage() {
           setSelectedProprietario(null)
           setEditingMorador(null)
           resetInquilinoForm()
-        }} size="lg">
+        }} size="lg" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingMorador ? 'Editar Inquilino' : 'Cadastrar Inquilino'}{selectedProprietario ? ` ${editingMorador ? 'de' : 'para'} ${selectedProprietario.nome}` : ''}
@@ -1764,7 +1773,7 @@ export default function MoradoresPage() {
         <Modal show={showImobiliariaModal} onHide={() => {
           setShowImobiliariaModal(false)
           resetImobiliariaForm()
-        }} size="lg">
+        }} size="lg" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               {showImobiliariaForm ? (editingImobiliaria ? 'Editar Imobiliária' : 'Nova Imobiliária') : 'Gerenciar Imobiliárias'}
@@ -1793,7 +1802,7 @@ export default function MoradoresPage() {
                   </Alert>
                 ) : (
                   <div className="table-responsive">
-                    <Table hover size="sm">
+                    <Table hover size="sm" data-bs-theme={getBootstrapTheme()}>
                       <thead className="table-light">
                         <tr>
                           <th>Nome</th>
@@ -2002,7 +2011,7 @@ export default function MoradoresPage() {
         </Modal>
 
         {/* Modal para escolher ações adicionais */}
-        <Modal show={showActionsModal} onHide={handleCloseActionsModal} centered>
+        <Modal show={showActionsModal} onHide={handleCloseActionsModal} centered data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               🏠 Gerenciar Família e Pertences

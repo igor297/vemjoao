@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import Header from "./Header";
 import { ReactNode, useEffect, useState } from "react";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export default function ClientShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -90,7 +91,7 @@ export default function ClientShell({ children }: { children: ReactNode }) {
 
   // Se está na página de login, mostrar sem verificações
   if (hideShell) {
-    return children;
+    return <ThemeProvider>{children}</ThemeProvider>;
   }
 
   // Se não está autenticado, não mostrar conteúdo
@@ -99,11 +100,11 @@ export default function ClientShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <>
+    <ThemeProvider>
       <Header />
       <div className="main-content">
         {children}
       </div>
-    </>
+    </ThemeProvider>
   );
 }

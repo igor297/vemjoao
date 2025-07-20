@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Modal, Form, Button, Alert, Table, Badge, Row, Col } from 'react-bootstrap'
+import { useTheme } from '@/context/ThemeContext'
 
 interface Morador {
   _id: string
@@ -45,6 +46,13 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
   const [showForm, setShowForm] = useState(false)
   const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null)
   const [loading, setLoading] = useState(false)
+  const { theme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
 
   const [formData, setFormData] = useState({
     tipo: 'cao' as 'cao' | 'gato' | 'passaro' | 'peixe' | 'outro',
@@ -218,8 +226,8 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
   }
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton closeVariant="white" className="bg-dark text-light">
+    <Modal show={show} onHide={onHide} size="lg" data-bs-theme={getBootstrapTheme()}>
+      <Modal.Header closeButton>
         <Modal.Title>
           🐕 Gerenciar Animais - {morador?.nome}
         </Modal.Title>
@@ -227,8 +235,8 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
       
       {!showForm ? (
         <>
-          <Modal.Body className="bg-dark text-light">
-            <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
+          <Modal.Body>
+            <Alert variant="info" className="mb-3">
               <strong>📋 Informações:</strong><br/>
               • Cada morador/inquilino pode ter múltiplos animais<br/>
               • Registre pets para controle condominial<br/>
@@ -254,14 +262,14 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                 </div>
               </div>
             ) : animais.length === 0 ? (
-              <Alert variant="secondary" className="text-center bg-dark text-light border-secondary">
+              <Alert variant="secondary" className="text-center">
                 <h6>📋 Nenhum animal cadastrado</h6>
                 <p className="mb-0">Clique em "Novo Animal" para adicionar</p>
               </Alert>
             ) : (
               <div className="table-responsive">
-                <Table hover size="sm" variant="dark">
-                  <thead className="table-light">
+                <Table hover size="sm" data-bs-theme={getBootstrapTheme()}>
+                  <thead>
                     <tr>
                       <th>Tipo</th>
                       <th>Nome</th>
@@ -310,7 +318,7 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer className="bg-dark text-light">
+          <Modal.Footer>
             {onBack && (
               <Button variant="outline-secondary" onClick={onBack}>
                 ← Voltar ao Menu
@@ -324,8 +332,8 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
       ) : (
         <>
           <Form onSubmit={handleSubmit}>
-            <Modal.Body className="bg-dark text-light">
-              <Alert variant="info" className="mb-3 bg-dark text-light border-secondary">
+            <Modal.Body>
+              <Alert variant="info" className="mb-3">
                 <strong>📋 Dados Herdados Automaticamente:</strong><br/>
                 <strong>🏢 Condomínio:</strong> {morador.condominio_nome}<br/>
                 <strong>🏗️ Bloco:</strong> {morador.bloco || 'Não informado'}<br/>
@@ -341,7 +349,6 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                       value={formData.tipo}
                       onChange={handleInputChange}
                       required
-                      className="bg-dark text-light"
                     >
                       <option value="cao">🐕 Cão</option>
                       <option value="gato">🐱 Gato</option>
@@ -362,7 +369,6 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                       required
                       placeholder="Ex: Rex, Mimi, Piu-piu"
                       maxLength={50}
-                      className="bg-dark text-light"
                     />
                   </Form.Group>
                 </Col>
@@ -379,7 +385,6 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                       onChange={handleInputChange}
                       placeholder="Ex: Labrador, Persa, Canário"
                       maxLength={50}
-                      className="bg-dark text-light"
                     />
                     <Form.Text className="text-muted">
                       Opcional
@@ -396,7 +401,6 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                       onChange={handleInputChange}
                       placeholder="Ex: 3"
                       maxLength={2}
-                      className="bg-dark text-light"
                     />
                     <Form.Text className="text-muted">
                       Idade em anos (opcional, máximo 50)
@@ -415,11 +419,10 @@ export default function AnimalManager({ show, onHide, morador, onSuccess, onErro
                   onChange={handleInputChange}
                   placeholder="Informações adicionais sobre o animal (temperamento, cuidados especiais, etc.)..."
                   maxLength={500}
-                  className="bg-dark text-light"
                 />
               </Form.Group>
             </Modal.Body>
-            <Modal.Footer className="bg-dark text-light">
+            <Modal.Footer>
               <Button variant="secondary" onClick={() => {
                 resetForm()
                 setShowForm(false)
