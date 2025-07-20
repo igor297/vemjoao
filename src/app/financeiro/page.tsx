@@ -147,16 +147,16 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-const PageHeader = ({ lastUpdate, autoRefresh, onToggleAutoRefresh, onManualRefresh, loading, selectedCondominiumId, currentUser }) => (
+const PageHeader = ({ lastUpdate, autoRefresh, onToggleAutoRefresh, onManualRefresh, loading, selectedCondominiumId, currentUser, getTextColorForDarkTheme }) => (
   <Row className="mb-4 align-items-center">
     <Col md={6}>
       <h1 className="h2 mb-0">Dashboard Financeiro</h1>
-      <p className="text-muted mb-0">Visão consolidada das finanças do condomínio.</p>
+      <p className={getTextColorForDarkTheme('mb-0')}>Visão consolidada das finanças do condomínio.</p>
     </Col>
     <Col md={6} className="text-md-end">
       {lastUpdate && (
         <div className="d-flex align-items-center justify-content-md-end">
-          <small className="text-muted me-3">
+          <small className={getTextColorForDarkTheme('me-3')}>
             Última atualização: {lastUpdate}
           </small>
           <Button variant="outline-secondary" size="sm" onClick={onToggleAutoRefresh} className="me-2">
@@ -178,11 +178,11 @@ const PageHeader = ({ lastUpdate, autoRefresh, onToggleAutoRefresh, onManualRefr
   </Row>
 );
 
-const CondominiumSelector = ({ condominiums, selectedCondominiumId, onCondominioChange, currentUser }) => {
+const CondominiumSelector = ({ condominios, selectedCondominiumId, onCondominioChange, currentUser, getBootstrapTheme }) => {
     if (currentUser?.tipo !== 'master') return null;
 
     return (
-        <Card className="shadow-sm mb-4">
+        <Card className="shadow-sm mb-4" data-bs-theme={getBootstrapTheme()}>
             <Card.Body>
                 <Row className="align-items-center">
                     <Col md={2}>
@@ -198,7 +198,7 @@ const CondominiumSelector = ({ condominiums, selectedCondominiumId, onCondominio
                             aria-label="Selecionar Condomínio"
                         >
                             <option value="">Selecione um condomínio...</option>
-                            {condominiums.map((cond) => (
+                            {condominios.map((cond) => (
                                 <option key={cond._id} value={cond._id}>
                                     {cond.nome}
                                 </option>
@@ -219,7 +219,7 @@ const CondominiumSelector = ({ condominiums, selectedCondominiumId, onCondominio
     );
 };
 
-const SummaryCard = ({ title, value, icon, variant, subValue, badgeText, badgeVariant }) => (
+const SummaryCard = ({ title, value, icon, variant, subValue, badgeText, badgeVariant, getTextColorForDarkTheme }) => (
     <Card className={`shadow-sm h-100 border-start border-${variant} border-4 position-relative overflow-hidden financial-summary-card`}>
         <Card.Body>
             <Row className="align-items-center">
@@ -229,9 +229,9 @@ const SummaryCard = ({ title, value, icon, variant, subValue, badgeText, badgeVa
                     </div>
                 </Col>
                 <Col xs={9}>
-                    <h6 className="text-muted mb-1">{title}</h6>
+                    <h6 className={getTextColorForDarkTheme('mb-1')}>{title}</h6>
                     <h4 className={`mb-0 text-${variant}`}>{value}</h4>
-                    {subValue && <small className="text-muted">{subValue}</small>}
+                    {subValue && <small className={getTextColorForDarkTheme()}>{subValue}</small>}
                 </Col>
             </Row>
             {badgeText && (
@@ -301,7 +301,7 @@ const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChang
                 <Button variant="outline-secondary" size="sm" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>
                     <i className="fas fa-chevron-left"></i>
                 </Button>
-                <small className="text-muted">Página {currentPage} de {totalPages}</small>
+                <small className={getTextColorForDarkTheme()}>Página {currentPage} de {totalPages}</small>
                 <Button variant="outline-secondary" size="sm" disabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}>
                     <i className="fas fa-chevron-right"></i>
                 </Button>
@@ -327,7 +327,7 @@ const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChang
                     <tbody>
                         {items.length === 0 ? (
                             <tr>
-                                <td colSpan={columns.length} className="text-center text-muted py-4">
+                                <td colSpan={columns.length} className={getTextColorForDarkTheme('text-center py-4')}>
                                     <i className="fas fa-check-circle fa-2x text-success mb-2"></i>
                                     <p className="mb-0">Nenhum item nesta categoria.</p>
                                 </td>
@@ -350,10 +350,18 @@ const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChang
 export default function FinanceiroPage() {
   const { theme } = useTheme()
   
-  // Mapear tema do contexto para Bootstrap
+  // Função global para mapear tema para Bootstrap
   const getBootstrapTheme = () => {
     if (theme === 'dark' || theme === 'comfort') return 'dark'
     return 'light'
+  }
+  
+  // Função para aplicar cor amarela em texto que pode ficar invisível no tema dark
+  const getTextColorForDarkTheme = (baseClass = '') => {
+    if (theme === 'dark' || theme === 'comfort') {
+      return `text-warning ${baseClass}` // Amarelo no tema dark
+    }
+    return `text-muted ${baseClass}` // Cor padrão no tema light
   }
   
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -852,20 +860,22 @@ export default function FinanceiroPage() {
           loading={loading}
           selectedCondominiumId={selectedCondominiumId}
           currentUser={currentUser}
+          getTextColorForDarkTheme={getTextColorForDarkTheme}
       />
 
       <CondominiumSelector
-          condominiums={condominiums}
+          condominios={condominiums}
           selectedCondominiumId={selectedCondominiumId}
           onCondominioChange={handleCondominioChange}
           currentUser={currentUser}
+          getBootstrapTheme={getBootstrapTheme}
       />
 
       {/* Seleção de Período para Exportação */}
       {selectedCondominiumId && resumoUnificado && (
         <Row className="mb-3">
           <Col>
-            <Card className="shadow-sm border-info">
+            <Card className="shadow-sm border-info" data-bs-theme={getBootstrapTheme()}>
               <Card.Header className="bg-info text-white">
                 <h6 className="mb-0">
                   <i className="fas fa-calendar-alt me-2"></i>
@@ -932,7 +942,7 @@ export default function FinanceiroPage() {
                 </Row>
                 <Row className="mt-2">
                   <Col>
-                    <small className="text-muted">
+                    <small className={getTextColorForDarkTheme()}>
                       <i className="fas fa-info-circle me-1"></i>
                       Período selecionado: {dataInicial ? dataInicial.toLocaleDateString('pt-BR') : 'N/A'} até {dataFinal ? dataFinal.toLocaleDateString('pt-BR') : 'N/A'}
                     </small>
@@ -948,7 +958,7 @@ export default function FinanceiroPage() {
       {selectedCondominiumId && resumoUnificado && (
         <Row className="mb-4">
           <Col>
-            <Card className="shadow-sm border-primary">
+            <Card className="shadow-sm border-primary" data-bs-theme={getBootstrapTheme()}>
               <Card.Header className="bg-primary text-white">
                 <Row className="align-items-center">
                   <Col>
@@ -994,7 +1004,7 @@ export default function FinanceiroPage() {
                 </Row>
               </Card.Header>
               <Card.Body className="py-2">
-                <small className="text-muted">
+                <small className={getTextColorForDarkTheme()}>
                   <i className="fas fa-info-circle me-1"></i>
                   Exporte os dados financeiros em diferentes formatos para análise e compartilhamento.
                   Os relatórios incluem resumo geral, moradores em atraso, colaboradores pendentes e lançamentos detalhados.
@@ -1031,16 +1041,16 @@ export default function FinanceiroPage() {
 
           <Row className="mb-4 g-4">
               <Col md={3}>
-                  <SummaryCard title="Unidades em Dia" value={dadosUnificados.moradores.em_dia.length} icon="fa-check-circle" variant="success" subValue={`de ${dadosUnificados.moradores.estatisticas.total_unidades}`} />
+                  <SummaryCard title="Unidades em Dia" value={dadosUnificados.moradores.em_dia.length} icon="fa-check-circle" variant="success" subValue={`de ${dadosUnificados.moradores.estatisticas.total_unidades}`} getTextColorForDarkTheme={getTextColorForDarkTheme} />
               </Col>
               <Col md={3}>
-                  <SummaryCard title="Unidades Atrasadas" value={moradoresAtrasados.length} icon="fa-exclamation-triangle" variant="danger" subValue={formatCurrency(totalAtrasadoMoradores)} badgeText={moradoresAtrasados.length > 0 ? "URGENTE" : undefined} badgeVariant="danger" />
+                  <SummaryCard title="Unidades Atrasadas" value={moradoresAtrasados.length} icon="fa-exclamation-triangle" variant="danger" subValue={formatCurrency(totalAtrasadoMoradores)} badgeText={moradoresAtrasados.length > 0 ? "URGENTE" : undefined} badgeVariant="danger" getTextColorForDarkTheme={getTextColorForDarkTheme} />
               </Col>
               <Col md={3}>
-                  <SummaryCard title="Colaboradores em Dia" value={dadosUnificados.colaboradores.em_dia.length} icon="fa-user-check" variant="info" subValue={`de ${dadosUnificados.colaboradores.estatisticas.total}`} />
+                  <SummaryCard title="Colaboradores em Dia" value={dadosUnificados.colaboradores.em_dia.length} icon="fa-user-check" variant="info" subValue={`de ${dadosUnificados.colaboradores.estatisticas.total}`} getTextColorForDarkTheme={getTextColorForDarkTheme} />
               </Col>
               <Col md={3}>
-                  <SummaryCard title="Pagamentos Pendentes" value={colaboradoresPendentes.length + colaboradoresAtrasados.length} icon="fa-hourglass-half" variant="warning" subValue={formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)} badgeText={(colaboradoresPendentes.length + colaboradoresAtrasados.length) > 0 ? "PAGAR" : undefined} badgeVariant="warning" />
+                  <SummaryCard title="Pagamentos Pendentes" value={colaboradoresPendentes.length + colaboradoresAtrasados.length} icon="fa-hourglass-half" variant="warning" subValue={formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)} badgeText={(colaboradoresPendentes.length + colaboradoresAtrasados.length) > 0 ? "PAGAR" : undefined} badgeVariant="warning" getTextColorForDarkTheme={getTextColorForDarkTheme} />
               </Col>
           </Row>
 
@@ -1124,50 +1134,50 @@ export default function FinanceiroPage() {
                               </Col>
                           </Row>
                       </Card.Header>
-                      <Card.Body className="bg-light">
+                      <Card.Body style={{backgroundColor: 'var(--bs-secondary-bg)'}}>
                           <Row className="g-3">
                               <Col md={3}>
-                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-success border-4">
+                                  <div className={`text-center p-3 ${getBootstrapTheme() === 'dark' ? 'bg-dark' : 'bg-white'} rounded shadow-sm border-start border-success border-4`}>
                                       <div className="text-success display-6 mb-2">
                                           <i className="fas fa-arrow-up"></i>
                                       </div>
-                                      <h6 className="text-muted">A Receber</h6>
+                                      <h6 className={getTextColorForDarkTheme()}>A Receber</h6>
                                       <h4 className="text-success mb-0">{formatCurrency(totalAtrasadoMoradores)}</h4>
-                                      <small className="text-muted">{moradoresAtrasados.length} unidade(s)</small>
+                                      <small className={getTextColorForDarkTheme()}>{moradoresAtrasados.length} unidade(s)</small>
                                   </div>
                               </Col>
                               <Col md={3}>
-                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-warning border-4">
+                                  <div className={`text-center p-3 ${getBootstrapTheme() === 'dark' ? 'bg-dark' : 'bg-white'} rounded shadow-sm border-start border-warning border-4`}>
                                       <div className="text-warning display-6 mb-2">
                                           <i className="fas fa-arrow-down"></i>
                                       </div>
-                                      <h6 className="text-muted">A Pagar</h6>
+                                      <h6 className={getTextColorForDarkTheme()}>A Pagar</h6>
                                       <h4 className="text-warning mb-0">{formatCurrency(totalPendenteColaboradores + totalAtrasadoColaboradores)}</h4>
-                                      <small className="text-muted">{colaboradoresPendentes.length + colaboradoresAtrasados.length} colaborador(es)</small>
+                                      <small className={getTextColorForDarkTheme()}>{colaboradoresPendentes.length + colaboradoresAtrasados.length} colaborador(es)</small>
                                   </div>
                               </Col>
                               <Col md={3}>
-                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-info border-4">
+                                  <div className={`text-center p-3 ${getBootstrapTheme() === 'dark' ? 'bg-dark' : 'bg-white'} rounded shadow-sm border-start border-info border-4`}>
                                       <div className="text-info display-6 mb-2">
                                           <i className="fas fa-balance-scale"></i>
                                       </div>
-                                      <h6 className="text-muted">Saldo Líquido</h6>
+                                      <h6 className={getTextColorForDarkTheme()}>Saldo Líquido</h6>
                                       <h4 className={`mb-0 ${(dadosUnificados?.condominio?.saldo_liquido || 0) >= 0 ? 'text-info' : 'text-danger'}`}>
                                           {formatCurrency(dadosUnificados?.condominio?.saldo_liquido || 0)}
                                       </h4>
-                                      <small className="text-muted">Condomínio</small>
+                                      <small className={getTextColorForDarkTheme()}>Condomínio</small>
                                   </div>
                               </Col>
                               <Col md={3}>
-                                  <div className="text-center p-3 bg-white rounded shadow-sm border-start border-primary border-4">
+                                  <div className={`text-center p-3 ${getBootstrapTheme() === 'dark' ? 'bg-dark' : 'bg-white'} rounded shadow-sm border-start border-primary border-4`}>
                                       <div className={`display-6 mb-2 ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
                                           <i className={`fas ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'fa-trending-up' : 'fa-trending-down'}`}></i>
                                       </div>
-                                      <h6 className="text-muted">Resultado</h6>
+                                      <h6 className={getTextColorForDarkTheme()}>Resultado</h6>
                                       <h4 className={`mb-0 ${(resumoGeral?.resultado_liquido || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
                                           {formatCurrency(resumoGeral?.resultado_liquido || 0)}
                                       </h4>
-                                      <small className="text-muted">Operacional</small>
+                                      <small className={getTextColorForDarkTheme()}>Operacional</small>
                                   </div>
                               </Col>
                           </Row>
@@ -1330,8 +1340,8 @@ export default function FinanceiroPage() {
                                               <tbody>
                                                   {lancamentos.length === 0 ? (
                                                       <tr>
-                                                          <td colSpan={7} className="text-center text-muted py-5">
-                                                              <i className="fas fa-search fa-3x mb-3 text-muted"></i>
+                                                          <td colSpan={7} className={getTextColorForDarkTheme('text-center py-5')}>
+                                                              <i className={`fas fa-search fa-3x mb-3 ${getTextColorForDarkTheme()}`}></i>
                                                               <h5>Nenhum lançamento encontrado</h5>
                                                               <p className="mb-0">Tente ajustar os filtros ou verificar se há dados disponíveis.</p>
                                                           </td>
@@ -1343,7 +1353,7 @@ export default function FinanceiroPage() {
                                                                   <div>
                                                                       <strong>{new Date(lancamento.data_vencimento).toLocaleDateString('pt-BR')}</strong>
                                                                       {lancamento.data_pagamento && (
-                                                                          <><br /><small className="text-muted">Pago: {new Date(lancamento.data_pagamento).toLocaleDateString('pt-BR')}</small></>
+                                                                          <><br /><small className={getTextColorForDarkTheme()}>Pago: {new Date(lancamento.data_pagamento).toLocaleDateString('pt-BR')}</small></>
                                                                       )}
                                                                   </div>
                                                               </td>
@@ -1373,7 +1383,7 @@ export default function FinanceiroPage() {
                                                                               {/* Todos os moradores da unidade */}
                                                                               {lancamento.todos_moradores_unidade && lancamento.todos_moradores_unidade.length > 0 && (
                                                                                   <div className="mb-2">
-                                                                                      <div className="text-muted small fw-bold mb-1">
+                                                                                      <div className={getTextColorForDarkTheme('small fw-bold mb-1')}>
                                                                                           <i className="fas fa-users me-1"></i>
                                                                                           Moradores da Unidade:
                                                                                       </div>
@@ -1381,7 +1391,7 @@ export default function FinanceiroPage() {
                                                                                           {lancamento.todos_moradores_unidade.map((morador, idx) => (
                                                                                               <span key={morador._id || idx}>
                                                                                                   <strong>{morador.nome}</strong>
-                                                                                                  <span className="text-muted"> ({morador.tipo || 'proprietario'})</span>
+                                                                                                  <span className={getTextColorForDarkTheme()}> ({morador.tipo || 'proprietario'})</span>
                                                                                                   {idx < lancamento.todos_moradores_unidade.length - 1 && ', '}
                                                                                               </span>
                                                                                           ))}
@@ -1391,7 +1401,7 @@ export default function FinanceiroPage() {
 
                                                                               {/* Informações da unidade */}
                                                                               {(lancamento.bloco || lancamento.unidade) && (
-                                                                                  <div className="text-muted small">
+                                                                                  <div className={getTextColorForDarkTheme('small')}>
                                                                                       <i className="fas fa-building me-1"></i>
                                                                                       Unidade: <strong>{lancamento.bloco ? `${lancamento.bloco}-` : ''}{lancamento.unidade}</strong>
                                                                                   </div>
@@ -1399,13 +1409,13 @@ export default function FinanceiroPage() {
                                                                               
                                                                               {/* Informações de contato */}
                                                                               {lancamento.cpf_morador && (
-                                                                                  <div className="text-muted small">
+                                                                                  <div className={getTextColorForDarkTheme('small')}>
                                                                                       <i className="fas fa-id-card me-1"></i>
                                                                                       CPF: {lancamento.cpf_morador}
                                                                                   </div>
                                                                               )}
                                                                               {lancamento.telefone_morador && (
-                                                                                  <div className="text-muted small">
+                                                                                  <div className={getTextColorForDarkTheme('small')}>
                                                                                       <i className="fas fa-phone me-1"></i>
                                                                                       {lancamento.telefone_morador}
                                                                                   </div>
@@ -1420,7 +1430,7 @@ export default function FinanceiroPage() {
                                                                                   </Badge>
                                                                               </div>
                                                                               {lancamento.cargo && (
-                                                                                  <div className="text-muted small">
+                                                                                  <div className={getTextColorForDarkTheme('small')}>
                                                                                       <i className="fas fa-user-tie me-1"></i>
                                                                                       Cargo: {lancamento.cargo}
                                                                                   </div>
@@ -1435,7 +1445,7 @@ export default function FinanceiroPage() {
                                                                                   </Badge>
                                                                               </div>
                                                                               {(lancamento.bloco || lancamento.unidade) && (
-                                                                                  <div className="text-muted small">
+                                                                                  <div className={getTextColorForDarkTheme('small')}>
                                                                                       <i className="fas fa-building me-1"></i>
                                                                                       Local: {lancamento.bloco ? `${lancamento.bloco}-` : ''}{lancamento.unidade}
                                                                                   </div>
@@ -1498,7 +1508,7 @@ export default function FinanceiroPage() {
                                                       Página {lancamentosPagination.current_page} de {lancamentosPagination.total_pages}
                                                   </Badge>
                                                   <div className="mt-1">
-                                                      <small className="text-muted">
+                                                      <small className={getTextColorForDarkTheme()}>
                                                           ({lancamentosPagination.total_items} lançamentos total)
                                                       </small>
                                                   </div>
