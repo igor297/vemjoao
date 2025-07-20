@@ -21,7 +21,7 @@ async function checkPayments() {
   try {
     console.log('🔍 Verificando pagamentos PIX...');
     
-    const response = await fetch('http://localhost:3000/api/check-payments', {
+    const response = await fetch('http://localhost:3002/api/check-payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

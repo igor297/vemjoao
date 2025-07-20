@@ -55,12 +55,12 @@ credentials-file: $HOME/.cloudflared/$TUNNEL_ID.json
 
 ingress:
   - hostname: $DOMAIN
-    service: http://localhost:3000
+    service: http://localhost:3002
     originRequest:
       httpHostHeader: $DOMAIN
       
   - hostname: www.$DOMAIN  
-    service: http://localhost:3000
+    service: http://localhost:3002
     originRequest:
       httpHostHeader: www.$DOMAIN
       

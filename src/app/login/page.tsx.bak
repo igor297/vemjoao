@@ -110,7 +110,7 @@ export default function LoginPage() {
             align-items: center;
             justify-content: center;
             margin: 0;
-            padding: 0;
+            padding: 15px;
         }
         
         .login-container {
@@ -121,7 +121,7 @@ export default function LoginPage() {
             width: 100%;
             max-width: 900px;
             display: flex;
-            
+            min-height: 550px;
         }
 
         .login-image {
@@ -300,31 +300,6 @@ export default function LoginPage() {
                 display: block;
             }
         }
-
-        @media (max-width: 767px) {
-            .login-container {
-                min-height: 100vh;
-                border-radius: 0;
-                box-shadow: none;
-            }
-            .login-form {
-                padding: 30px 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                background: white;
-                padding: 0;
-            }
-            .login-container {
-                box-shadow: none;
-                border-radius: 0;
-            }
-            .login-form {
-                padding: 20px 15px;
-            }
-        }
       `}</style>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -340,10 +315,7 @@ export default function LoginPage() {
           </div>
           <div className="login-form">
             <div className="login-header">
-              <div className="d-flex flex-column align-items-center">
-                <img src="/logomarca2.png" alt="Logo do Condomínio" className="login-logo mx-auto d-block mb-0" />
-                <h5 className="mt-0"><span style={{ color: '#FF6600' }}>one</span><span style={{ color: '#E91E63' }}>systemas</span></h5>
-              </div>
+              <img src="/logo-transparente.jpeg" alt="Logo do Condomínio" className="login-logo mx-auto d-block" />
               <h1>Portal do Condomínio</h1>
               <p>Faça login para acessar sua conta</p>
             </div>

@@ -77,20 +77,20 @@ class SystemChecker {
 
   async checkNextJSServer() {
     try {
-      const response = await fetch('http://localhost:3000/api/health');
+      const response = await fetch('http://localhost:3002/api/health');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
       const data = await response.json();
       return { status: 'running', health: data };
     } catch (error) {
-      throw new Error('Servidor Next.js não está rodando na porta 3000');
+      throw new Error('Servidor Next.js não está rodando na porta 3002');
     }
   }
 
   async checkPaymentAPI() {
     try {
-      const response = await fetch('http://localhost:3000/api/payments?action=listar_providers', {
+      const response = await fetch('http://localhost:3002/api/payments?action=listar_providers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,9 +114,9 @@ class SystemChecker {
 
   async checkWebhooks() {
     const webhooks = [
-      'http://localhost:3000/api/webhooks/mercado-pago',
-      'http://localhost:3000/api/webhooks/stone',
-      'http://localhost:3000/api/webhooks/pagseguro'
+      'http://localhost:3002/api/webhooks/mercado-pago',
+      'http://localhost:3002/api/webhooks/stone',
+      'http://localhost:3002/api/webhooks/pagseguro'
     ];
 
     const results = {};

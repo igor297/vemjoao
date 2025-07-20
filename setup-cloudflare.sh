@@ -65,9 +65,9 @@ credentials-file: $HOME/.cloudflared/$TUNNEL_ID.json
 
 ingress:
   - hostname: $DOMAIN
-    service: http://localhost:3000
+    service: http://localhost:3002
   - hostname: www.$DOMAIN  
-    service: http://localhost:3000
+    service: http://localhost:3002
   - service: http_status:404
 EOF
 

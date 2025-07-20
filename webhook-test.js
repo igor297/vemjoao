@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 // Configuração de teste dos webhooks
 const WEBHOOK_CONFIG = {
-  base_url: 'http://localhost:3000',
+  base_url: 'http://localhost:3002',
   test_data: {
     condominio_id: '684f0e3e5eb749bbecf97091',
     master_id: '684eec5c4af0e8961a18b1ff'

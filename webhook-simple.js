@@ -22,7 +22,7 @@ async function createTunnel() {
   console.log('🚀 Criando túnel para receber webhooks reais...');
   console.log('');
   
-  const tunnel = spawn('lt', ['--port', '3000'], {
+  const tunnel = spawn('lt', ['--port', '3002'], {
     stdio: 'inherit'
   });
 

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 // Configuração para teste do portal
 const PORTAL_CONFIG = {
-  api_base: 'http://localhost:3000',
+  api_base: 'http://localhost:3002',
   test_data: {
     morador_id: '68540f83d501ababd9bc48ec',
     condominio_id: '684f0e3e5eb749bbecf97091',
@@ -298,7 +298,7 @@ class PortalPagamentoTester {
     }
 
     console.log('\n💡 PRÓXIMOS PASSOS:');
-    console.log('  1. Acesse: http://localhost:3000/portal-pagamento');
+    console.log('  1. Acesse: http://localhost:3002/portal-pagamento');
     console.log('  2. Faça login como morador');
     console.log('  3. Teste os pagamentos PIX/Boleto/Cartão');
     console.log('  4. Verifique se status atualiza automaticamente');

@@ -30,7 +30,7 @@ async function setupWebhook() {
   
   // Passo 1: Iniciar o túnel
   console.log('📡 Criando túnel público...');
-  const tunnel = spawn('lt', ['--port', '3000', '--subdomain', 'vemjoao-webhook'], {
+  const tunnel = spawn('lt', ['--port', '3002', '--subdomain', 'vemjoao-webhook'], {
     stdio: 'pipe'
   });
 

@@ -8,19 +8,19 @@ credentials-file: CREDENTIALS_FILE_PLACEHOLDER
 ingress:
   # Domínio principal
   - hostname: DOMAIN_PLACEHOLDER
-    service: http://localhost:3000
+    service: http://localhost:3002
     originRequest:
       httpHostHeader: DOMAIN_PLACEHOLDER
       
   # Subdomínio www
   - hostname: www.DOMAIN_PLACEHOLDER
-    service: http://localhost:3000
+    service: http://localhost:3002
     originRequest:
       httpHostHeader: www.DOMAIN_PLACEHOLDER
       
   # API específica (opcional)
   - hostname: api.DOMAIN_PLACEHOLDER
-    service: http://localhost:3000
+    service: http://localhost:3002
     originRequest:
       httpHostHeader: api.DOMAIN_PLACEHOLDER
       

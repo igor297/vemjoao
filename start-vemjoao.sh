@@ -34,16 +34,16 @@ cleanup() {
 # Configurar trap para cleanup
 trap cleanup SIGINT SIGTERM
 
-# Verificar se a porta 3000 está livre
-if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null ; then
-    echo "❌ Porta 3000 já está em uso"
-    echo "Execute: lsof -ti:3000 | xargs kill -9"
+# Verificar se a porta 3002 está livre
+if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null ; then
+    echo "❌ Porta 3002 já está em uso"
+    echo "Execute: lsof -ti:3002 | xargs kill -9"
     exit 1
 fi
 
 echo "🔧 Iniciando Next.js..."
 # Iniciar Next.js em background
-npm run dev > logs/nextjs.log 2> logs/nextjs-error.log &
+PORT=3002 npm run dev > logs/nextjs.log 2> logs/nextjs-error.log &
 NEXTJS_PID=$!
 
 # Aguardar Next.js iniciar
@@ -56,13 +56,13 @@ if ! kill -0 $NEXTJS_PID 2>/dev/null; then
     exit 1
 fi
 
-# Aguardar porta 3000 ficar disponível
-echo "⏳ Aguardando porta 3000..."
-while ! nc -z localhost 3000; do
+# Aguardar porta 3002 ficar disponível
+echo "⏳ Aguardando porta 3002..."
+while ! nc -z localhost 3002; do
     sleep 1
 done
 
-echo "✅ Next.js rodando na porta 3000"
+echo "✅ Next.js rodando na porta 3002"
 
 echo "🌐 Iniciando Cloudflare Tunnel..."
 # Iniciar Cloudflare Tunnel
@@ -86,7 +86,7 @@ echo ""
 echo "🎉 VemJoao está rodando!"
 echo ""
 echo "📊 Status dos serviços:"
-echo "  • Next.js: http://localhost:3000"
+echo "  • Next.js: http://localhost:3002"
 echo "  • Cloudflare Tunnel: Ativo"
 echo ""
 echo "📋 Logs disponíveis:"

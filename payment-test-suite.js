@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const TEST_CONFIG = {
   condominio_id: '684f0e3e5eb749bbecf97091',
   master_id: '684eec5c4af0e8961a18b1ff',
-  api_base: 'http://localhost:3000/api',
+  api_base: 'http://localhost:3002/api',
   
   // Dados de teste para pagador
   pagador_teste: {

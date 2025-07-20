@@ -4,7 +4,7 @@ async function testarPortal() {
   console.log('🔍 Debugando Portal de Pagamento');
   console.log('================================');
 
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = 'http://localhost:3002';
   const testData = {
     morador_id: '68540f83d501ababd9bc48ec',
     condominio_id: '684f0e3e5eb749bbecf97091',

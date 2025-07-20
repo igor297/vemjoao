@@ -6,7 +6,7 @@ const fs = require('fs');
 
 // Configuração
 const CONFIG = {
-  nextjs_port: 3000,
+  nextjs_port: 3002,
   monitor_port: 3001,
   log_dir: './logs',
   restart_on_crash: true,
