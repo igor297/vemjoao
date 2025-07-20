@@ -36,45 +36,8 @@ export default function ClientShell({ children }: { children: ReactNode }) {
     
     setIsLoading(false);
 
-    // Lógica de tema
-    const applyTheme = (theme: string) => {
-      console.log('🎨 ClientShell: Aplicando tema:', theme)
-      if (document.body) {
-        if (theme === 'dark') {
-          document.body.classList.add('dark-mode');
-          console.log('🎨 ClientShell: Classe dark-mode adicionada ao body')
-        } else {
-          document.body.classList.remove('dark-mode');
-          console.log('🎨 ClientShell: Classe dark-mode removida do body')
-        }
-        console.log('🎨 ClientShell: Classes do body:', document.body.className)
-      }
-    };
-
-    const savedTheme = localStorage.getItem('theme');
-    console.log('🎨 ClientShell: Tema salvo no localStorage:', savedTheme)
-    if (savedTheme) {
-      applyTheme(savedTheme);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      // Detecta a preferência do sistema operacional se não houver tema salvo
-      console.log('🎨 ClientShell: Usando preferência do sistema (dark)')
-      applyTheme('dark');
-    } else {
-      console.log('🎨 ClientShell: Usando tema padrão (light)')
-      applyTheme('light');
-    }
-
-    const handleThemeChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log('🎨 ClientShell: Evento themeChange recebido:', customEvent.detail)
-      applyTheme(customEvent.detail);
-    };
-
-    window.addEventListener('themeChange', handleThemeChange);
-
-    return () => {
-      window.removeEventListener('themeChange', handleThemeChange);
-    };
+    // Tema agora é gerenciado exclusivamente pelo ThemeContext
+    // Removida lógica duplicada para evitar conflitos
 
   }, [pathname, router, hideShell]);
 

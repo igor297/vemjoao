@@ -18,16 +18,24 @@ const themeClasses: Record<Theme, string> = {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>('light');
+  // Inicializar com o tema salvo para evitar flash
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as Theme | null;
+      if (savedTheme && themeClasses.hasOwnProperty(savedTheme)) {
+        return savedTheme;
+      }
+    }
+    return 'light';
+  });
 
   useEffect(() => {
+    // Este useEffect agora só é necessário para verificação adicional
     const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme && themeClasses.hasOwnProperty(savedTheme)) {
+    if (savedTheme && themeClasses.hasOwnProperty(savedTheme) && savedTheme !== theme) {
       setThemeState(savedTheme);
-    } else {
-        setThemeState('light');
     }
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     const currentClass = themeClasses[theme];
