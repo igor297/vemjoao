@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Container, Row, Col, Card, Badge, Alert, Table, Form, Button, Spinner, Dropdown } from 'react-bootstrap'
+import { useTheme } from '@/context/ThemeContext'
 import { Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -19,6 +20,7 @@ import 'jspdf-autotable'
 import { Document, Packer, Paragraph, Table as DocxTable, TableRow, TableCell, WidthType } from 'docx'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import '@/styles/financeiro-theme.css'
 
 ChartJS.register(
   CategoryScale,
@@ -218,7 +220,7 @@ const CondominiumSelector = ({ condominiums, selectedCondominiumId, onCondominio
 };
 
 const SummaryCard = ({ title, value, icon, variant, subValue, badgeText, badgeVariant }) => (
-    <Card className={`shadow-sm h-100 border-start border-${variant} border-4 position-relative overflow-hidden`}>
+    <Card className={`shadow-sm h-100 border-start border-${variant} border-4 position-relative overflow-hidden financial-summary-card`}>
         <Card.Body>
             <Row className="align-items-center">
                 <Col xs={3}>
@@ -250,7 +252,7 @@ const FinancialAlerts = ({ moradoresAtrasados, colaboradoresAtrasados, colaborad
     const hasAlerts = moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0 || colaboradoresPendentes.length > 0;
     if (!hasAlerts) {
         return (
-            <Alert variant="success" className="d-flex align-items-center shadow-sm">
+            <Alert variant="success" className="d-flex align-items-center shadow-sm financial-alert">
                 <i className="fas fa-check-circle fa-2x me-3"></i>
                 <div>
                     <Alert.Heading>Parabéns! Situação financeira excelente!</Alert.Heading>
@@ -263,7 +265,7 @@ const FinancialAlerts = ({ moradoresAtrasados, colaboradoresAtrasados, colaborad
     const isUrgent = moradoresAtrasados.length > 0 || colaboradoresAtrasados.length > 0;
 
     return (
-        <Alert variant={isUrgent ? "danger" : "warning"} className="d-flex align-items-center shadow-sm">
+        <Alert variant={isUrgent ? "danger" : "warning"} className="d-flex align-items-center shadow-sm financial-alert">
             <i className={`fas ${isUrgent ? 'fa-exclamation-triangle' : 'fa-hourglass-half'} fa-2x me-3`}></i>
             <div>
                 <Alert.Heading>{isUrgent ? 'Atenção! Existem itens em atraso' : 'Colaboradores com pagamentos pendentes'}</Alert.Heading>
@@ -287,7 +289,11 @@ const FinancialAlerts = ({ moradoresAtrasados, colaboradoresAtrasados, colaborad
     );
 };
 
-const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChange, currentPage, totalPages, totalItems, itemsPerPage }) => {
+const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChange, currentPage, totalPages, totalItems, itemsPerPage, theme }) => {
+    const getBootstrapTheme = () => {
+        if (theme === 'dark' || theme === 'comfort') return 'dark'
+        return 'light'
+    }
     const renderPagination = () => {
         if (totalPages <= 1) return null;
         return (
@@ -312,8 +318,8 @@ const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChang
                 </h6>
             </Card.Header>
             <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <Table hover size="sm" className="mb-0">
-                    <thead className="table-light sticky-top">
+                <Table hover size="sm" className="mb-0" data-bs-theme={getBootstrapTheme()}>
+                    <thead className={getBootstrapTheme() === 'dark' ? 'table-dark sticky-top' : 'table-light sticky-top'}>
                         <tr>
                             {columns.map(col => <th key={col.key}>{col.label}</th>)}
                         </tr>
@@ -342,6 +348,14 @@ const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChang
 };
 
 export default function FinanceiroPage() {
+  const { theme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
+  
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [selectedCondominiumId, setSelectedCondominiumId] = useState<string>('')
   const [condominiums, setCondominiums] = useState<any[]>([])
@@ -950,6 +964,7 @@ export default function FinanceiroPage() {
                         size="sm" 
                         onClick={exportToExcel}
                         disabled={loading}
+                        className="export-button"
                       >
                         <i className="fas fa-file-excel me-1"></i>
                         Excel
@@ -959,6 +974,7 @@ export default function FinanceiroPage() {
                         size="sm" 
                         onClick={exportToPDF}
                         disabled={loading}
+                        className="export-button"
                       >
                         <i className="fas fa-file-pdf me-1"></i>
                         PDF
@@ -968,6 +984,7 @@ export default function FinanceiroPage() {
                         size="sm" 
                         onClick={exportToWord}
                         disabled={loading}
+                        className="export-button"
                       >
                         <i className="fas fa-file-word me-1"></i>
                         Word
@@ -1032,16 +1049,27 @@ export default function FinanceiroPage() {
                   <Card className="shadow-sm h-100">
                       <Card.Header><h6 className="mb-0"><i className="fas fa-chart-pie me-2"></i>Status das Unidades</h6></Card.Header>
                       <Card.Body>
-                        <div style={{ maxHeight: '250px' }}>
+                        <div className="chart-container" style={{ maxHeight: '250px' }}>
                           <Doughnut data={{
                               labels: ['Em Dia', 'Atrasadas'],
                               datasets: [{
                                   data: [dadosUnificados.moradores.em_dia.length, moradoresAtrasados.length],
                                   backgroundColor: ['#198754', '#dc3545'],
-                                  borderColor: '#fff',
+                                  borderColor: getBootstrapTheme() === 'dark' ? '#495057' : '#fff',
                                   borderWidth: 2,
                               }]
-                          }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+                          }} options={{ 
+                              responsive: true, 
+                              maintainAspectRatio: false, 
+                              plugins: { 
+                                  legend: { 
+                                      position: 'bottom',
+                                      labels: {
+                                          color: getBootstrapTheme() === 'dark' ? '#f8f9fa' : '#212529'
+                                      }
+                                  } 
+                              } 
+                          }} />
                         </div>
                       </Card.Body>
                   </Card>
@@ -1050,16 +1078,27 @@ export default function FinanceiroPage() {
                   <Card className="shadow-sm h-100">
                       <Card.Header><h6 className="mb-0"><i className="fas fa-users me-2"></i>Status dos Colaboradores</h6></Card.Header>
                       <Card.Body>
-                        <div style={{ maxHeight: '250px' }}>
+                        <div className="chart-container" style={{ maxHeight: '250px' }}>
                           <Doughnut data={{
                               labels: ['Em Dia', 'Pendentes', 'Atrasados'],
                               datasets: [{
                                   data: [dadosUnificados.colaboradores.em_dia.length, colaboradoresPendentes.length, colaboradoresAtrasados.length],
                                   backgroundColor: ['#0dcaf0', '#ffc107', '#dc3545'],
-                                  borderColor: '#fff',
+                                  borderColor: getBootstrapTheme() === 'dark' ? '#495057' : '#fff',
                                   borderWidth: 2,
                               }]
-                          }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+                          }} options={{ 
+                              responsive: true, 
+                              maintainAspectRatio: false, 
+                              plugins: { 
+                                  legend: { 
+                                      position: 'bottom',
+                                      labels: {
+                                          color: getBootstrapTheme() === 'dark' ? '#f8f9fa' : '#212529'
+                                      }
+                                  } 
+                              } 
+                          }} />
                         </div>
                       </Card.Body>
                   </Card>
@@ -1151,6 +1190,7 @@ export default function FinanceiroPage() {
                       totalPages={getTotalPages(moradoresAtrasados.length)}
                       totalItems={moradoresAtrasados.length}
                       itemsPerPage={itemsPerPage}
+                      theme={theme}
                   />
               </Col>
               <Col lg={6}>
@@ -1166,6 +1206,7 @@ export default function FinanceiroPage() {
                       totalPages={getTotalPages(colaboradoresAtrasados.length + colaboradoresPendentes.length)}
                       totalItems={colaboradoresAtrasados.length + colaboradoresPendentes.length}
                       itemsPerPage={itemsPerPage}
+                      theme={theme}
                   />
               </Col>
           </Row>
@@ -1197,7 +1238,7 @@ export default function FinanceiroPage() {
                       {showLancamentos && (
                           <Card.Body>
                               {/* Filtros */}
-                              <Row className="mb-3">
+                              <Row className="mb-3 financial-filters">
                                   <Col md={3}>
                                       <Form.Group>
                                           <Form.Label className="fw-bold">Status</Form.Label>
@@ -1274,8 +1315,8 @@ export default function FinanceiroPage() {
                               ) : (
                                   <>
                                       <div className="table-responsive">
-                                          <Table striped hover>
-                                              <thead className="table-dark">
+                                          <Table striped hover data-bs-theme={getBootstrapTheme()}>
+                                              <thead className={getBootstrapTheme() === 'dark' ? 'table-dark' : 'table-light'}>
                                                   <tr>
                                                       <th>Data</th>
                                                       <th>Origem</th>

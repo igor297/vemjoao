@@ -9,18 +9,23 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Obter dados do usuário autenticado
-    const { masterId, isValid } = await getAuthUser(request)
+    console.log('🔧 PUT condominio - Iniciando...')
     
-    if (!isValid) {
+    const condominiumData = await request.json()
+    const { id } = await params
+    
+    console.log('📝 Dados recebidos:', { id, masterId: condominiumData.master_id })
+    
+    // Obter master_id do body da requisição
+    const masterId = condominiumData.master_id
+    
+    if (!masterId) {
+      console.log('❌ Master ID não fornecido')
       return NextResponse.json(
-        { error: 'Usuário não autenticado. Faça login novamente.' },
-        { status: 401 }
+        { error: 'Master ID é obrigatório' },
+        { status: 400 }
       )
     }
-    
-    const condominiumData = (request as any)._parsedBody || await request.json()
-    const { id } = params
     
     if (!condominiumData.nome || !condominiumData.numero) {
       return NextResponse.json(
@@ -34,22 +39,33 @@ export async function PUT(
     // Verificar se o condomínio existe e pertence ao master
     const existingCond = await Condominium.findById(new mongoose.Types.ObjectId(id))
     if (!existingCond) {
+      console.log('❌ Condomínio não encontrado:', id)
       return NextResponse.json(
         { error: 'Condomínio não encontrado' },
         { status: 404 }
       )
     }
     
-    if (!validateUserPermission(masterId, existingCond.master_id)) {
+    console.log('🔍 Validando permissão:', { 
+      userMasterId: masterId, 
+      resourceMasterId: existingCond.master_id,
+      match: masterId === existingCond.master_id.toString()
+    })
+    
+    if (!validateUserPermission(masterId, existingCond.master_id.toString())) {
+      console.log('❌ Permissão negada')
       return NextResponse.json(
         { error: 'Você não tem permissão para editar este condomínio' },
         { status: 403 }
       )
     }
     
+    console.log('✅ Permissão validada, prosseguindo com update')
+    
     // Garantir que o master_id seja sempre preservado na atualização
-    const updateData = ensureMasterIdBinding({
+    const updateData = {
       ...condominiumData,
+      master_id: masterId,
       estado: condominiumData.estado ? condominiumData.estado.toUpperCase() : '',
       // Garantir valores padrão para campos numéricos
       valor_taxa_condominio: condominiumData.valor_taxa_condominio || 0,
@@ -70,8 +86,9 @@ export async function PUT(
       agencia: condominiumData.agencia || '',
       conta: condominiumData.conta || '',
       chave_pix: condominiumData.chave_pix || '',
-      observacoes_cobranca: condominiumData.observacoes_cobranca || ''
-    }, masterId)
+      observacoes_cobranca: condominiumData.observacoes_cobranca || '',
+      updated_at: new Date()
+    }
 
     // Atualizar o condomínio
     const result = await Condominium.findByIdAndUpdate(new mongoose.Types.ObjectId(id), updateData, { new: true })
@@ -102,7 +119,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // Obter dados do usuário autenticado
     const { masterId, isValid } = await getAuthUser(request)

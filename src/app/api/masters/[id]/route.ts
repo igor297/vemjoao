@@ -10,7 +10,8 @@ export async function GET(
   try {
     await connectDB()
     
-    const master = await Master.findById(params.id).select('-senha')
+    const { id } = await params
+    const master = await Master.findById(id).select('-senha')
     
     if (!master) {
       return NextResponse.json({
@@ -47,8 +48,10 @@ export async function PUT(
     const { nome, email, celular1, celular2, senha, password } = body
     const senhaInput = senha || password; // Aceita tanto 'senha' quanto 'password'
 
+    const { id } = await params
+    
     // Verificar se o master existe
-    const existingMaster = await Master.findById(params.id)
+    const existingMaster = await Master.findById(id)
     if (!existingMaster) {
       return NextResponse.json({
         success: false,
@@ -60,7 +63,7 @@ export async function PUT(
     if (email && email !== existingMaster.email) {
       const emailExists = await Master.findOne({ 
         email: email.toLowerCase(),
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       })
       if (emailExists) {
         return NextResponse.json({
@@ -84,7 +87,7 @@ export async function PUT(
 
     // Atualizar o master
     const updatedMaster = await Master.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     ).select('-senha')

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table } from 'react-bootstrap'
+import { useTheme } from '@/context/ThemeContext'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -106,6 +107,14 @@ interface Condominium {
 }
 
 export default function FinanceiroColaboradorPage() {
+  const { theme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
+  
   const [financeiro, setFinanceiro] = useState<FinanceiroColaborador[]>([])
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
@@ -788,9 +797,9 @@ export default function FinanceiroColaboradorPage() {
 
   return (
     <>
-      <Container fluid className="mt-4 bg-dark text-light">
+      <Container fluid className="mt-4">
         {alert && (
-          <Alert variant={alert.type} dismissible onClose={() => setAlert(null)} className="bg-dark text-light">
+          <Alert variant={alert.type} dismissible onClose={() => setAlert(null)} data-bs-theme={getBootstrapTheme()}>
             {alert.message}
           </Alert>
         )}
@@ -828,8 +837,8 @@ export default function FinanceiroColaboradorPage() {
   <>
     <Row className="mb-4">
       <Col>
-        <Card className="bg-dark text-light">
-          <Card.Header className="d-flex justify-content-between align-items-center bg-dark text-light border-bottom border-secondary">
+        <Card data-bs-theme={getBootstrapTheme()}>
+          <Card.Header className="d-flex justify-content-between align-items-center">
             <h5 className="mb-0">🏢 Seleção de Condomínio</h5>
           </Card.Header>
           <Card.Body>
@@ -882,8 +891,8 @@ export default function FinanceiroColaboradorPage() {
 
     <Row className="mb-4">
       <Col>
-        <Card className="bg-dark text-light">
-          <Card.Header className="d-flex justify-content-between align-items-center bg-dark text-light border-bottom border-secondary">
+        <Card data-bs-theme={getBootstrapTheme()}>
+          <Card.Header className="d-flex justify-content-between align-items-center">
             <h5 className="mb-0">👤 Seleção de Colaborador</h5>
           </Card.Header>
           <Card.Body>
@@ -965,7 +974,7 @@ export default function FinanceiroColaboradorPage() {
 )}
 
         {currentUser?.tipo === 'master' && !selectedCondominiumId ? (
-          <Alert variant="info" className="text-center bg-dark text-light border-secondary">
+          <Alert variant="info" className="text-center" data-bs-theme={getBootstrapTheme()}>
             <h5>👆 Selecione um condomínio acima</h5>
             <p className="mb-0">Escolha o condomínio para visualizar os dados financeiros dos colaboradores</p>
           </Alert>
@@ -974,7 +983,7 @@ export default function FinanceiroColaboradorPage() {
         {selectedCondominiumId && (
           <Row className="mb-4">
             <Col>
-              <Alert variant="info" className="border-primary bg-dark text-light">
+              <Alert variant="info" className="border-primary" data-bs-theme={getBootstrapTheme()}>
                 <div className="d-flex align-items-start">
                   <div className="me-3">
                     <span style={{ fontSize: '24px' }}>🔗</span>
@@ -1006,7 +1015,7 @@ export default function FinanceiroColaboradorPage() {
           <>
             <Row className="mb-4">
               <Col md={3}>
-                <Card className="border-success bg-dark text-light">
+                <Card className="border-success" data-bs-theme={getBootstrapTheme()}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-success mb-0">Receitas</h6>
@@ -1017,7 +1026,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className="border-danger bg-dark text-light">
+                <Card className="border-danger" data-bs-theme={getBootstrapTheme()}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-danger mb-0">Despesas</h6>
@@ -1028,7 +1037,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'border-primary bg-dark text-light' : 'border-warning bg-dark text-light'}>
+                <Card className={(dashboardData?.resumo?.resultado_liquido || 0) >= 0 ? 'border-primary' : 'border-warning'} data-bs-theme={getBootstrapTheme()}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="mb-0">Saldo</h6>
@@ -1041,7 +1050,7 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={3}>
-                <Card className="border-warning bg-dark text-light">
+                <Card className="border-warning" data-bs-theme={getBootstrapTheme()}>
                   <Card.Body className="text-center">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <h6 className="text-warning mb-0">Pendentes</h6>
@@ -1061,8 +1070,8 @@ export default function FinanceiroColaboradorPage() {
 
             <Row className="mb-4">
               <Col md={8}>
-                <Card className="h-100 bg-dark text-light">
-                  <Card.Header className="bg-dark text-light border-bottom border-secondary">
+                <Card className="h-100" data-bs-theme={getBootstrapTheme()}>
+                  <Card.Header>
                     <h5 className="mb-0">📈 Fluxo de Caixa Mensal</h5>
                   </Card.Header>
                   <Card.Body>
@@ -1109,8 +1118,8 @@ export default function FinanceiroColaboradorPage() {
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100">
-                  <Card.Header className="bg-light">
+                <Card className="h-100" data-bs-theme={getBootstrapTheme()}>
+                  <Card.Header>
                     <h5 className="mb-0">🎯 Principais Categorias</h5>
                   </Card.Header>
                   <Card.Body>
@@ -1149,7 +1158,7 @@ export default function FinanceiroColaboradorPage() {
         {(currentUser?.tipo !== 'master' || selectedCondominiumId) && (
           <Row>
             <Col>
-              <Card>
+              <Card data-bs-theme={getBootstrapTheme()}>
               <Card.Header>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h5 className="mb-0">📋 Lançamentos Financeiros</h5>
@@ -1164,7 +1173,7 @@ export default function FinanceiroColaboradorPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="bg-light p-3 rounded">
+                <div className="p-3 rounded border" style={{backgroundColor: 'var(--bs-secondary-bg)'}}>
                   <Row className="g-2">
                     <Col md={4}>
                       <Form.Group>
@@ -1334,7 +1343,7 @@ export default function FinanceiroColaboradorPage() {
                 </div>
               </Card.Header>
               <Card.Body>
-                <Table responsive hover variant="dark">
+                <Table responsive hover data-bs-theme={getBootstrapTheme()}>
                   <thead>
                     <tr>
                       <th>Colaborador</th>
@@ -1511,7 +1520,7 @@ export default function FinanceiroColaboradorPage() {
         )}
 
         {/* Modal de lançamento */}
-        <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal show={showModal} onHide={handleCloseModal} size="lg" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingItem ? 'Editar Lançamento' : 'Novo Lançamento'}
@@ -1814,7 +1823,7 @@ export default function FinanceiroColaboradorPage() {
         </Modal>
 
         {/* Modal de confirmação de exclusão */}
-        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title className="text-danger">
               🗑️ Confirmar Exclusão
@@ -1827,7 +1836,7 @@ export default function FinanceiroColaboradorPage() {
               </div>
               <h5 className="mb-3">Tem certeza que deseja excluir este lançamento?</h5>
               {itemToDelete && (
-                <div className="bg-light p-3 rounded mb-3">
+                <div className="p-3 rounded mb-3 border" style={{backgroundColor: 'var(--bs-secondary-bg)'}}>
                   <p className="mb-1"><strong>Descrição:</strong> {itemToDelete.descricao}</p>
                   <p className="mb-1"><strong>Valor:</strong> {formatCurrencyDisplay(itemToDelete.valor)}</p>
                   <p className="mb-0"><strong>Categoria:</strong> {getCategoriaLabel(itemToDelete.tipo)}</p>
@@ -1838,7 +1847,7 @@ export default function FinanceiroColaboradorPage() {
               </p>
             </div>
           </Modal.Body>
-          <Modal.Footer className="bg-dark text-light">
+          <Modal.Footer>
             <Button 
               variant="secondary" 
               onClick={() => setShowDeleteModal(false)}

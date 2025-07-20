@@ -1,0 +1,172 @@
+/* Estilos para página financeiro - Tema Padrão e Dark */
+
+/* Melhorias para tema padrão */
+.financial-card-light {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.financial-card-light .card-header {
+  background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Melhorias para tema dark */
+.theme-dark .financial-card-dark,
+.theme-comfort .financial-card-dark {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8f9fa;
+}
+
+.theme-dark .financial-card-dark .card-header,
+.theme-comfort .financial-card-dark .card-header {
+  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8f9fa;
+}
+
+.theme-dark .financial-card-dark .card-body,
+.theme-comfort .financial-card-dark .card-body {
+  color: #f8f9fa;
+}
+
+/* Cards de resumo financeiro */
+.financial-summary-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.financial-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .financial-summary-card:hover,
+.theme-comfort .financial-summary-card:hover {
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+}
+
+/* Badges com melhor contraste */
+.theme-dark .badge,
+.theme-comfort .badge {
+  color: #212529 !important;
+  font-weight: 600;
+}
+
+/* Tabelas com melhor espaçamento */
+.financial-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.theme-dark .financial-table,
+.theme-comfort .financial-table {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Alertas financeiros */
+.financial-alert {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-dark .financial-alert,
+.theme-comfort .financial-alert {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+}
+
+/* Botões de exportação */
+.export-button {
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.export-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .export-button:hover,
+.theme-comfort .export-button:hover {
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Gráficos com fundo adaptativo */
+.chart-container {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.theme-dark .chart-container,
+.theme-comfort .chart-container {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Texto com melhor contraste no tema dark */
+.theme-dark .text-muted,
+.theme-comfort .text-muted {
+  color: #adb5bd !important;
+}
+
+.theme-dark .text-dark,
+.theme-comfort .text-dark {
+  color: #f8f9fa !important;
+}
+
+/* Cards especiais para resumo financeiro */
+.financial-metrics-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+}
+
+.theme-dark .financial-metrics-card,
+.theme-comfort .financial-metrics-card {
+  background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8f9fa;
+}
+
+/* Melhor visibilidade para ícones */
+.financial-icon {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.financial-icon:hover {
+  opacity: 1;
+}
+
+/* Paginação com melhor contraste */
+.theme-dark .page-link,
+.theme-comfort .page-link {
+  background-color: #495057;
+  border-color: #6c757d;
+  color: #f8f9fa;
+}
+
+.theme-dark .page-link:hover,
+.theme-comfort .page-link:hover {
+  background-color: #6c757d;
+  border-color: #adb5bd;
+  color: #f8f9fa;
+}
+
+/* Filtros com melhor aparência */
+.financial-filters {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.theme-dark .financial-filters,
+.theme-comfort .financial-filters {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

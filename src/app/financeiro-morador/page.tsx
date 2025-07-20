@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Form, Alert, Badge, Table, Dropdown } from 'react-bootstrap'
+import { useTheme } from '@/context/ThemeContext'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -86,6 +87,22 @@ interface Condominium {
 
 // Integração completa com configurações do condomínio
 export default function FinanceiroMoradorPage() {
+  const { theme } = useTheme()
+  
+  // Mapear tema do contexto para Bootstrap
+  const getBootstrapTheme = () => {
+    if (theme === 'dark' || theme === 'comfort') return 'dark'
+    return 'light'
+  }
+  
+  // Função para aplicar cor amarela em texto que pode ficar invisível no tema dark
+  const getTextColorForDarkTheme = (baseClass = '') => {
+    if (theme === 'dark' || theme === 'comfort') {
+      return `text-muted ${baseClass}` // Amarelo no tema dark
+    }
+    return `text-muted ${baseClass}` // Cor padrão no tema light
+  }
+  
   const [financeiro, setFinanceiro] = useState<FinanceiroMorador[]>([])
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [moradores, setMoradores] = useState<Morador[]>([])
@@ -947,7 +964,7 @@ export default function FinanceiroMoradorPage() {
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h2 className="mb-1">🏠 Gestão Financeira de Moradores</h2>
-                <p className="text-muted mb-0">Controle financeiro de taxas condominiais, multas e pagamentos de moradores</p>
+                <p className={getTextColorForDarkTheme('mb-0')}>Controle financeiro de taxas condominiais, multas e pagamentos de moradores</p>
               </div>
               <div className="d-flex gap-2">
                 <Button 
@@ -1078,7 +1095,7 @@ export default function FinanceiroMoradorPage() {
                                 </span>
                               )
                             ) : (
-                              <span className="text-warning">
+                              <span className="text-muted">
                                 ⚠️ Selecione um morador para ver os dados financeiros
                               </span>
                             )}
@@ -1202,9 +1219,9 @@ export default function FinanceiroMoradorPage() {
               <Col md={2}>
                 <Card className="border-warning">
                   <Card.Body className="text-center">
-                    <div className="text-warning display-6 mb-2">⏳</div>
+                    <div className="text-muted display-6 mb-2">⏳</div>
                     <h6 className="text-muted">Pendentes</h6>
-                    <h4 className="text-warning">{formatCurrencyDisplay(dashboardData.resumo.total_pendentes)}</h4>
+                    <h4 className="text-muted">{formatCurrencyDisplay(dashboardData.resumo.total_pendentes)}</h4>
                     <small className="text-muted">{dashboardData.resumo.count_pendentes} lançamento(s)</small>
                   </Card.Body>
                 </Card>
@@ -1586,7 +1603,7 @@ export default function FinanceiroMoradorPage() {
                       <Col md={4}>
                         <Card className="border-warning text-center">
                           <Card.Body>
-                            <h3 className="text-warning">
+                            <h3 className="text-muted">
                               {formatCurrencyDisplay(
                                 moradoresAtrasados.reduce((sum, m) => sum + (m.total_atrasado || 0), 0)
                               )}
@@ -1639,7 +1656,7 @@ export default function FinanceiroMoradorPage() {
                               </td>
                               <td>
                                 {morador.count_pendente > 0 ? (
-                                  <span className="text-warning">
+                                  <span className="text-muted">
                                     {formatCurrencyDisplay(morador.total_pendente)} ({morador.count_pendente})
                                   </span>
                                 ) : '-'}
@@ -1691,7 +1708,7 @@ export default function FinanceiroMoradorPage() {
                               </td>
                               <td>
                                 {morador.count_pendente > 0 ? (
-                                  <span className="text-warning">
+                                  <span className="text-muted">
                                     {formatCurrencyDisplay(morador.total_pendente)} ({morador.count_pendente})
                                   </span>
                                 ) : '-'}
@@ -1743,7 +1760,7 @@ export default function FinanceiroMoradorPage() {
         
 
         {/* Modal para Novo/Editar Lançamento */}
-        <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal show={showModal} onHide={handleCloseModal} size="lg" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingItem ? 'Editar Lançamento' : 'Novo Lançamento'}
@@ -1811,7 +1828,7 @@ export default function FinanceiroMoradorPage() {
                       </Form.Text>
                     )}
                     {formData.categoria === 'multa_atraso' && (
-                      <Form.Text className="text-warning">
+                      <Form.Text className={getTextColorForDarkTheme()}>
                         ⚠️ Para multas, preencha manualmente o valor e motivo
                       </Form.Text>
                     )}
@@ -1832,7 +1849,7 @@ export default function FinanceiroMoradorPage() {
                       required
                       maxLength={200}
                     />
-                    <Form.Text className="text-muted">
+                    <Form.Text className={getTextColorForDarkTheme()}>
                       Máximo 200 caracteres
                     </Form.Text>
                   </Form.Group>
@@ -1906,7 +1923,7 @@ export default function FinanceiroMoradorPage() {
                         value={formData.data_pagamento}
                         onChange={handleInputChange}
                       />
-                      <Form.Text className="text-muted">
+                      <Form.Text className={getTextColorForDarkTheme()}>
                         Deixe em branco para usar a data atual
                       </Form.Text>
                     </Form.Group>
@@ -1980,7 +1997,7 @@ export default function FinanceiroMoradorPage() {
         </Modal>
 
         {/* Modal de Busca de Moradores */}
-        <Modal show={showBuscaModal} onHide={() => setShowBuscaModal(false)} size="xl">
+        <Modal show={showBuscaModal} onHide={() => setShowBuscaModal(false)} size="xl" data-bs-theme={getBootstrapTheme()}>
           <Modal.Header closeButton>
             <Modal.Title>🔍 Buscar Morador</Modal.Title>
           </Modal.Header>
@@ -2020,7 +2037,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Header>
                   <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
                     {moradoresEmDia.length === 0 ? (
-                      <p className="text-muted text-center">Carregando...</p>
+                      <p className={getTextColorForDarkTheme('text-center')}>Carregando...</p>
                     ) : (
                       moradoresEmDia.map((morador) => (
                         <div 
@@ -2034,7 +2051,7 @@ export default function FinanceiroMoradorPage() {
                         >
                           <div>
                             <strong>{morador.nome}</strong><br/>
-                            <small className="text-muted">
+                            <small className={getTextColorForDarkTheme()}>
                               {morador.bloco && `${morador.bloco} - `}{morador.unidade}
                               {morador.cpf && ` | CPF: ${morador.cpf}`}
                             </small>
@@ -2057,7 +2074,7 @@ export default function FinanceiroMoradorPage() {
                   </Card.Header>
                   <Card.Body style={{maxHeight: '300px', overflowY: 'auto'}}>
                     {moradoresAtrasados.length === 0 ? (
-                      <p className="text-muted text-center">Carregando...</p>
+                      <p className={getTextColorForDarkTheme('text-center')}>Carregando...</p>
                     ) : (
                       moradoresAtrasados.map((morador) => (
                         <div 
@@ -2071,7 +2088,7 @@ export default function FinanceiroMoradorPage() {
                         >
                           <div>
                             <strong>{morador.nome}</strong><br/>
-                            <small className="text-muted">
+                            <small className={getTextColorForDarkTheme()}>
                               {morador.bloco && `${morador.bloco} - `}{morador.unidade}
                               {morador.cpf && ` | CPF: ${morador.cpf}`}
                             </small>
