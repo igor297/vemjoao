@@ -324,9 +324,9 @@ export async function POST(request: NextRequest) {
       ...encryptedData,
       cpf: encryptedData.cpf, // Já criptografado pelo prepareForSave
       email: moradorData.email.toLowerCase(),
-      data_nasc: new Date(moradorData.data_nasc),
-      data_inicio: new Date(moradorData.data_inicio),
-      data_fim: moradorData.data_fim ? new Date(moradorData.data_fim) : undefined,
+      data_nasc: moradorData.data_nasc && !isNaN(new Date(moradorData.data_nasc).getTime()) ? new Date(moradorData.data_nasc) : undefined,
+      data_inicio: moradorData.data_inicio && !isNaN(new Date(moradorData.data_inicio).getTime()) ? new Date(moradorData.data_inicio) : undefined,
+      data_fim: moradorData.data_fim && !isNaN(new Date(moradorData.data_fim).getTime()) ? new Date(moradorData.data_fim) : undefined,
       // Tratar campos ObjectId vazios
       responsavel_id: moradorData.responsavel_id && moradorData.responsavel_id !== '' ? moradorData.responsavel_id : undefined,
       proprietario_id: moradorData.proprietario_id && moradorData.proprietario_id !== '' ? moradorData.proprietario_id : undefined,
@@ -394,13 +394,38 @@ export async function PUT(request: NextRequest) {
       processedData = await PersonalDataEncryption.prepareForSave(moradorData);
     }
 
+    // Função para converter data DD/MM/YYYY para Date
+    const parseDate = (dateString: string) => {
+      if (!dateString) return null;
+      
+      // Se já é uma data válida (ISO format), usar diretamente
+      const isoDate = new Date(dateString);
+      if (!isNaN(isoDate.getTime()) && !dateString.includes('/')) {
+        return isoDate;
+      }
+      
+      // Se é formato DD/MM/YYYY
+      if (dateString.includes('/')) {
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        }
+      }
+      
+      return null;
+    };
+
     const updateData = {
       ...processedData,
       ...(processedData.cpf && { cpf: processedData.cpf }), // Já processado pelo prepareForSave se necessário
       ...(moradorData.email && { email: moradorData.email.toLowerCase() }),
-      ...(moradorData.data_nasc && { data_nasc: new Date(moradorData.data_nasc) }),
-      ...(moradorData.data_inicio && { data_inicio: new Date(moradorData.data_inicio) }),
-      ...(moradorData.data_fim && { data_fim: new Date(moradorData.data_fim) }),
+      ...(moradorData.data_nasc && parseDate(moradorData.data_nasc) ? { data_nasc: parseDate(moradorData.data_nasc) } : {}),
+      ...(moradorData.data_inicio && parseDate(moradorData.data_inicio) ? { data_inicio: parseDate(moradorData.data_inicio) } : {}),
+      ...(moradorData.data_fim && parseDate(moradorData.data_fim) ? { data_fim: parseDate(moradorData.data_fim) } : {}),
       // Limpar campos ObjectId vazios
       responsavel_id: cleanObjectIdField(moradorData.responsavel_id),
       proprietario_id: cleanObjectIdField(moradorData.proprietario_id),
