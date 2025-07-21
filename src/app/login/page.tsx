@@ -413,7 +413,7 @@ export default function LoginPage() {
 
             <div className="login-footer">
               <p>Esqueceu sua senha? <a href="#">Recuperar acesso</a></p>
-              <p className="mt-3">Primeiro acesso? <a href="#">Cadastre-se</a></p>
+              <p className="mt-3">Primeiro acesso? <a href="/cadastro">Cadastre-se</a></p>
             </div>
           </div>
         </div>

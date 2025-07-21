@@ -10,7 +10,7 @@ export default function ClientShell({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  const hideShell = pathname === "/login";
+  const hideShell = pathname === "/login" || pathname === "/cadastro";
 
   useEffect(() => {
     // Lógica de autenticação existente

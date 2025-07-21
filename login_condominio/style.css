@@ -22,15 +22,29 @@ body {
     padding: 15px;
 }
 
-.login-container {
+.cadastro-container {
     background-color: white;
     border-radius: 12px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     width: 100%;
+    max-width: 400px; /* Adjust as needed */
+    min-height: 550px;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-container {
     max-width: 900px;
     display: flex;
     min-height: 550px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 100%;
 }
 
 .login-image {
@@ -80,6 +94,12 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.cadastro-container .login-form {
+    width: 100%;
+    max-width: 500px; /* Adjust as needed */
+    margin: auto;
 }
 
 .login-header {
@@ -223,7 +243,7 @@ body {
 }
 
 @media (max-width: 767px) {
-    .login-container {
+    .login-container, .cadastro-container {
         min-height: auto;
     }
     
@@ -242,7 +262,7 @@ body {
         padding: 0;
     }
     
-    .login-container {
+    .login-container, .cadastro-container {
         box-shadow: none;
         border-radius: 0;
     }

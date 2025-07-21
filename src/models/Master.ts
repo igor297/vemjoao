@@ -41,14 +41,7 @@ const MasterSchema: Schema = new Schema({
   senha: {
     type: String,
     required: true,
-    minlength: [8, 'Senha deve ter pelo menos 8 caracteres'],
-    validate: {
-      validator: function(senha: string) {
-        // Senha deve ter pelo menos 8 caracteres, incluindo: maiúscula, minúscula, número e caractere especial
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])[^\s]{8,}$/.test(senha)
-      },
-      message: 'Senha deve ter pelo menos 8 caracteres, incluindo: maiúscula, minúscula, número e caractere especial'
-    }
+    minlength: [6, 'Senha deve ter pelo menos 6 caracteres']
   },
   celular1: {
     type: String,
@@ -62,13 +55,60 @@ const MasterSchema: Schema = new Schema({
   },
   celular2: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
     validate: {
       validator: function(v: string) {
-        return /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(v)
+        return !v || /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(v)
       },
       message: 'Celular deve estar no formato (XX) XXXXX-XXXX'
     }
+  },
+  // Campos adicionais para compatibilidade
+  cpf: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  cnpj: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  status: {
+    type: String,
+    required: false,
+    default: 'teste'
+  },
+  dataCriacao: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  horaCriacao: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  dataHoraCriacao: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  dataHoraUltimaAtualizacao: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  dataUltimaAtualizacao: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  horaUltimaAtualizacao: {
+    type: String,
+    required: false,
+    default: ''
   },
   data_criacao: {
     type: Date,
