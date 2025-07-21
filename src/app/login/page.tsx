@@ -341,8 +341,7 @@ export default function LoginPage() {
           <div className="login-form">
             <div className="login-header">
               <div className="d-flex flex-column align-items-center">
-                <img src="/logomarca2.png" alt="Logo do Condomínio" className="login-logo mx-auto d-block mb-0" />
-                <h5 className="mt-0"><span style={{ color: '#FF6600' }}>one</span><span style={{ color: '#E91E63' }}>systemas</span></h5>
+                <img src="/logo-transparente.jpeg" alt="Logo do Condomínio" className="login-logo mx-auto d-block mb-0" />
               </div>
               <h1>Portal do Condomínio</h1>
               <p>Faça login para acessar sua conta</p>
