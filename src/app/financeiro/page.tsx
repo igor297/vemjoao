@@ -289,7 +289,7 @@ const FinancialAlerts = ({ moradoresAtrasados, colaboradoresAtrasados, colaborad
     );
 };
 
-const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChange, currentPage, totalPages, totalItems, itemsPerPage, theme }) => {
+const DetailedTable = ({ title, icon, variant, items, columns, type, onPageChange, currentPage, totalPages, totalItems, itemsPerPage, theme, getTextColorForDarkTheme }) => {
     const getBootstrapTheme = () => {
         if (theme === 'dark' || theme === 'comfort') return 'dark'
         return 'light'
@@ -1201,6 +1201,7 @@ export default function FinanceiroPage() {
                       totalItems={moradoresAtrasados.length}
                       itemsPerPage={itemsPerPage}
                       theme={theme}
+                      getTextColorForDarkTheme={getTextColorForDarkTheme}
                   />
               </Col>
               <Col lg={6}>
@@ -1217,6 +1218,7 @@ export default function FinanceiroPage() {
                       totalItems={colaboradoresAtrasados.length + colaboradoresPendentes.length}
                       itemsPerPage={itemsPerPage}
                       theme={theme}
+                      getTextColorForDarkTheme={getTextColorForDarkTheme}
                   />
               </Col>
           </Row>
